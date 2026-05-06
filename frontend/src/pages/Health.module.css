@@ -1,0 +1,316 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ========== KPI 아이콘 배지 (헬스 페이지 전용) ========== */
+.kpiBadge_total  { background: var(--color-accent-muted); color: var(--color-accent); }
+.kpiBadge_online { background: color-mix(in srgb, var(--color-success) 14%, transparent); color: var(--color-success); }
+.kpiBadge_off    { background: color-mix(in srgb, var(--color-danger) 14%, transparent);  color: var(--color-danger); }
+.kpiBadge_fw     { background: color-mix(in srgb, var(--color-warn) 14%, transparent);    color: var(--color-warn); }
+
+/* ========== 도넛 ========== */
+.donutCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.donutWrap {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) 0;
+}
+
+.donutSvg {
+  width: 200px;
+  height: 200px;
+}
+
+.donutCenter {
+  fill: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.donutSub {
+  fill: var(--color-text-muted);
+}
+
+.donutLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.donutLegendRow {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm);
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-sm);
+}
+
+.legendLabel {
+  color: var(--color-text-muted);
+}
+
+.legendVal {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========== 사이트 막대 ========== */
+.barChart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 92px 1fr 44px;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: var(--font-size-xs);
+}
+
+.barLabel {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barTrack {
+  position: relative;
+  height: 8px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
+}
+
+.barPct {
+  text-align: right;
+  font-family: var(--font-mono);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========== 시스템 indicator ========== */
+.indicatorList {
+  display: flex;
+  flex-direction: column;
+}
+
+.indicatorRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.indicatorRow:last-child {
+  border-bottom: none;
+}
+
+.indDot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.indDot_ok       { background: var(--color-success); }
+.indDot_warn     { background: var(--color-warn); }
+.indDot_critical { background: var(--color-danger); }
+
+.indLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.indMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.indVal {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========== 헬스 테이블 ========== */
+.tableWrap {
+  overflow-x: auto;
+}
+
+.sortHeader {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortHeader:hover {
+  color: var(--color-accent);
+}
+
+.sortArrow {
+  display: inline-block;
+  width: 10px;
+  margin-left: 4px;
+  color: var(--color-accent);
+  font-size: 10px;
+}
+
+.sortArrowMuted {
+  display: inline-block;
+  width: 10px;
+  margin-left: 4px;
+  color: var(--color-text-muted);
+  opacity: 0.4;
+  font-size: 10px;
+}
+
+.fwWarnIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-warn) 16%, transparent);
+  color: var(--color-warn);
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  margin-right: 6px;
+  cursor: help;
+}
+
+.cellMono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.cellNumber {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.miniBar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.miniBarTrack {
+  width: 56px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-alt);
+  overflow: hidden;
+}
+
+.miniBarFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+}
+
+.miniBarFill_ok       { background: var(--color-success); }
+.miniBarFill_warn     { background: var(--color-warn); }
+.miniBarFill_critical { background: var(--color-danger); }
+
+/* ========== Drawer 내용 ========== */
+.kvList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.kvItem {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.kvItem:last-child {
+  border-bottom: none;
+}
+
+.kvKey {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.kvVal {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.kvValPlain {
+  font-family: var(--font-sans);
+}
+
+.drawerSection {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.drawerSection:first-child {
+  margin-top: 0;
+}

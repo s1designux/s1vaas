@@ -1,0 +1,261 @@
+/* Algorithm tab — design_origin 충실 재현 + 프로젝트 토큰화 */
+
+.algoBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.algoBannerWarn {
+  border-color: var(--color-warning, var(--color-accent));
+  color: var(--color-warning, var(--color-accent));
+  background: var(--color-accent-muted);
+}
+
+.algoBannerCount {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.algoSectionTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 var(--space-3);
+}
+
+.algoGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.algoCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, border-color var(--transition-base);
+}
+
+.algoCard:hover {
+  /* default variant — border-color 만 (lift 는 SiteCard 한정) */
+  border-color: var(--color-action);
+}
+
+.algoCardActive {
+  border-color: var(--color-accent);
+  background: linear-gradient(
+    180deg,
+    var(--color-accent-muted) 0%,
+    var(--color-surface) 60%
+  );
+}
+
+.algoCardSelected {
+  box-shadow: 0 0 0 2px var(--color-accent-ring), var(--shadow-card);
+  border-color: var(--color-accent);
+}
+
+.algoCardDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.algoHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.algoIcon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.algoTitleBox {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.algoLabel {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.algoDesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.algoRow {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.algoRowLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: var(--font-weight-medium);
+}
+
+.zoneList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.zoneChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.zoneChip:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.zoneChipX {
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.zoneAddBtn {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px dashed var(--color-accent);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.zoneAddBtn:hover {
+  background: var(--color-accent);
+  color: var(--color-accent-on);
+}
+
+.zoneEmpty {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.sensiRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.sensiBtn {
+  position: relative;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.sensiBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.sensiBtnActive {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-muted);
+  font-weight: var(--font-weight-semibold);
+}
+
+.sensiBtnActive::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 4px;
+  height: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  animation: sensi-slide 0.25s ease-out;
+}
+
+@keyframes sensi-slide {
+  from { transform: scaleX(0.2); opacity: 0; }
+  to   { transform: scaleX(1);   opacity: 1; }
+}
+
+/* Toggle switch aligned to card header top-right */
+.algoSwitchWrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.algoSwitchBadge {
+  font-size: var(--font-size-xs);
+  color: var(--color-warning, var(--color-accent));
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.algoEmpty {
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

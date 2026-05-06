@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="S1 Cloud symbol">
+  <!-- Tag / speech-bubble shape: rounded square with a small nub on the bottom-right -->
+  <path d="M12 4 H52 A8 8 0 0 1 60 12 V48 A8 8 0 0 1 52 56 H40 L44 64 L30 56 H12 A8 8 0 0 1 4 48 V12 A8 8 0 0 1 12 4 Z" fill="#0033A0"/>
+  <text x="32" y="38" text-anchor="middle" font-family="'Pretendard Variable','Pretendard','Segoe UI',sans-serif" font-size="22" font-weight="800" fill="#FFFFFF" letter-spacing="-0.02em">S1</text>
+</svg>

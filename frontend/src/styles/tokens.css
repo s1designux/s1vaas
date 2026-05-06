@@ -1,0 +1,119 @@
+:root {
+  /* Color — light */
+  --color-bg-app: #F5F7FA;
+  --color-bg-elevated: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F2F4F6;
+  --color-surface-hover: #EFF3F9;
+  --color-border: #E2E8F0;
+  --color-border-subtle: #EFF1F3;
+  --color-text: #191C1E;
+  --color-text-muted: #444653;
+  --color-text-inverse: #FFFFFF;
+  /* Brand anchor (로고·핵심 면) — 라이트/다크 공통 */
+  --color-brand: #0033A0;
+  /* Action (텍스트·링크·버튼·focus ring) — 라이트는 brand 와 동일 */
+  --color-action: #0033A0;
+  --color-accent: #0033A0;
+  --color-accent-hover: #002577;
+  --color-accent-on: #FFFFFF;
+  --color-accent-muted: color-mix(in srgb, var(--color-action) 12%, transparent);
+  --color-accent-ring: color-mix(in srgb, var(--color-action) 18%, transparent);
+  --color-success: #16A34A;
+  --color-warn: #D97706;
+  --color-danger: #DC2626;
+  --color-info: #0033A0;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 48px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+  --line-height-loose: 1.6;
+
+  /* Shadow */
+  --shadow-none: none;
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  /* Motion */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.5s ease;
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --topbar-height: 52px;
+
+  /* Theme-independent (camera feed simulation) */
+  --color-video-bg: #0A0F18;
+  --color-video-bg-offline: #1A1A1A;
+  --color-rec: #FF3B3B;
+  --color-online: #22C55E;
+  --color-switch-thumb: #FFFFFF;
+
+  /* Login brand panel (always navy per §4) */
+  --color-login-brand-1: #001F66;
+  --color-login-brand-2: #0033A0;
+  --color-login-brand-3: #0F52CC;
+  --color-login-brand-text: #FFFFFF;
+}
+
+[data-theme='dark'] {
+  --color-bg-app: #0A0E17;
+  --color-bg-elevated: #0F1420;
+  --color-surface: #111827;
+  --color-surface-alt: #0F1520;
+  --color-surface-hover: #1A2233;
+  --color-border: #1E293B;
+  --color-border-subtle: #263045;
+  --color-text: #F1F5F9;
+  --color-text-muted: #94A3B8;
+  --color-text-inverse: #0A0E17;
+  /* Brand anchor 는 다크에서도 동일 — 로고 배지/면 */
+  --color-brand: #0033A0;
+  /* Action 은 WCAG AA 통과를 위해 #60A5FA 로 상향 (7.06:1 on #111827) */
+  --color-action: #60A5FA;
+  --color-accent: #60A5FA;
+  --color-accent-hover: #3B82F6;
+  --color-accent-on: #FFFFFF;
+  --color-accent-muted: color-mix(in srgb, var(--color-action) 18%, transparent);
+  --color-accent-ring: color-mix(in srgb, var(--color-action) 28%, transparent);
+  --color-success: #22C55E;
+  --color-warn: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #60A5FA;
+
+  --shadow-card: none;
+  --shadow-card-hover: 0 0 0 1px var(--color-accent-muted);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.40);
+}

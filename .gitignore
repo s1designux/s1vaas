@@ -1,0 +1,50 @@
+.DS_Store
+Thumbs.db
+
+# Node / JS
+node_modules/
+dist/
+build/
+.next/
+.cache/
+*.log
+npm-debug.log*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 환경/시크릿
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Java / Gradle
+.gradle/
+build/
+out/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+.idea/
+*.iml
+
+# AI 작업 산출물 (분석/큐레이션/리서치 — 코드 외 일체)
+design.md
+design.html
+design_origin/
+research/
+v2/
+s1vsaasasset_v2.zip
+backend/API.md
+backend/ARCHITECTURE.md
+backend/README.md
+frontend/README.md
+
+# Claude Code
+.claude/settings.local.json

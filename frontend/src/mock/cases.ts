@@ -1,0 +1,330 @@
+// TODO: replace with fetch('/api/v1/cases')
+import type { SecurityCase } from '@/types/case';
+
+export const cases: SecurityCase[] = [
+  {
+    id: 'cs-01',
+    code: 'C-2026-0421-001',
+    title: '강남본점 후문 침입 의심 (4/21)',
+    status: 'in_progress',
+    priority: 'high',
+    owner: '김보안',
+    tags: ['야간', '외부인', '후속조치필요'],
+    createdAt: '2026-04-21T01:42:00+09:00',
+    updatedAt: '2026-04-29T10:18:00+09:00',
+    description:
+      '4월 21일 새벽 1시 42분경 강남본점 후문 CAM-04 옥상 카메라에서 미인가 인원의 외벽 접근이 포착되었습니다. 1차 출동 결과 침입 흔적은 확인되지 않았으나 동일 시간대에 인근 CAM-02 주차장에서 차량 1대가 정차한 정황이 있어 차량 추적 및 보안 패트롤 강화 후속조치가 필요합니다.',
+    attachments: [
+      { id: 'a-01', kind: 'clip', cameraName: 'CAM-04 강남본점 옥상', siteName: '강남 본점', capturedAt: '2026-04-21T01:42:10+09:00', durationSec: 42, thumbSeed: 'gn-rooftop', note: '외벽 접근 전후 30초' },
+      { id: 'a-02', kind: 'clip', cameraName: 'CAM-02 강남본점 주차장', siteName: '강남 본점', capturedAt: '2026-04-21T01:43:55+09:00', durationSec: 28, thumbSeed: 'gn-parking', note: '검은색 SUV 정차' },
+      { id: 'a-03', kind: 'snapshot', cameraName: 'CAM-04 강남본점 옥상', siteName: '강남 본점', capturedAt: '2026-04-21T01:42:18+09:00', thumbSeed: 'gn-rooftop-2', note: '인물 후드 미확인' },
+    ],
+    comments: [
+      { id: 'cm-01', at: '2026-04-21T02:10:00+09:00', by: '관제센터', text: '1차 보안 출동 완료. 외부 침입 흔적 없음.' },
+      { id: 'cm-02', at: '2026-04-21T09:30:00+09:00', by: '김보안', text: '경찰 협조 요청 완료. 차량 번호판 식별 후 추적 의뢰.' },
+      { id: 'cm-03', at: '2026-04-29T10:18:00+09:00', by: '이매니저', text: '주변 카메라 보강 설치 검토 중. 다음 주까지 결정.' },
+    ],
+    shareLink: { url: 'https://share.s1vaas.com/c/4f8a21e0', expiresAt: '2026-05-08T23:59:00+09:00' },
+  },
+  {
+    id: 'cs-02',
+    code: 'C-2026-0418-002',
+    title: '송파지점 주차장 차량 충돌',
+    status: 'review',
+    priority: 'mid',
+    owner: '박관제',
+    tags: ['차량', '보험연계'],
+    createdAt: '2026-04-18T14:20:00+09:00',
+    updatedAt: '2026-04-28T16:05:00+09:00',
+    description:
+      '4월 18일 오후 2시 20분경 송파지점 지하 주차장에서 차량 2대 간 접촉 사고 발생. 운전자 간 합의 진행 중이며 보험사 영상 자료 요청에 대비해 사고 전후 5분 영상을 보존했습니다.',
+    attachments: [
+      { id: 'a-04', kind: 'clip', cameraName: 'CAM-10 송파 주차장 A', siteName: '송파 지점', capturedAt: '2026-04-18T14:18:30+09:00', durationSec: 305, thumbSeed: 'sp-parking', note: '사고 전후 5분 풀 클립' },
+      { id: 'a-05', kind: 'snapshot', cameraName: 'CAM-10 송파 주차장 A', siteName: '송파 지점', capturedAt: '2026-04-18T14:20:42+09:00', thumbSeed: 'sp-impact', note: '충돌 순간' },
+    ],
+    comments: [
+      { id: 'cm-04', at: '2026-04-18T14:55:00+09:00', by: '관제센터', text: '운전자 양측 신원 확인 및 영상 보존 완료.' },
+      { id: 'cm-05', at: '2026-04-22T11:00:00+09:00', by: '박관제', text: '삼성화재로부터 영상 자료 요청 접수.' },
+      { id: 'cm-06', at: '2026-04-28T16:05:00+09:00', by: '박관제', text: '보험사에 PDF 보고서 송부 완료. 종결 검토 중.' },
+    ],
+    shareLink: { url: 'https://share.s1vaas.com/c/9c12b341', expiresAt: '2026-05-15T23:59:00+09:00' },
+  },
+  {
+    id: 'cs-03',
+    code: 'C-2026-0419-003',
+    title: '판교 R&D 야간 출입 위반',
+    status: 'closed',
+    priority: 'mid',
+    owner: '최운영',
+    tags: ['야간', '내부직원', '교육완료'],
+    createdAt: '2026-04-19T22:48:00+09:00',
+    updatedAt: '2026-04-25T17:30:00+09:00',
+    description:
+      '판교 R&D 센터에서 야간 출입 승인 없이 서버룸에 입실한 직원 1명을 적발. HR 협조하에 본인 확인 및 출입 절차 재교육 완료. 사후 보안 정책 안내 메일 전체 발송 완료.',
+    attachments: [
+      { id: 'a-06', kind: 'clip', cameraName: 'CAM-13 판교 R&D 서버룸', siteName: '판교 R&D 센터', capturedAt: '2026-04-19T22:48:15+09:00', durationSec: 64, thumbSeed: 'pg-server', note: '입실 시점' },
+      { id: 'a-07', kind: 'clip', cameraName: 'CAM-12 판교 R&D 입구', siteName: '판교 R&D 센터', capturedAt: '2026-04-19T22:46:00+09:00', durationSec: 36, thumbSeed: 'pg-entrance', note: '복도 진입 영상' },
+      { id: 'a-08', kind: 'document', cameraName: '-', siteName: '판교 R&D 센터', capturedAt: '2026-04-25T11:00:00+09:00', thumbSeed: 'doc-policy', note: '재교육 확인서 PDF' },
+    ],
+    comments: [
+      { id: 'cm-07', at: '2026-04-20T09:12:00+09:00', by: '최운영', text: 'HR 협조 요청 완료. 본인 확인 진행.' },
+      { id: 'cm-08', at: '2026-04-22T14:00:00+09:00', by: '최운영', text: '출입 절차 재교육 1차 완료.' },
+      { id: 'cm-09', at: '2026-04-25T17:30:00+09:00', by: '최운영', text: '전체 직원 보안 정책 안내 발송 후 종결.' },
+    ],
+  },
+  {
+    id: 'cs-04',
+    code: 'C-2026-0422-004',
+    title: '서초지점 출입구 카드 도용 의심',
+    status: 'in_progress',
+    priority: 'high',
+    owner: '김보안',
+    tags: ['카드도용', '내부조사'],
+    createdAt: '2026-04-22T08:15:00+09:00',
+    updatedAt: '2026-04-30T11:42:00+09:00',
+    description:
+      '서초지점 출입구에서 동일 카드가 30초 간격으로 두 번 인증되는 패턴이 3일 연속 포착됨. 카드 소유자는 평일 정시 출근만 하는 패턴이라 도용 가능성이 높음. 영상 대조 결과 다른 인물이 동일 카드를 사용한 정황 확인.',
+    attachments: [
+      { id: 'a-09', kind: 'clip', cameraName: 'CAM-05 서초지점 출입구', siteName: '서초 지점', capturedAt: '2026-04-22T08:15:30+09:00', durationSec: 92, thumbSeed: 'sc-entry-1', note: '1차 인증 영상' },
+      { id: 'a-10', kind: 'clip', cameraName: 'CAM-05 서초지점 출입구', siteName: '서초 지점', capturedAt: '2026-04-22T08:16:02+09:00', durationSec: 88, thumbSeed: 'sc-entry-2', note: '2차 인증 영상' },
+      { id: 'a-11', kind: 'snapshot', cameraName: 'CAM-06 서초지점 로비', siteName: '서초 지점', capturedAt: '2026-04-22T08:17:11+09:00', thumbSeed: 'sc-lobby', note: '로비 진입 인물' },
+    ],
+    comments: [
+      { id: 'cm-10', at: '2026-04-23T10:00:00+09:00', by: '김보안', text: 'HR과 카드 소유자 면담 일정 조율.' },
+      { id: 'cm-11', at: '2026-04-30T11:42:00+09:00', by: '김보안', text: '카드 일시 정지 후 신규 발급 진행.' },
+    ],
+  },
+  {
+    id: 'cs-05',
+    code: 'C-2026-0415-005',
+    title: '부산지사 정문 외부인 배회',
+    status: 'open',
+    priority: 'low',
+    owner: '이매니저',
+    tags: ['외부인', '관찰'],
+    createdAt: '2026-04-15T19:30:00+09:00',
+    updatedAt: '2026-04-15T19:30:00+09:00',
+    description:
+      '부산지사 정문 앞에서 동일 인물이 일주일에 3회 이상 30분 이상 배회하는 패턴 포착. 직접적인 침입 시도는 없으나 모니터링 강화 필요.',
+    attachments: [
+      { id: 'a-12', kind: 'clip', cameraName: 'CAM-16 부산 지사 정문', siteName: '부산 지사', capturedAt: '2026-04-15T19:30:00+09:00', durationSec: 180, thumbSeed: 'bs-gate', note: '배회 패턴 포착' },
+      { id: 'a-13', kind: 'snapshot', cameraName: 'CAM-16 부산 지사 정문', siteName: '부산 지사', capturedAt: '2026-04-15T19:32:14+09:00', thumbSeed: 'bs-person', note: '얼굴 정면 캡처' },
+    ],
+    comments: [
+      { id: 'cm-12', at: '2026-04-15T20:00:00+09:00', by: '관제센터', text: '관찰 모드로 전환. 일일 보고에 포함.' },
+    ],
+  },
+  {
+    id: 'cs-06',
+    code: 'C-2026-0410-006',
+    title: '제주 물류센터 적재장 도난 의심',
+    status: 'closed',
+    priority: 'high',
+    owner: '박관제',
+    tags: ['도난', '경찰협조', '종결'],
+    createdAt: '2026-04-10T03:20:00+09:00',
+    updatedAt: '2026-04-23T14:00:00+09:00',
+    description:
+      '제주 물류센터 적재장에서 야간 시간대 박스 5개가 사라진 사건. CCTV 분석 결과 외부 차량이 후문으로 진입한 정황 확인. 경찰 신고 후 용의자 검거되어 종결.',
+    attachments: [
+      { id: 'a-14', kind: 'clip', cameraName: 'CAM-19 제주 물류 적재장', siteName: '제주 물류센터', capturedAt: '2026-04-10T03:18:40+09:00', durationSec: 240, thumbSeed: 'jj-cargo', note: '도난 시점 풀클립' },
+      { id: 'a-15', kind: 'clip', cameraName: 'CAM-20 제주 물류 출입구', siteName: '제주 물류센터', capturedAt: '2026-04-10T03:21:20+09:00', durationSec: 120, thumbSeed: 'jj-out', note: '차량 출차 시점' },
+      { id: 'a-16', kind: 'document', cameraName: '-', siteName: '제주 물류센터', capturedAt: '2026-04-23T14:00:00+09:00', thumbSeed: 'doc-police', note: '경찰 종결 통지서' },
+    ],
+    comments: [
+      { id: 'cm-13', at: '2026-04-10T05:00:00+09:00', by: '관제센터', text: '경찰 신고 완료.' },
+      { id: 'cm-14', at: '2026-04-12T16:30:00+09:00', by: '박관제', text: '용의자 차량 번호판 확인 → 경찰에 자료 제출.' },
+      { id: 'cm-15', at: '2026-04-18T10:00:00+09:00', by: '박관제', text: '용의자 검거. 분실 물품 일부 회수.' },
+      { id: 'cm-16', at: '2026-04-23T14:00:00+09:00', by: '박관제', text: '종결.' },
+    ],
+  },
+  {
+    id: 'cs-07',
+    code: 'C-2026-0420-007',
+    title: '강남본점 엘리베이터 추락 사고',
+    status: 'in_progress',
+    priority: 'high',
+    owner: '최운영',
+    tags: ['안전사고', '시설점검', '후속조치필요'],
+    createdAt: '2026-04-20T16:50:00+09:00',
+    updatedAt: '2026-04-29T15:20:00+09:00',
+    description:
+      '강남본점 엘리베이터 내부에서 50대 여성 고객이 갑작스러운 정지로 넘어진 사고. 부상 정도는 경미하나 본사 시설팀과 합동 점검 진행 중. 보험사 통보 완료.',
+    attachments: [
+      { id: 'a-17', kind: 'clip', cameraName: 'CAM-03 강남본점 엘리베이터', siteName: '강남 본점', capturedAt: '2026-04-20T16:50:18+09:00', durationSec: 75, thumbSeed: 'gn-elev', note: '사고 순간' },
+      { id: 'a-18', kind: 'snapshot', cameraName: 'CAM-03 강남본점 엘리베이터', siteName: '강남 본점', capturedAt: '2026-04-20T16:50:22+09:00', thumbSeed: 'gn-elev-2', note: '낙상 직후' },
+      { id: 'a-19', kind: 'document', cameraName: '-', siteName: '강남 본점', capturedAt: '2026-04-22T10:00:00+09:00', thumbSeed: 'doc-elev', note: '시설팀 점검 보고서' },
+    ],
+    comments: [
+      { id: 'cm-17', at: '2026-04-20T17:30:00+09:00', by: '관제센터', text: '119 신고 완료. 경상 처리.' },
+      { id: 'cm-18', at: '2026-04-22T09:30:00+09:00', by: '최운영', text: '엘리베이터 제조사에 점검 요청.' },
+      { id: 'cm-19', at: '2026-04-29T15:20:00+09:00', by: '최운영', text: '제조사 점검 결과 센서 오작동 확인. 부품 교체 일정 협의.' },
+    ],
+    shareLink: { url: 'https://share.s1vaas.com/c/22aa44b2', expiresAt: '2026-05-12T23:59:00+09:00' },
+  },
+  {
+    id: 'cs-08',
+    code: 'C-2026-0426-008',
+    title: '서초지점 로비 분실물 신고',
+    status: 'open',
+    priority: 'low',
+    owner: '관제센터',
+    tags: ['분실물', '고객응대'],
+    createdAt: '2026-04-26T13:10:00+09:00',
+    updatedAt: '2026-04-26T13:10:00+09:00',
+    description:
+      '서초지점 로비에서 고객이 갈색 가죽가방 분실 신고. 영상 검토 결과 1시간 전 다른 고객이 가방을 들고 나간 정황 확인. 양측 연락처 확보 후 안내 진행 중.',
+    attachments: [
+      { id: 'a-20', kind: 'clip', cameraName: 'CAM-06 서초지점 로비', siteName: '서초 지점', capturedAt: '2026-04-26T12:05:00+09:00', durationSec: 90, thumbSeed: 'sc-bag-1', note: '가방 두고 간 시점' },
+      { id: 'a-21', kind: 'clip', cameraName: 'CAM-06 서초지점 로비', siteName: '서초 지점', capturedAt: '2026-04-26T12:42:00+09:00', durationSec: 60, thumbSeed: 'sc-bag-2', note: '다른 고객 픽업 시점' },
+    ],
+    comments: [
+      { id: 'cm-20', at: '2026-04-26T13:30:00+09:00', by: '관제센터', text: '분실 고객·습득 고객 양측 연락처 확보.' },
+    ],
+  },
+  {
+    id: 'cs-09',
+    code: 'C-2026-0428-009',
+    title: '판교 R&D 카페테리아 기물 파손',
+    status: 'open',
+    priority: 'mid',
+    owner: '이매니저',
+    tags: ['시설피해', '내부직원'],
+    createdAt: '2026-04-28T20:40:00+09:00',
+    updatedAt: '2026-04-28T20:40:00+09:00',
+    description:
+      '판교 R&D 카페테리아에서 야간 시간대 자판기 1대가 파손된 상태로 발견. 영상 확인 결과 직원 1명이 자판기 오작동에 화가 나서 발로 찬 정황 확인.',
+    attachments: [
+      { id: 'a-22', kind: 'clip', cameraName: 'CAM-14 판교 R&D 카페테리아', siteName: '판교 R&D 센터', capturedAt: '2026-04-28T20:38:00+09:00', durationSec: 45, thumbSeed: 'pg-cafe-1', note: '파손 순간' },
+      { id: 'a-23', kind: 'snapshot', cameraName: 'CAM-14 판교 R&D 카페테리아', siteName: '판교 R&D 센터', capturedAt: '2026-04-28T20:38:15+09:00', thumbSeed: 'pg-cafe-2', note: '인물 식별 가능' },
+    ],
+    comments: [
+      { id: 'cm-21', at: '2026-04-28T21:00:00+09:00', by: '관제센터', text: '본인 확인 후 시설팀과 변상 절차 협의 예정.' },
+      { id: 'cm-22', at: '2026-04-29T10:00:00+09:00', by: '이매니저', text: 'HR 통해 본인 확인 진행.' },
+    ],
+  },
+  {
+    id: 'cs-10',
+    code: 'C-2026-0405-010',
+    title: '송파 1F 매장 화재 경보 오작동',
+    status: 'closed',
+    priority: 'low',
+    owner: '박관제',
+    tags: ['오작동', '점검완료'],
+    createdAt: '2026-04-05T11:25:00+09:00',
+    updatedAt: '2026-04-08T16:00:00+09:00',
+    description:
+      '송파 1F 매장 화재 경보가 울려 119 출동했으나 실제 화재 없음. 센서 점검 결과 먼지 누적으로 인한 오작동으로 확인. 센서 청소 및 교체 완료.',
+    attachments: [
+      { id: 'a-24', kind: 'clip', cameraName: 'CAM-09 송파 1F 매장', siteName: '송파 지점', capturedAt: '2026-04-05T11:24:00+09:00', durationSec: 180, thumbSeed: 'sp-fire', note: '경보 발생 시점' },
+      { id: 'a-25', kind: 'document', cameraName: '-', siteName: '송파 지점', capturedAt: '2026-04-08T15:00:00+09:00', thumbSeed: 'doc-sensor', note: '센서 점검 결과서' },
+    ],
+    comments: [
+      { id: 'cm-23', at: '2026-04-05T12:00:00+09:00', by: '관제센터', text: '119 출동, 화재 없음 확인.' },
+      { id: 'cm-24', at: '2026-04-08T16:00:00+09:00', by: '박관제', text: '센서 교체 완료. 종결.' },
+    ],
+  },
+  {
+    id: 'cs-11',
+    code: 'C-2026-0427-011',
+    title: '강남본점 1F 로비 VIP 동선 보호',
+    status: 'in_progress',
+    priority: 'mid',
+    owner: '김보안',
+    tags: ['VIP', '동선보호'],
+    createdAt: '2026-04-27T09:00:00+09:00',
+    updatedAt: '2026-04-30T18:00:00+09:00',
+    description:
+      '5월 첫째주 본사 임원 방문 일정에 따라 강남본점 1F 로비 동선의 카메라 사각지대 사전 점검. 임시 카메라 2대 설치 검토 중.',
+    attachments: [
+      { id: 'a-26', kind: 'snapshot', cameraName: 'CAM-01 강남본점 1F 로비', siteName: '강남 본점', capturedAt: '2026-04-27T09:00:00+09:00', thumbSeed: 'gn-lobby-1', note: '현재 커버리지' },
+      { id: 'a-27', kind: 'document', cameraName: '-', siteName: '강남 본점', capturedAt: '2026-04-29T14:00:00+09:00', thumbSeed: 'doc-vip', note: '임시 설치 안건서' },
+    ],
+    comments: [
+      { id: 'cm-25', at: '2026-04-27T11:00:00+09:00', by: '김보안', text: '사각지대 2개소 식별.' },
+      { id: 'cm-26', at: '2026-04-30T18:00:00+09:00', by: '김보안', text: '임시 카메라 발주 완료. 5/2 설치 예정.' },
+    ],
+  },
+  {
+    id: 'cs-12',
+    code: 'C-2026-0429-012',
+    title: '부산지사 주차장 차량 무단 점유',
+    status: 'review',
+    priority: 'low',
+    owner: '이매니저',
+    tags: ['차량', '관찰'],
+    createdAt: '2026-04-29T07:50:00+09:00',
+    updatedAt: '2026-04-30T09:00:00+09:00',
+    description:
+      '부산지사 주차장에 외부 차량 1대가 3일 연속 동일 위치에 주차. 번호판 식별 후 임차인 확인 결과 인근 회사 차량으로 확인. 안내문 부착 후 자진 이동 요청.',
+    attachments: [
+      { id: 'a-28', kind: 'clip', cameraName: 'CAM-17 부산 지사 주차장', siteName: '부산 지사', capturedAt: '2026-04-29T07:48:00+09:00', durationSec: 60, thumbSeed: 'bs-park-1', note: '입차 영상' },
+      { id: 'a-29', kind: 'snapshot', cameraName: 'CAM-17 부산 지사 주차장', siteName: '부산 지사', capturedAt: '2026-04-29T07:48:42+09:00', thumbSeed: 'bs-plate', note: '번호판 캡처' },
+    ],
+    comments: [
+      { id: 'cm-27', at: '2026-04-30T09:00:00+09:00', by: '이매니저', text: '안내문 부착 완료. 5/2까지 미이동 시 견인 검토.' },
+    ],
+  },
+  {
+    id: 'cs-13',
+    code: 'C-2026-0408-013',
+    title: '판교 R&D 옥상 출입문 잠금 해제',
+    status: 'closed',
+    priority: 'mid',
+    owner: '최운영',
+    tags: ['시설관리', '교육완료'],
+    createdAt: '2026-04-08T17:30:00+09:00',
+    updatedAt: '2026-04-12T11:00:00+09:00',
+    description:
+      '판교 R&D 옥상 출입문이 잠금 해제 상태로 1시간 방치. 영상 확인 결과 청소 직원이 잠금을 잊고 내려간 것으로 확인. 청소 업체에 절차 재교육 완료.',
+    attachments: [
+      { id: 'a-30', kind: 'clip', cameraName: 'CAM-15 판교 R&D 옥상', siteName: '판교 R&D 센터', capturedAt: '2026-04-08T17:32:00+09:00', durationSec: 30, thumbSeed: 'pg-roof', note: '잠금 미실시 시점' },
+      { id: 'a-31', kind: 'document', cameraName: '-', siteName: '판교 R&D 센터', capturedAt: '2026-04-12T10:00:00+09:00', thumbSeed: 'doc-cleaning', note: '청소 업체 재교육 확인서' },
+    ],
+    comments: [
+      { id: 'cm-28', at: '2026-04-08T19:00:00+09:00', by: '관제센터', text: '시설 관리자가 직접 잠금.' },
+      { id: 'cm-29', at: '2026-04-12T11:00:00+09:00', by: '최운영', text: '청소 업체 재교육 완료. 종결.' },
+    ],
+  },
+  {
+    id: 'cs-14',
+    code: 'C-2026-0430-014',
+    title: '송파 옥외 정문 시위 인파',
+    status: 'open',
+    priority: 'mid',
+    owner: '관제센터',
+    tags: ['외부인', '관찰', '경찰협조'],
+    createdAt: '2026-04-30T13:15:00+09:00',
+    updatedAt: '2026-04-30T13:15:00+09:00',
+    description:
+      '송파 옥외 정문 앞에서 약 20명 규모 시위 인파 운집. 직접적인 충돌은 없으나 출입 동선 영향 있음. 관할 경찰서에 상황 공유 및 추가 인력 요청.',
+    attachments: [
+      { id: 'a-32', kind: 'clip', cameraName: 'CAM-11 송파 옥외 정문', siteName: '송파 지점', capturedAt: '2026-04-30T13:14:00+09:00', durationSec: 120, thumbSeed: 'sp-rally', note: '인파 운집 영상' },
+      { id: 'a-33', kind: 'snapshot', cameraName: 'CAM-11 송파 옥외 정문', siteName: '송파 지점', capturedAt: '2026-04-30T13:14:30+09:00', thumbSeed: 'sp-rally-2', note: '전체 규모' },
+    ],
+    comments: [
+      { id: 'cm-30', at: '2026-04-30T13:20:00+09:00', by: '관제센터', text: '관할 경찰서 상황 공유.' },
+    ],
+  },
+  {
+    id: 'cs-15',
+    code: 'C-2026-0402-015',
+    title: '제주 물류 출입구 야간 무단 진입',
+    status: 'in_progress',
+    priority: 'mid',
+    owner: '박관제',
+    tags: ['야간', '외부인', '관광객'],
+    createdAt: '2026-04-02T23:50:00+09:00',
+    updatedAt: '2026-04-30T08:30:00+09:00',
+    description:
+      '제주 물류 출입구에서 야간 무단 진입 시도 반복 발생. 4월 한 달간 3건. 일부는 길을 잃은 관광객으로 확인되었으나 동일 패턴 반복으로 안내 표지판 추가 설치 및 야간 조명 보강 진행 중.',
+    attachments: [
+      { id: 'a-34', kind: 'clip', cameraName: 'CAM-20 제주 물류 출입구', siteName: '제주 물류센터', capturedAt: '2026-04-02T23:48:00+09:00', durationSec: 90, thumbSeed: 'jj-night', note: '진입 시도' },
+      { id: 'a-35', kind: 'document', cameraName: '-', siteName: '제주 물류센터', capturedAt: '2026-04-09T10:00:00+09:00', thumbSeed: 'doc-sign', note: '안내판 설치 완료' },
+    ],
+    comments: [
+      { id: 'cm-31', at: '2026-04-03T00:30:00+09:00', by: '관제센터', text: '경비원 대응 완료. 관광객 무사 귀가.' },
+      { id: 'cm-32', at: '2026-04-09T11:00:00+09:00', by: '박관제', text: '안내판 설치 후 종결.' },
+    ],
+  },
+];

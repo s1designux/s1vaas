@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="S1 Cloud aperture hexagon">
+  <!-- outer hexagon — surveillance aperture outer ring -->
+  <path d="M48 4 L86.1051 26 L86.1051 70 L48 92 L9.89489 70 L9.89489 26 Z"
+        fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linejoin="round"/>
+  <!-- inner hexagon — shutter iris (dashed) -->
+  <path d="M48 24 L68.7846 36 L68.7846 60 L48 72 L27.2154 60 L27.2154 36 Z"
+        fill="none" stroke="currentColor" stroke-width="1.5"
+        stroke-linejoin="round" stroke-dasharray="4 2"/>
+  <!-- aperture center — lens pupil -->
+  <circle cx="48" cy="48" r="8"
+          fill="none" stroke="currentColor" stroke-width="2"/>
+</svg>
