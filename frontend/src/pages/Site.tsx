@@ -184,7 +184,6 @@ export default function Site() {
           <div className={styles.sectionLabel}>내 장소 (계약처 ▸ 사이트)</div>
           {myContracts.map((c) => {
             const cOpen = openContracts.has(c.id);
-            const cCamCount = camsByContract.get(c.id)?.length ?? 0;
             const cSites = sitesOf(c.id);
             const unassigned = unassignedOf(c.id);
             return (
@@ -205,7 +204,6 @@ export default function Site() {
                   <div className={styles.nodeActions}>
                     <button type="button" className={styles.iconBtn} title="사이트 추가" onClick={(e) => { e.stopPropagation(); handleAddSite(c.id); }}>＋</button>
                   </div>
-                  <span className={styles.nodeCount}>{cCamCount}</span>
                 </div>
 
                 {cOpen && (

@@ -119,9 +119,6 @@
 .node:hover .nodeActions {
   display: flex;
 }
-.node:hover .nodeCount {
-  display: none;
-}
 
 .iconBtn {
   width: 20px;
