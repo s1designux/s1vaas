@@ -1,0 +1,54 @@
+/* S1 DS — Chip (Line type). chip.json variant=line 토큰 기준. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--sizing-chip-height-md);
+  padding: 0 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--chip-default-border);
+  background: var(--chip-default-bg);
+  color: var(--chip-default-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.chip:hover:not(:disabled) {
+  background: var(--chip-hover-bg);
+  border-color: var(--chip-hover-border);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--chip-focus-ring);
+  outline-offset: 1px;
+}
+
+.selected {
+  background: var(--chip-selected-bg);
+  border-color: var(--chip-selected-border);
+  color: var(--chip-selected-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.selected:hover:not(:disabled) {
+  background: var(--chip-selected-hover-bg);
+  border-color: var(--chip-selected-border);
+}
+
+.chip:disabled {
+  background: var(--chip-disabled-bg);
+  border-color: var(--chip-disabled-border);
+  color: var(--chip-disabled-text);
+  cursor: not-allowed;
+}
+
+.dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+}

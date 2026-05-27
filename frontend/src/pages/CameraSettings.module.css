@@ -1,213 +1,227 @@
-/* Algorithm tab — design_origin 충실 재현 + 프로젝트 토큰화 */
+/* ── 페이지 래퍼 ── */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  animation: fade-in 0.35s ease-out;
+}
 
-.algoBanner {
+/* ── 상단 헤더 ── */
+.pageHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-alt);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  margin-bottom: var(--space-4);
+  padding: var(--spacing-12) var(--spacing-20);
+  border-bottom: var(--border-width-default) solid var(--color-border-subtle);
+  flex-shrink: 0;
+  gap: var(--spacing-12);
+  background: var(--color-surface-default);
 }
 
-.algoBannerWarn {
-  border-color: var(--color-warning, var(--color-accent));
-  color: var(--color-warning, var(--color-accent));
-  background: var(--color-accent-muted);
+.pageTitle {
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
 }
 
-.algoBannerCount {
-  font-family: var(--font-mono);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
+.pageActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
 }
 
-.algoSectionTitle {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted);
+/* ── 바디 레이아웃 (트리 + 콘텐츠) ── */
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── 좌측 트리 ── */
+.sidebar {
+  width: 232px;
+  min-width: 232px;
+  border-right: var(--border-width-default) solid var(--color-border-subtle);
+  overflow-y: auto;
+  background: var(--color-surface-default);
+  padding: var(--spacing-8) 0;
+}
+
+/* 트리: 고객번호 그룹 헤더 */
+.treeContract {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-6) var(--spacing-12);
+  font-size: var(--font-size-11);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.06em;
+  color: var(--color-text-tertiary);
   text-transform: uppercase;
-  margin: 0 0 var(--space-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--transition-fast);
+  user-select: none;
 }
 
-.algoGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-4);
-  align-items: start;
+.treeContract:hover {
+  color: var(--color-text-secondary);
 }
 
-.algoCard {
-  position: relative;
+.treeChevron {
+  flex-shrink: 0;
+  color: var(--color-icon-subtle);
+  transition: transform var(--transition-fast);
+}
+
+.treeChevronOpen {
+  transform: rotate(90deg);
+}
+
+/* 트리: 사이트 */
+.treeSite {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-5) var(--spacing-12) var(--spacing-5) var(--spacing-32);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--transition-fast);
+  user-select: none;
+}
+
+.treeSite:hover {
+  color: var(--color-text-primary);
+}
+
+.treeSiteIcon {
+  flex-shrink: 0;
+  color: var(--color-icon-subtle);
+}
+
+/* 트리: 카메라 항목 */
+.treeCam {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-6) var(--spacing-12) var(--spacing-6) var(--spacing-48);
+  font-size: var(--font-size-12);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+  border-left: 2px solid transparent;
+}
+
+.treeCam:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+}
+
+.treeCamActive {
+  background: color-mix(in srgb, var(--color-action-primary-default) 8%, transparent);
+  color: var(--color-action-primary-default);
+  font-weight: var(--font-weight-semibold);
+  border-left-color: var(--color-action-primary-default);
+}
+
+.treeCamActive:hover {
+  background: color-mix(in srgb, var(--color-action-primary-default) 12%, transparent);
+  color: var(--color-action-primary-default);
+}
+
+/* 상태 점 */
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotOnline   { background: var(--color-status-success); }
+.dotRecording {
+  background: var(--color-status-error);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.dotOffline  { background: var(--color-status-neutral); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* ── 우측 콘텐츠 ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, border-color var(--transition-base);
+  gap: var(--spacing-16);
+  padding: var(--spacing-16) var(--spacing-20);
 }
 
-.algoCard:hover {
-  /* default variant — border-color 만 (lift 는 SiteCard 한정) */
-  border-color: var(--color-action);
-}
-
-.algoCardActive {
-  border-color: var(--color-accent);
-  background: linear-gradient(
-    180deg,
-    var(--color-accent-muted) 0%,
-    var(--color-surface) 60%
-  );
-}
-
-.algoCardSelected {
-  box-shadow: 0 0 0 2px var(--color-accent-ring), var(--shadow-card);
-  border-color: var(--color-accent);
-}
-
-.algoCardDisabled {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.algoHeader {
+/* 선택 없음 empty state */
+.empty {
+  flex: 1;
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-}
-
-.algoIcon {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-  background: var(--color-accent-muted);
-  color: var(--color-accent);
-  display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--spacing-8);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-14);
 }
 
-.algoTitleBox {
-  flex: 1;
-  min-width: 0;
+/* ── 설정 탭 ── */
+.settingsTabs {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.algoLabel {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-.algoDesc {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  line-height: 1.4;
-}
-
-.algoRow {
-  display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: var(--space-3);
-  align-items: center;
-}
-
-.algoRowLabel {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-weight: var(--font-weight-medium);
-}
-
-.zoneList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-}
-
-.zoneChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  color: var(--color-text);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-family: inherit;
-}
-
-.zoneChip:hover {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-}
-
-.zoneChipX {
-  font-size: var(--font-size-sm);
-  line-height: 1;
-  opacity: 0.7;
-}
-
-.zoneAddBtn {
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  border: 1px dashed var(--color-accent);
-  background: var(--color-accent-muted);
-  color: var(--color-accent);
-  cursor: pointer;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  font-family: inherit;
-  transition: all var(--transition-fast);
-}
-
-.zoneAddBtn:hover {
-  background: var(--color-accent);
-  color: var(--color-accent-on);
-}
-
-.zoneEmpty {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  opacity: 0.7;
-}
-
-
-
-/* Toggle switch aligned to card header top-right */
-.algoSwitchWrap {
+  gap: 0;
+  border-bottom: var(--border-width-default) solid var(--color-border-subtle);
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
-.algoSwitchBadge {
-  font-size: var(--font-size-xs);
-  color: var(--color-warning, var(--color-accent));
-  font-weight: var(--font-weight-semibold);
+.settingsTab {
+  padding: var(--spacing-8) var(--spacing-16);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
   white-space: nowrap;
 }
 
-.algoEmpty {
-  padding: var(--space-5);
-  text-align: center;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+.settingsTab:hover {
+  color: var(--color-text-primary);
+}
+
+.settingsTabActive {
+  color: var(--color-action-primary-default);
+  border-bottom-color: var(--color-action-primary-default);
+  font-weight: var(--font-weight-semibold);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

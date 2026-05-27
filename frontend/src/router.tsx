@@ -7,6 +7,7 @@ import Dashboard from '@/pages/Dashboard';
 import Monitoring from '@/pages/Monitoring';
 import Alerts from '@/pages/Alerts';
 import Search from '@/pages/Search';
+import AiSafety from '@/pages/AiSafety';
 import Cases from '@/pages/Cases';
 import Dispatch from '@/pages/Dispatch';
 import CameraSettings from '@/pages/CameraSettings';
@@ -39,6 +40,7 @@ export function AppRouter() {
           <Route path="/monitoring" element={<Monitoring />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/ai-safety" element={<AiSafety />} />
           <Route path="/cases" element={<Cases />} />
           <Route path="/dispatch" element={<Dispatch />} />
           <Route path="/camera-settings" element={<CameraSettings />} />

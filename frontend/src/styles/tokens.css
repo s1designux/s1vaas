@@ -564,10 +564,6 @@
   --progress-warning: var(--color-status-dark-yellow);
   --progress-success: var(--color-status-dark-green);
 
-  /* Nav Active — Dark (한 단계 밝은 톤으로 가독성 개선) */
-  --nav-item-active-bg: var(--color-blue-dark-350);
-  --nav-item-active-text: var(--color-base-white);
-  --nav-item-active-icon: var(--color-base-white);
 }
 
 /* ══ 5. Component Tokens ══ */
@@ -794,6 +790,11 @@
   --shadow-card: none;
   --shadow-card-hover: 0 0 0 1px var(--color-action-primary-subtle);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* Nav Active — dark overrides (must come after :root component tokens to win cascade) */
+  --nav-item-active-bg: var(--color-gray-dark-300);   /* Figma: gray/300 → #2e2f38 */
+  --nav-item-active-text: var(--color-text-primary);  /* Figma: text/primary → #ecedf0 */
+  --nav-item-active-icon: var(--color-text-primary);
 
   /* Chip — dark overrides (must come after :root component tokens to win cascade) */
   --chip-default-bg: transparent;

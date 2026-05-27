@@ -1,0 +1,406 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ===== 서브 탭 칩 네비게이션 ===== */
+.subNavRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-12);
+  flex-wrap: wrap;
+}
+
+.subChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  flex-shrink: 0;
+  white-space: nowrap;
+  height: var(--sizing-chip-height-sm);
+  padding: 0 var(--spacing-16);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--chip-default-border);
+  background: var(--chip-default-bg);
+  color: var(--chip-default-text);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+
+.subChip:hover:not(.subChipActive) {
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.05) 100%), var(--chip-default-bg);
+  border-color: var(--chip-hover-border);
+}
+
+.subChipActive {
+  background: var(--chip-selected-bg);
+  border-color: var(--chip-selected-border);
+  color: var(--chip-selected-text);
+}
+
+/* ===== 추천 안심 설정 ===== */
+.recPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.recRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.recRowLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.recRowHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+  margin-left: 6px;
+}
+
+.recResult {
+  margin-top: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.recResultHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.recResultTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.recList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.recItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.recItemIcon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-muted);
+  color: var(--color-action);
+}
+
+.recItemIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.recItemText {
+  flex: 1;
+  min-width: 0;
+}
+
+.recItemLabel {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.recItemReason {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.recEmpty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  padding: var(--space-2) 0;
+}
+
+/* ===== AI 특화 제한 배너 ===== */
+.algoBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.algoBannerWarn {
+  background: color-mix(in srgb, var(--color-warn) 12%, transparent);
+  border-color: var(--color-warn);
+  color: var(--color-text);
+}
+
+.algoBannerCount {
+  flex: none;
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-accent);
+}
+
+/* ===== 알고리즘 카드 ===== */
+.algoGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.algoCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.algoCardActive {
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+}
+
+.algoCardSelected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.algoCardDisabled {
+  opacity: 0.55;
+}
+
+.algoHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.algoIcon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-muted);
+  color: var(--color-action);
+}
+
+.algoIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.algoTitleBox {
+  flex: 1;
+  min-width: 0;
+}
+
+.algoLabel {
+  display: block;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.algoDesc {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.algoSwitchWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.algoSwitchBadge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-warn);
+  white-space: nowrap;
+}
+
+.algoChevron {
+  flex: none;
+  color: var(--color-text-muted);
+  transition: transform 0.15s ease;
+  display: flex;
+  align-items: center;
+}
+
+.algoChevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ===== 카드 본문 (확장) ===== */
+.algoBody {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--color-bg-muted);
+}
+
+.algoField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.algoFieldLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* 민감도 radio */
+.radioRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.radioOpt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.radioOptActive {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+}
+
+.radioOptTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.radioOptDesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* 감지 영역 chips */
+.zoneList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.zoneEmpty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.zoneChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.zoneChipX {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+}
+
+.zoneAddBtn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  font-size: var(--font-size-xs);
+  color: var(--color-action);
+  cursor: pointer;
+}
+
+.zoneAddBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 시간 예약 */
+.schedTime {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  width: fit-content;
+}
+
+.notice {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.noticeIcon {
+  flex: none;
+  color: var(--color-action);
+  margin-top: 1px;
+}

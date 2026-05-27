@@ -1,25 +1,35 @@
 // TODO: replace with fetch('/api/v1/cameras/{id}') + PATCH
+// 카메라 관리 — AI 카메라 Process Flow(V0.76) 사양 기반 상세화.
+//   설정 체계: 시스템 / 네트워크 / 비디오 / 이미지 / 녹화
+//   AI 이벤트(침입·배회·가상펜스·화재·주정차·피플카운팅)와 움직임 감지·감지 스케줄은
+//   [안심 AI 설정]으로 이관 — 여기서는 다루지 않는다(상단 참조 배너).
+//   단, 프라이버시 마스크는 PPTX상 [이미지] 설정에 속하므로 이미지 탭에서 ROI로 관리한다.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { useToast } from '@/hooks/useToast';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { BtnGroup } from '@/components/ui/BtnGroup';
 import { Badge } from '@/components/ui/Badge';
-import { Tabs } from '@/components/ui/Tabs';
-import type {
-  CameraAlgorithm,
-  AlgorithmSensitivity,
-  ZonePoint,
-  ZonePolygon,
-} from '@/types';
-import { MAX_AI_ALGOS, SENSITIVITY_OPTIONS } from '@/types/algorithm';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import type { CameraAlgorithm, ZonePoint, ZonePolygon } from '@/types';
 import page from './Page.module.css';
-import algoStyles from './CameraSettings.module.css';
+import cs from './CameraSettings.module.css';
 
-type SettingsTab = 'algorithm' | 'system' | 'osd' | 'video' | 'record' | 'network';
+type SettingsTab = 'system' | 'network' | 'video' | 'image' | 'record';
 
-// ROI accent palette — 해시 기반 색 순환. fill rgba 를 0.14 → 0.32~0.35 로 상향.
+const SETTINGS_TABS: { key: SettingsTab; label: string }[] = [
+  { key: 'system', label: '시스템' },
+  { key: 'network', label: '네트워크' },
+  { key: 'video', label: '비디오' },
+  { key: 'image', label: '이미지' },
+  { key: 'record', label: '녹화' },
+];
+
+/** 프라이버시 마스크 최대 영역 수 (PPTX 630). */
+const PRIVACY_MAX_ZONES = 4;
+
+// ROI accent palette — 해시 기반 색 순환.
 const ROI_PALETTE = [
   { stroke: 'var(--color-accent)', fill: 'rgba(21, 83, 198, 0.34)' },
   { stroke: 'var(--color-warn)', fill: 'rgba(217, 119, 6, 0.34)' },
@@ -37,77 +47,7 @@ function hashIdx(key: string): number {
   return h % ROI_PALETTE.length;
 }
 
-function AlgoIcon({ algoKey }: { algoKey: string }) {
-  const commonProps = {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.6,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-  };
-  switch (algoKey) {
-    case 'motion':
-      return (
-        <svg {...commonProps}>
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" />
-        </svg>
-      );
-    case 'privacy':
-      return (
-        <svg {...commonProps}>
-          <rect x="4" y="7" width="16" height="12" rx="2" />
-          <path d="M8 7V5a4 4 0 018 0v2" />
-        </svg>
-      );
-    case 'intrusion':
-      return (
-        <svg {...commonProps}>
-          <path d="M3 21l4-10 5 3 5-8 4 10" />
-          <circle cx="17" cy="5" r="1.5" />
-        </svg>
-      );
-    case 'loitering':
-      return (
-        <svg {...commonProps}>
-          <circle cx="12" cy="12" r="8" />
-          <path d="M12 8v4l2.5 1.5" />
-        </svg>
-      );
-    case 'virtual_fence':
-      return (
-        <svg {...commonProps}>
-          <path d="M3 18L21 6" strokeDasharray="3 2" />
-          <circle cx="5" cy="17" r="1.6" />
-          <circle cx="19" cy="7" r="1.6" />
-        </svg>
-      );
-    case 'fire':
-      return (
-        <svg {...commonProps}>
-          <path d="M12 3c1 4 4 5 4 9a4 4 0 11-8 0c0-2 1-3 2-4 0 2 1 2 2 1 0-2-1-4 0-6z" />
-        </svg>
-      );
-    default:
-      return (
-        <svg {...commonProps}>
-          <circle cx="12" cy="12" r="8" />
-        </svg>
-      );
-  }
-}
-
-const SETTINGS_TABS: { key: SettingsTab; label: string }[] = [
-  { key: 'algorithm', label: '알고리즘' },
-  { key: 'system', label: '시스템' },
-  { key: 'osd', label: 'OSD' },
-  { key: 'video', label: '영상' },
-  { key: 'record', label: '녹화' },
-  { key: 'network', label: '네트워크' },
-];
+/* ---------- 공용 폼 헬퍼 ---------- */
 
 function Kv({ label, value }: { label: string; value: string | number }) {
   return (
@@ -118,21 +58,171 @@ function Kv({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function Slider({ label, value }: { label: string; value: number }) {
+function Switch({ on, onToggle, disabled = false }: { on: boolean; onToggle: () => void; disabled?: boolean }) {
   return (
-    <div className={page.progressRow}>
-      <div className={page.progressTop}>
-        <span className={page.kvLabel}>{label}</span>
-        <span style={{ color: 'var(--color-accent)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{value}</span>
+    <div
+      className={[page.switch, on ? page.switchOn : ''].filter(Boolean).join(' ')}
+      role="switch"
+      aria-checked={on}
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : 0}
+      onClick={() => !disabled && onToggle()}
+      onKeyDown={(e) => {
+        if (disabled) return;
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      style={disabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
+    >
+      <span className={page.switchThumb} />
+    </div>
+  );
+}
+
+function ToggleRow({
+  title,
+  desc,
+  on,
+  onToggle,
+}: {
+  title: string;
+  desc?: string;
+  on: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className={page.settingsRow}>
+      <div>
+        <div className={page.settingsRowTitle}>{title}</div>
+        {desc && <div className={page.settingsRowDesc}>{desc}</div>}
       </div>
-      <div className={page.progressTrack}>
-        <div className={page.progressFill} style={{ width: `${value}%` }} />
+      <Switch on={on} onToggle={onToggle} />
+    </div>
+  );
+}
+
+interface Opt<T> {
+  value: T;
+  label: string;
+}
+
+function Seg<T extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: Opt<T>[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className={page.formRow}>
+      <span className={page.formLabel}>{label}</span>
+      <div className={page.chips}>
+        {options.map((o) => (
+          <button
+            key={String(o.value)}
+            type="button"
+            className={[page.chip, value === o.value ? page.chipActive : ''].filter(Boolean).join(' ')}
+            onClick={() => onChange(o.value)}
+          >
+            {o.label}
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
-/** Live preview card with ROI polygon overlay + click-to-draw. */
+// DS Select 위임 (제네릭 string|number → DS는 string. 매핑은 여기서 처리)
+function SelectField<T extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: Opt<T>[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <Select
+      label={label}
+      value={String(value)}
+      options={options.map((o) => ({ value: String(o.value), label: o.label }))}
+      onChange={(raw) => {
+        const match = options.find((o) => String(o.value) === raw);
+        if (match) onChange(match.value);
+      }}
+    />
+  );
+}
+
+// DS Input 위임
+function InputField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  maxLength,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  maxLength?: number;
+}) {
+  return (
+    <Input
+      label={label}
+      value={value}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
+function EditSlider({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className={page.progressRow}>
+      <div className={page.progressTop}>
+        <span className={page.kvLabel}>{label}</span>
+        <span style={{ color: 'var(--color-accent)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+          {value}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{ width: '100%', accentColor: 'var(--color-accent)' }}
+      />
+    </div>
+  );
+}
+
+/* ---------- 프라이버시 마스크 Live preview (ROI) ---------- */
+
 interface LivePreviewProps {
   camName: string;
   camStatus: string;
@@ -203,7 +293,6 @@ function LivePreview({
     [onDrawComplete],
   );
 
-  // Reset vertex state when exiting drawMode
   useEffect(() => {
     if (!drawMode) {
       setVertices([]);
@@ -211,7 +300,6 @@ function LivePreview({
     }
   }, [drawMode]);
 
-  // Keyboard handlers — ESC / Enter / Backspace
   useEffect(() => {
     if (!drawMode) return;
     const onKey = (e: KeyboardEvent) => {
@@ -246,11 +334,9 @@ function LivePreview({
 
   const handleClick = (e: React.MouseEvent) => {
     if (!drawMode || offline) return;
-    // double click handled separately (React fires click then dblclick)
     if (e.detail >= 2) return;
     e.preventDefault();
     const pt = getXY(e);
-    // auto-close if clicking within CLOSE_RADIUS of the first vertex (and already ≥3 vertices)
     if (vertices.length >= 3) {
       const first = vertices[0];
       const dx = pt.x - first.x;
@@ -299,11 +385,7 @@ function LivePreview({
     setDragPoly(null);
   };
 
-  const handlePolyMouseDown = (
-    e: React.MouseEvent,
-    algoId: string,
-    poly: ZonePolygon,
-  ) => {
+  const handlePolyMouseDown = (e: React.MouseEvent, algoId: string, poly: ZonePolygon) => {
     if (drawMode || algoId !== activeAlgoId) return;
     e.stopPropagation();
     e.preventDefault();
@@ -322,10 +404,7 @@ function LivePreview({
 
   const handleMouseLeave = () => {
     if (drawMode) setCursor(null);
-    if (dragPoly) {
-      // treat leave as cancel
-      setDragPoly(null);
-    }
+    if (dragPoly) setDragPoly(null);
   };
 
   const cursorStyle: React.CSSProperties = drawMode && !offline
@@ -334,7 +413,6 @@ function LivePreview({
       ? { cursor: 'grabbing' }
       : {};
 
-  // Guide line last-vertex → cursor
   const lastVertex = vertices.length > 0 ? vertices[vertices.length - 1] : null;
 
   return (
@@ -362,14 +440,12 @@ function LivePreview({
         )}
         {offline && <span style={{ position: 'relative', zIndex: 2 }}>OFFLINE</span>}
 
-        {/* SVG overlay for ROI polygons */}
         <svg
           className={page.previewSvg}
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
           aria-hidden={!drawMode}
         >
-          {/* Spotlight: darken everything except polygon areas */}
           <defs>
             <mask id="roi-spotlight">
               <rect x="0" y="0" width="100" height="100" fill="white" />
@@ -385,7 +461,6 @@ function LivePreview({
                   return <polygon key={`m-${poly.id}`} points={pts} fill="black" />;
                 }),
               )}
-              {/* in-progress drawing polygon also gets mask cut */}
               {drawMode && vertices.length >= 3 && (
                 <polygon
                   points={vertices.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')}
@@ -417,9 +492,7 @@ function LivePreview({
                 .map((p) => `${(p.x + shift.dx) * 100},${(p.y + shift.dy) * 100}`)
                 .join(' ');
               const first = poly.points[0];
-              const firstShifted = first
-                ? { x: first.x + shift.dx, y: first.y + shift.dy }
-                : null;
+              const firstShifted = first ? { x: first.x + shift.dx, y: first.y + shift.dy } : null;
               return (
                 <g key={poly.id} opacity={op} style={{ pointerEvents: drawMode ? 'none' : 'auto' }}>
                   <polygon
@@ -437,11 +510,10 @@ function LivePreview({
                     onClick={(ev) => {
                       ev.stopPropagation();
                       if (!isActive || drawMode) return;
-                      if (dragPoly?.moved) return; // just finished dragging
+                      if (dragPoly?.moved) return;
                       setSelectedPolygon(sel ? null : poly.id);
                     }}
                   />
-                  {/* vertex markers (visible on active polygon) */}
                   {isActive &&
                     poly.points.map((p, vi) => (
                       <circle
@@ -453,10 +525,7 @@ function LivePreview({
                         stroke={pal.stroke}
                         strokeWidth={2}
                         vectorEffect="non-scaling-stroke"
-                        style={{
-                          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))',
-                          pointerEvents: 'none',
-                        }}
+                        style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))', pointerEvents: 'none' }}
                       />
                     ))}
                   {firstShifted && (
@@ -480,10 +549,8 @@ function LivePreview({
             });
           })}
 
-          {/* In-progress polygon preview */}
           {drawMode && vertices.length > 0 && (
             <g style={{ pointerEvents: 'none' }}>
-              {/* closed edges between vertices */}
               {vertices.length >= 2 && (
                 <polyline
                   points={vertices.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')}
@@ -495,7 +562,6 @@ function LivePreview({
                   opacity={0.95}
                 />
               )}
-              {/* guide line from last vertex to cursor */}
               {lastVertex && cursor && (
                 <line
                   x1={lastVertex.x * 100}
@@ -509,7 +575,6 @@ function LivePreview({
                   opacity={0.9}
                 />
               )}
-              {/* vertex dots */}
               {vertices.map((p, idx) => (
                 <circle
                   key={idx}
@@ -527,7 +592,6 @@ function LivePreview({
           )}
         </svg>
 
-        {/* Overlay × buttons for selected polygon (HTML — positioned absolutely at bbox top-right) */}
         {!drawMode &&
           algos.flatMap((a) => {
             if (a.id !== activeAlgoId) return [];
@@ -540,10 +604,7 @@ function LivePreview({
                     key={`x-${poly.id}`}
                     type="button"
                     className={page.rectRemoveBtn}
-                    style={{
-                      left: `${b.maxX * 100}%`,
-                      top: `${b.minY * 100}%`,
-                    }}
+                    style={{ left: `${b.maxX * 100}%`, top: `${b.minY * 100}%` }}
                     onClick={(ev) => {
                       ev.stopPropagation();
                       onPolygonRemove(a.id, poly.id);
@@ -568,551 +629,749 @@ function LivePreview({
   );
 }
 
+/* ---------- 트리 헬퍼 ---------- */
+
+function StatusDot({ status }: { status: string }) {
+  const cls =
+    status === 'recording' ? cs.dotRecording
+    : status === 'online'  ? cs.dotOnline
+    : cs.dotOffline;
+  return <span className={`${cs.dot} ${cls}`} />;
+}
+
+/** contractId (c-0001) → 고객번호 표기 (n000001) */
+function fmtContract(id: string) {
+  const num = id.replace(/\D/g, '').padStart(6, '0');
+  return `n${num}`;
+}
+
+/* ---------- 메인 ---------- */
+
+interface StreamCfg {
+  resolution: string;
+  bitrateType: string;
+  quality: string;
+  fps: number;
+  codec: string;
+}
+
+const FPS_OPTIONS: Opt<number>[] = [5, 10, 15, 20, 25, 30].map((v) => ({ value: v, label: String(v) }));
+const RES_OPTIONS: Opt<string>[] = [
+  { value: '1920x1080P', label: '1920×1080P' },
+  { value: '1280x720P', label: '1280×720P' },
+  { value: '640x360P', label: '640×360P' },
+];
+const QUALITY_OPTIONS: Opt<string>[] = ['매우 좋음', '좋음', '보통', '낮음', '매우 낮음'].map((v) => ({ value: v, label: v }));
+
 export default function CameraSettings() {
-  const cameras = useDataStore((s) => s.cameras);
+  const cameras  = useDataStore((s) => s.cameras);
+  const sites    = useDataStore((s) => s.sites);
   const algorithms = useDataStore((s) => s.algorithms);
   const patchAlgorithm = useDataStore((s) => s.patchAlgorithm);
-  const addAlgorithmZone = useDataStore((s) => s.addAlgorithmZone);
-  const removeAlgorithmZone = useDataStore((s) => s.removeAlgorithmZone);
   const addAlgorithmPolygon = useDataStore((s) => s.addAlgorithmPolygon);
   const removeAlgorithmPolygon = useDataStore((s) => s.removeAlgorithmPolygon);
   const toast = useToast();
-  const tabCams = useMemo(() => cameras.slice(0, 5), [cameras]);
-  const [activeId, setActiveId] = useState(tabCams[0]?.id ?? '');
-  const [tab, setTab] = useState<SettingsTab>('algorithm');
+
+  // 트리 그룹: contractId → sites → cameras
+  const contractGroups = useMemo(() => {
+    const map = new Map<string, typeof sites>();
+    sites.forEach((s) => {
+      if (!map.has(s.contractId)) map.set(s.contractId, []);
+      map.get(s.contractId)!.push(s);
+    });
+    return Array.from(map.entries()).map(([contractId, siteList]) => ({ contractId, sites: siteList }));
+  }, [sites]);
+
+  // 초기 선택: 첫 번째 카메라
+  const [activeId, setActiveId] = useState(() => cameras[0]?.id ?? '');
+  const [tab, setTab] = useState<SettingsTab>('system');
+
+  // 트리 접힘 상태 (기본: 모두 펼침)
+  const allContractIds = useMemo(() => contractGroups.map((g) => g.contractId), [contractGroups]);
+  const allSiteIds     = useMemo(() => sites.map((s) => s.id), [sites]);
+  const [expandedContracts, setExpandedContracts] = useState<Set<string>>(() => new Set(allContractIds));
+  const [expandedSites,     setExpandedSites]     = useState<Set<string>>(() => new Set(allSiteIds));
+
+  const toggleContract = (id: string) =>
+    setExpandedContracts((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleSite = (id: string) =>
+    setExpandedSites((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
   const cam = cameras.find((c) => c.id === activeId);
 
-  const camAlgos = useMemo(
-    () => algorithms.filter((a) => a.cameraId === activeId),
-    [algorithms, activeId],
-  );
-  const basicAlgos = camAlgos.filter((a) => a.kind === 'basic');
-  const aiAlgos = camAlgos.filter((a) => a.kind === 'ai');
-  const aiEnabledCount = aiAlgos.filter((a) => a.enabled).length;
-  const aiLimitReached = aiEnabledCount >= MAX_AI_ALGOS;
-
-  // ROI drawing state — algorithm 탭에서만 유효
-  const [activeAlgoId, setActiveAlgoId] = useState<string | null>(null);
-  const [drawMode, setDrawMode] = useState(false);
-
-  // Reset active algo when camera switches
-  useEffect(() => {
-    setActiveAlgoId(null);
-    setDrawMode(false);
-  }, [activeId]);
-
-  // Auto-pick an active algorithm: prefer enabled, else first
-  useEffect(() => {
-    if (activeAlgoId && camAlgos.some((a) => a.id === activeAlgoId)) return;
-    const first = camAlgos.find((a) => a.enabled) ?? camAlgos[0];
-    if (first) setActiveAlgoId(first.id);
-  }, [camAlgos, activeAlgoId]);
-
-  // Mapping: activeId → videoIdx (index % 6 + 1)
   const videoIdx = useMemo(() => {
     const idx = cameras.findIndex((c) => c.id === activeId);
     return ((idx < 0 ? 0 : idx) % 6) + 1;
   }, [cameras, activeId]);
 
-  if (!cam) {
-    return <div>카메라가 없습니다.</div>;
-  }
+  // ---- 시스템 / 날짜·시간 ----
+  const [timezone, setTimezone] = useState('GMT+09:00');
+  const [timeMode, setTimeMode] = useState<'ntp' | 'manual'>('ntp');
+  const [ntpServer, setNtpServer] = useState('time.s1.co.kr');
+  const [ntpPort, setNtpPort] = useState('123');
+  const [ntpCycle, setNtpCycle] = useState('1');
+  // ---- 시스템 / 보안 ----
+  const [autoLogout, setAutoLogout] = useState('30');
+  const [pwdValidity, setPwdValidity] = useState('90');
 
-  const offline = cam.status === 'offline';
+  // ---- 네트워크 / TCP·IP ----
+  const [nicSpeed, setNicSpeed] = useState('auto');
+  const [dhcp, setDhcp] = useState(false);
+  const [dns1, setDns1] = useState('168.126.63.1');
+  const [dns2, setDns2] = useState('8.8.8.8');
+  // ---- 네트워크 / DDNS ----
+  const [ddnsOn, setDdnsOn] = useState(true);
+  // ---- 네트워크 / 포트 ----
+  const [httpPort, setHttpPort] = useState('80');
+  const [httpsPort, setHttpsPort] = useState('443');
+  const [rtspPort, setRtspPort] = useState('554');
+  const [portMapMode, setPortMapMode] = useState<'auto' | 'manual'>('auto');
+  const [upnp, setUpnp] = useState(true);
+  const [httpsUse, setHttpsUse] = useState(true);
+  // ---- 네트워크 / 고급설정 ----
+  const [tlsEncrypt, setTlsEncrypt] = useState(true);
+  const [serverCert, setServerCert] = useState('self');
+  const [ipFilterOn, setIpFilterOn] = useState(false);
+  const [ipFilterMode, setIpFilterMode] = useState<'deny' | 'allow'>('deny');
+  const [rtspAuth, setRtspAuth] = useState('digest');
+  const [webAuth, setWebAuth] = useState('sha256');
+  const [streamEncrypt, setStreamEncrypt] = useState(true);
 
-  const handleToggle = (a: CameraAlgorithm) => {
-    if (!a.enabled && a.kind === 'ai' && aiLimitReached) {
-      toast.warn('AI 알고리즘 제한', `최대 ${MAX_AI_ALGOS}개까지 동시 활성화할 수 있습니다`);
-      return;
-    }
-    patchAlgorithm(a.cameraId, a.id, { enabled: !a.enabled });
-    toast.info(
-      a.enabled ? '알고리즘 비활성화' : '알고리즘 활성화',
-      `${a.label} — ${cam.name.split(' ')[0]}`,
-    );
-  };
+  // ---- 비디오 ----
+  const [streamSel, setStreamSel] = useState<'main' | 'sub1' | 'sub2'>('main');
+  const [streams, setStreams] = useState<Record<'main' | 'sub1' | 'sub2', StreamCfg>>({
+    main: { resolution: '1920x1080P', bitrateType: 'VBR', quality: '매우 좋음', fps: 30, codec: 'H.265' },
+    sub1: { resolution: '1280x720P', bitrateType: 'VBR', quality: '좋음', fps: 15, codec: 'H.264' },
+    sub2: { resolution: '640x360P', bitrateType: 'CBR', quality: '보통', fps: 15, codec: 'H.264' },
+  });
+  const patchStream = (patch: Partial<StreamCfg>) =>
+    setStreams((s) => ({ ...s, [streamSel]: { ...s[streamSel], ...patch } }));
+  const cur = streams[streamSel];
 
-  const handleSensitivity = (a: CameraAlgorithm, s: AlgorithmSensitivity) => {
-    patchAlgorithm(a.cameraId, a.id, { sensitivity: s });
-  };
+  // ---- 이미지 / 영상 설정 ----
+  const [img, setImg] = useState({ brightness: 50, sharpness: 50, contrast: 50, saturation: 50, gain: 50 });
+  const patchImg = (patch: Partial<typeof img>) => setImg((s) => ({ ...s, ...patch }));
+  const [dayNight, setDayNight] = useState('auto');
+  const [irMode, setIrMode] = useState('auto');
+  const [flip, setFlip] = useState('off');
+  const [noiseOn, setNoiseOn] = useState(true);
+  const [noiseLevel, setNoiseLevel] = useState(50);
+  const [wdr, setWdr] = useState('off');
+  const [blc, setBlc] = useState('off');
+  const [wb, setWb] = useState('awb1');
 
-  const handleAddZone = (a: CameraAlgorithm) => {
-    const label = addAlgorithmZone(a.cameraId, a.id);
-    toast.success('영역 추가됨', `${a.label} · ${label}`);
-  };
+  // ---- 이미지 / OSD ----
+  const [osdName, setOsdName] = useState(true);
+  const [camLabel, setCamLabel] = useState(cam ? cam.name.split(' ')[0] : 'CAM');
+  const [osdDate, setOsdDate] = useState(true);
+  const [timeFormat, setTimeFormat] = useState<'24' | '12'>('24');
+  const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
+  const [osdWeekday, setOsdWeekday] = useState(false);
 
-  const handleRemoveZone = (a: CameraAlgorithm, idx: number) => {
-    const label = a.zones[idx];
-    removeAlgorithmZone(a.cameraId, a.id, idx);
-    toast.info('영역 삭제됨', `${a.label} · ${label}`);
-  };
+  // ---- 이미지 / 프라이버시 마스크 ----
+  const camAlgos = useMemo(() => algorithms.filter((a) => a.cameraId === activeId), [algorithms, activeId]);
+  const privacyAlgo = camAlgos.find((a) => a.algoKey === 'privacy') ?? null;
+  const [privacyDraw, setPrivacyDraw] = useState(false);
+  const privacyZoneCount = privacyAlgo?.polygons?.length ?? 0;
+  const privacyFull = privacyZoneCount >= PRIVACY_MAX_ZONES;
 
-  const handleStartDraw = (a: CameraAlgorithm) => {
-    setActiveAlgoId(a.id);
-    setDrawMode(true);
+  // 카메라 전환 시 상태 초기화
+  useEffect(() => {
+    setPrivacyDraw(false);
+    if (cam) setCamLabel(cam.name.split(' ')[0]);
+  }, [activeId, cam]);
+
+  const offline = cam?.status === 'offline';
+
+  const togglePrivacy = () => {
+    if (!privacyAlgo) return;
+    patchAlgorithm(privacyAlgo.cameraId, privacyAlgo.id, { enabled: !privacyAlgo.enabled });
+    if (privacyAlgo.enabled) setPrivacyDraw(false);
   };
 
   const handleDrawComplete = (polygon: Omit<ZonePolygon, 'id'>) => {
-    if (!activeAlgoId) return;
-    const algo = camAlgos.find((x) => x.id === activeAlgoId);
-    if (!algo) return;
-    if (polygon.points.length < 3) return;
-    addAlgorithmPolygon(algo.cameraId, algo.id, polygon);
-    setDrawMode(false);
-    toast.success('ROI 추가됨', `${algo.label} · ${polygon.points.length}개 vertex`);
+    if (!privacyAlgo || polygon.points.length < 3) return;
+    if (privacyFull) {
+      toast.warn('영역 제한', `프라이버시 마스크는 최대 ${PRIVACY_MAX_ZONES}개소까지 설정할 수 있습니다`);
+      setPrivacyDraw(false);
+      return;
+    }
+    addAlgorithmPolygon(privacyAlgo.cameraId, privacyAlgo.id, polygon);
+    setPrivacyDraw(false);
+    toast.success('영역 추가됨', `프라이버시 마스크 · ${polygon.points.length}개 vertex`);
   };
 
   const handlePolygonRemove = (algoId: string, polygonId: string) => {
-    const algo = camAlgos.find((x) => x.id === algoId);
-    if (!algo) return;
-    removeAlgorithmPolygon(algo.cameraId, algo.id, polygonId);
-    toast.info('ROI 삭제됨', `${algo.label}`);
+    if (!privacyAlgo) return;
+    removeAlgorithmPolygon(privacyAlgo.cameraId, algoId, polygonId);
+    toast.info('영역 삭제됨', '프라이버시 마스크');
   };
 
-  const handlePolygonUpdate = (
-    algoId: string,
-    polygonId: string,
-    points: ZonePoint[],
-  ) => {
-    const algo = camAlgos.find((x) => x.id === algoId);
-    if (!algo) return;
-    const nextPolygons = (algo.polygons ?? []).map((p) =>
-      p.id === polygonId ? { ...p, points } : p,
-    );
-    patchAlgorithm(algo.cameraId, algo.id, { polygons: nextPolygons });
+  const handlePolygonUpdate = (algoId: string, polygonId: string, points: ZonePoint[]) => {
+    if (!privacyAlgo) return;
+    const next = (privacyAlgo.polygons ?? []).map((p) => (p.id === polygonId ? { ...p, points } : p));
+    patchAlgorithm(privacyAlgo.cameraId, algoId, { polygons: next });
   };
 
-  const handleRemovePolygonFromChip = (a: CameraAlgorithm, polygonId: string) => {
-    removeAlgorithmPolygon(a.cameraId, a.id, polygonId);
+  const clearAllPrivacy = () => {
+    if (!privacyAlgo) return;
+    (privacyAlgo.polygons ?? []).forEach((p) => removeAlgorithmPolygon(privacyAlgo.cameraId, privacyAlgo.id, p.id));
+    toast.info('전체 삭제', '프라이버시 마스크 영역을 모두 삭제했습니다');
   };
+
+  const serial  = cam ? `S1CAM2026${cam.id.slice(-4).padStart(6, '0')}` : '';
+  const macAddr = cam ? `A4:5E:60:${cam.id.slice(-2).toUpperCase().padStart(2, '0')}:1B:7C` : '';
+
+  const quickCard = cam ? (
+    <Card title="빠른 정보">
+      <Kv label="모델" value={cam.model} />
+      <Kv label="펌웨어" value={cam.firmware} />
+      <Kv label="IP" value={cam.ip} />
+      <Kv label="코덱" value={cam.codec} />
+      <Kv label="해상도" value={cam.resolution} />
+      <Kv label="저장소" value={`${cam.storageGb} GB`} />
+    </Card>
+  ) : null;
 
   return (
-    <div className={page.page}>
-      <div className={page.header}>
-        <div className={page.actions}>
-          <Button variant="secondary" size="sm">
-            초기화
-          </Button>
-          <Button variant="primary" size="sm">
-            저장
-          </Button>
+    <div className={cs.wrap}>
+      {/* ── 상단 헤더 ── */}
+      <div className={cs.pageHeader}>
+        <span className={cs.pageTitle}>카메라 관리</span>
+        <div className={cs.pageActions}>
+          <Button variant="secondary" size="sm">초기화</Button>
+          <Button variant="primary" size="sm" disabled={!cam}>저장</Button>
         </div>
       </div>
 
-      <Tabs
-        tabs={tabCams.map((c) => ({ key: c.id, label: c.name.split(' ')[0] }))}
-        active={activeId}
-        onChange={setActiveId}
-      />
+      <div className={cs.body}>
+        {/* ── 좌측 트리 ── */}
+        <aside className={cs.sidebar}>
+          {contractGroups.map(({ contractId, sites: siteList }) => {
+            const isContractOpen = expandedContracts.has(contractId);
+            return (
+              <div key={contractId}>
+                {/* 고객번호 */}
+                <button className={cs.treeContract} onClick={() => toggleContract(contractId)}>
+                  <svg
+                    className={`${cs.treeChevron} ${isContractOpen ? cs.treeChevronOpen : ''}`}
+                    width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                  {fmtContract(contractId)}
+                </button>
 
-      {(() => {
-        if (tab === 'algorithm') return null;
-        const previewCard = (
-          <LivePreview
-            camName={cam.name}
-            camStatus={cam.status}
-            videoIdx={videoIdx}
-            offline={offline}
-            algos={[]}
-            activeAlgoId={null}
-            drawMode={false}
-            onDrawComplete={() => {}}
-            onPolygonRemove={() => {}}
-            onPolygonUpdate={() => {}}
-            onCancelDraw={() => {}}
-          />
-        );
-        const quickCard = (
-          <Card title="빠른 정보">
-            <Kv label="모델" value={cam.model} />
-            <Kv label="펌웨어" value={cam.firmware} />
-            <Kv label="IP" value={cam.ip} />
-            <Kv label="코덱" value={cam.codec} />
-            <Kv label="해상도" value={cam.resolution} />
-            <Kv label="저장소" value={`${cam.storageGb} GB`} />
-          </Card>
-        );
-        return (
-          <div className={page.csGrid}>
-            {previewCard}
-            {quickCard}
+                {isContractOpen && siteList.map((site) => {
+                  const isSiteOpen   = expandedSites.has(site.id);
+                  const siteCameras  = cameras.filter((c) => c.siteId === site.id);
+                  return (
+                    <div key={site.id}>
+                      {/* 사이트 */}
+                      <button className={cs.treeSite} onClick={() => toggleSite(site.id)}>
+                        <svg
+                          className={`${cs.treeChevron} ${isSiteOpen ? cs.treeChevronOpen : ''}`}
+                          width="11" height="11" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                        >
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                        <svg className={cs.treeSiteIcon} width="13" height="13" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        </svg>
+                        {site.name}
+                      </button>
+
+                      {isSiteOpen && siteCameras.map((c) => (
+                        <button
+                          key={c.id}
+                          className={`${cs.treeCam} ${c.id === activeId ? cs.treeCamActive : ''}`}
+                          onClick={() => setActiveId(c.id)}
+                          title={c.name}
+                        >
+                          <StatusDot status={c.status} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {c.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </aside>
+
+        {/* ── 우측 콘텐츠 ── */}
+        {!cam ? (
+          <div className={cs.content}>
+            <div className={cs.empty}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.4">
+                <path d="M23 7l-7 5 7 5V7z" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
+              좌측 트리에서 카메라를 선택하세요.
+            </div>
           </div>
-        );
-      })()}
+        ) : (
+          <div className={cs.content}>
+            {/* AI 이벤트 이관 안내 */}
+            <Card>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.5 }}>
+                <span aria-hidden style={{ color: 'var(--color-accent)', flexShrink: 0, marginTop: 1 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="9" /><path d="M12 8h.01M11 12h1v4h1" />
+                  </svg>
+                </span>
+                <span>
+                  침입·배회·가상펜스·화재·주정차·피플카운팅 등 <b>AI 이벤트 감지</b>와 움직임 감지·감지 스케줄은{' '}
+                  <b>안심 AI 설정</b>에서 관리합니다.
+                </span>
+              </div>
+            </Card>
 
-      <Tabs
-        tabs={SETTINGS_TABS.map((t) => ({ key: t.key, label: t.label }))}
-        active={tab}
-        onChange={(k) => setTab(k as SettingsTab)}
-      />
+            {/* 설정 탭 */}
+            <div className={cs.settingsTabs}>
+              {SETTINGS_TABS.map((t) => (
+                <button
+                  key={t.key}
+                  className={`${cs.settingsTab} ${tab === t.key ? cs.settingsTabActive : ''}`}
+                  onClick={() => setTab(t.key)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
-      {tab === 'algorithm' && (
-        <div className={page.algoLayout}>
-          <div className={page.algoLeft}>
+      {/* ===== 시스템 ===== */}
+      {tab === 'system' && (
+        <div className={page.csGrid}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Card title="기본 정보">
+              <div className={page.sectionCaption}>카메라 정보</div>
+              <Kv label="접속 상태" value={cam.status === 'online' ? '온라인' : cam.status === 'recording' ? '녹화중' : '오프라인'} />
+              <Kv label="제품 코드" value={`SVI-${cam.model}`} />
+              <Kv label="제조번호 (S/N)" value={serial} />
+              <Kv label="제품등록번호" value={`R-${serial.slice(-8)}`} />
+              <Kv label="MAC 주소" value={macAddr} />
+              <Kv label="F/W 버전" value={cam.firmware} />
+              <Kv label="F/W 빌드 날짜" value="2026-03-18" />
+            </Card>
+
+            <Card title="날짜 · 시간">
+              <SelectField
+                label="표준 시간대"
+                value={timezone}
+                onChange={setTimezone}
+                options={[
+                  { value: 'GMT+09:00', label: 'GMT+09:00 서울' },
+                  { value: 'GMT+00:00', label: 'GMT+00:00 UTC' },
+                  { value: 'GMT-08:00', label: 'GMT-08:00 LA(미국)' },
+                ]}
+              />
+              <Seg
+                label="시간 동기화"
+                value={timeMode}
+                onChange={setTimeMode}
+                options={[
+                  { value: 'ntp', label: '자동 (NTP)' },
+                  { value: 'manual', label: '수동 (PC 연동)' },
+                ]}
+              />
+              {timeMode === 'ntp' && (
+                <>
+                  <div className={page.rowCols2}>
+                    <InputField label="NTP 서버 주소" value={ntpServer} onChange={setNtpServer} />
+                    <InputField label="NTP 포트" value={ntpPort} onChange={setNtpPort} />
+                  </div>
+                  <SelectField
+                    label="업데이트 주기"
+                    value={ntpCycle}
+                    onChange={setNtpCycle}
+                    options={[
+                      { value: '1', label: '1시간' },
+                      { value: '6', label: '6시간' },
+                      { value: '24', label: '24시간' },
+                    ]}
+                  />
+                </>
+              )}
+              {timeMode === 'manual' && <Kv label="PC 시간 연동" value="현재 PC 시간으로 동기화" />}
+            </Card>
+
+            <Card title="보안">
+              <SelectField
+                label="자동 로그아웃 (분)"
+                value={autoLogout}
+                onChange={setAutoLogout}
+                options={[10, 20, 30, 40, 50, 60].map((v) => ({ value: String(v), label: `${v}분` }))}
+              />
+              <SelectField
+                label="비밀번호 유효기간 (일)"
+                value={pwdValidity}
+                onChange={setPwdValidity}
+                options={[30, 60, 90, 120, 180].map((v) => ({ value: String(v), label: `${v}일` }))}
+              />
+            </Card>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {quickCard}
+            <Card title="도구">
+              <div className={page.sectionCaption}>펌웨어</div>
+              <div className={page.settingsRow}>
+                <div>
+                  <div className={page.settingsRowTitle}>F/W 업그레이드</div>
+                  <div className={page.settingsRowDesc}>PC에서 펌웨어 파일을 선택해 업그레이드합니다.</div>
+                </div>
+                <Button variant="secondary" size="sm">파일 선택</Button>
+              </div>
+              <div className={page.sectionCaption}>유지 보수</div>
+              <div className={page.settingsRow}>
+                <div><div className={page.settingsRowTitle}>재부팅</div></div>
+                <Button variant="secondary" size="sm">실행</Button>
+              </div>
+              <div className={page.settingsRow}>
+                <div>
+                  <div className={page.settingsRowTitle}>공장 초기화</div>
+                  <div className={page.settingsRowDesc}>네트워크 정보 제외 옵션 지원.</div>
+                </div>
+                <Button variant="secondary" size="sm">실행</Button>
+              </div>
+              <div className={page.settingsRow}>
+                <div>
+                  <div className={page.settingsRowTitle}>설정 내보내기 / 불러오기</div>
+                  <div className={page.settingsRowDesc}>파일 암호 설정 가능.</div>
+                </div>
+                <Button variant="secondary" size="sm">관리</Button>
+              </div>
+              <div className={page.sectionCaption}>시스템 로그</div>
+              <Kv label="로그 유형" value="시스템 · 이벤트" />
+              <div className={page.settingsRow}>
+                <div>
+                  <div className={page.settingsRowTitle}>목록 내보내기</div>
+                  <div className={page.settingsRowDesc}>*.csv 파일로 저장.</div>
+                </div>
+                <Button variant="secondary" size="sm">내보내기</Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ===== 네트워크 ===== */}
+      {tab === 'network' && (
+        <div className={page.csGrid}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Card title="TCP / IP">
+              <SelectField
+                label="NIC 속도"
+                value={nicSpeed}
+                onChange={setNicSpeed}
+                options={[
+                  { value: 'auto', label: '자동' },
+                  { value: '10h', label: '10M Half-dup' },
+                  { value: '10f', label: '10M Full-dup' },
+                  { value: '100h', label: '100M Half-dup' },
+                  { value: '100f', label: '100M Full-dup' },
+                ]}
+              />
+              <ToggleRow title="DHCP" desc="자동으로 IP 주소를 할당받습니다 (초기값: 해제)." on={dhcp} onToggle={() => setDhcp(!dhcp)} />
+              <Kv label="IPv4 주소" value={cam.ip} />
+              <Kv label="서브넷 마스크" value="255.255.255.0" />
+              <Kv label="기본 게이트웨이" value={`${cam.ip.split('.').slice(0, 3).join('.')}.1`} />
+              <Kv label="MAC 주소" value={macAddr} />
+              <div className={page.rowCols2}>
+                <InputField label="DNS" value={dns1} onChange={setDns1} />
+                <InputField label="DNS2" value={dns2} onChange={setDns2} />
+              </div>
+            </Card>
+
+            <Card title="DDNS">
+              <ToggleRow title="DDNS 사용" on={ddnsOn} onToggle={() => setDdnsOn(!ddnsOn)} />
+              <Kv label="DDNS 형식" value="S-1 DDNS" />
+              <Kv label="서버 주소" value="apddnsdev.s1.co.kr" />
+              <Kv label="포트" value="11001 ~ 11003" />
+              <div className={page.formRow}>
+                <span className={page.formLabel}>DDNS 상태</span>
+                <Badge tone={ddnsOn ? 'success' : 'neutral'} dot>{ddnsOn ? '연결 성공' : '비활성'}</Badge>
+              </div>
+              <div className={page.settingsActions}>
+                <div />
+                <div className={page.settingsActionsRight}>
+                  <Button variant="secondary" size="sm">연결 테스트</Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Card title="포트">
+              <div className={page.rowCols2}>
+                <InputField label="HTTP 포트" value={httpPort} onChange={setHttpPort} />
+                <InputField label="RTSP 포트" value={rtspPort} onChange={setRtspPort} />
+              </div>
+              <ToggleRow title="HTTPS 사용" on={httpsUse} onToggle={() => setHttpsUse(!httpsUse)} />
+              {httpsUse && <InputField label="HTTPS 포트" value={httpsPort} onChange={setHttpsPort} />}
+              <Seg
+                label="포트 매핑 모드"
+                value={portMapMode}
+                onChange={setPortMapMode}
+                options={[{ value: 'auto', label: '자동' }, { value: 'manual', label: '수동' }]}
+              />
+              <ToggleRow title="UPnP" on={upnp} onToggle={() => setUpnp(!upnp)} />
+            </Card>
+
+            <Card title="고급 설정">
+              <div className={page.sectionCaption}>TLS</div>
+              <ToggleRow title="영상전송 구간 암호화 (TLS)" on={tlsEncrypt} onToggle={() => setTlsEncrypt(!tlsEncrypt)} />
+              <SelectField
+                label="서버 인증서"
+                value={serverCert}
+                onChange={setServerCert}
+                options={[
+                  { value: 'self', label: '자체 인증서' },
+                  { value: 'public', label: '공개 인증서' },
+                  { value: 'none', label: '인증서 없음' },
+                ]}
+              />
+              <div className={page.sectionCaption}>인증</div>
+              <ToggleRow title="IP 필터링" on={ipFilterOn} onToggle={() => setIpFilterOn(!ipFilterOn)} />
+              {ipFilterOn && (
+                <Seg
+                  label="필터링 구분"
+                  value={ipFilterMode}
+                  onChange={setIpFilterMode}
+                  options={[{ value: 'deny', label: '제한' }, { value: 'allow', label: '허용' }]}
+                />
+              )}
+              <SelectField
+                label="RTSP 인증 알고리즘"
+                value={rtspAuth}
+                onChange={setRtspAuth}
+                options={[{ value: 'digest', label: '다이제스트' }, { value: 'basic', label: 'Basic' }]}
+              />
+              <SelectField
+                label="WEB 인증 알고리즘"
+                value={webAuth}
+                onChange={setWebAuth}
+                options={[{ value: 'sha256', label: 'SHA256' }, { value: 'digest', label: '다이제스트' }]}
+              />
+              <ToggleRow title="스트림 암호화" on={streamEncrypt} onToggle={() => setStreamEncrypt(!streamEncrypt)} />
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ===== 비디오 ===== */}
+      {tab === 'video' && (
+        <Card title="영상 스트림">
+          <Seg
+            label="스트림 유형"
+            value={streamSel}
+            onChange={setStreamSel}
+            options={[
+              { value: 'main', label: '메인 스트림' },
+              { value: 'sub1', label: '서브 스트림 1' },
+              { value: 'sub2', label: '서브 스트림 2' },
+            ]}
+          />
+          <SelectField label="해상도" value={cur.resolution} onChange={(v) => patchStream({ resolution: v })} options={RES_OPTIONS} />
+          <Seg
+            label="비트레이트 유형"
+            value={cur.bitrateType}
+            onChange={(v) => patchStream({ bitrateType: v })}
+            options={[{ value: 'VBR', label: 'VBR' }, { value: 'CBR', label: 'CBR' }]}
+          />
+          <SelectField label="화질" value={cur.quality} onChange={(v) => patchStream({ quality: v })} options={QUALITY_OPTIONS} />
+          <SelectField label="FPS (단위 5)" value={cur.fps} onChange={(v) => patchStream({ fps: v })} options={FPS_OPTIONS} />
+          <Seg
+            label="인코딩"
+            value={cur.codec}
+            onChange={(v) => patchStream({ codec: v })}
+            options={[{ value: 'H.265', label: 'H.265' }, { value: 'H.264', label: 'H.264' }]}
+          />
+        </Card>
+      )}
+
+      {/* ===== 이미지 ===== */}
+      {tab === 'image' && (
+        <div className={page.csGrid}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <LivePreview
               camName={cam.name}
               camStatus={cam.status}
               videoIdx={videoIdx}
               offline={offline}
-              algos={camAlgos.filter((a) => a.enabled)}
-              activeAlgoId={activeAlgoId}
-              drawMode={drawMode}
+              algos={privacyAlgo && privacyAlgo.enabled ? [privacyAlgo] : []}
+              activeAlgoId={privacyAlgo?.id ?? null}
+              drawMode={privacyDraw}
               onDrawComplete={handleDrawComplete}
               onPolygonRemove={handlePolygonRemove}
               onPolygonUpdate={handlePolygonUpdate}
-              onCancelDraw={() => setDrawMode(false)}
+              onCancelDraw={() => setPrivacyDraw(false)}
             />
-            <Card title="빠른 정보">
-              <Kv label="모델" value={cam.model} />
-              <Kv label="펌웨어" value={cam.firmware} />
-              <Kv label="IP" value={cam.ip} />
-              <Kv label="코덱" value={cam.codec} />
-              <Kv label="해상도" value={cam.resolution} />
-              <Kv label="저장소" value={`${cam.storageGb} GB`} />
-            </Card>
-          </div>
-          <div className={page.algoRight}>
-            <div
-              className={[
-                algoStyles.algoBanner,
-                aiLimitReached ? algoStyles.algoBannerWarn : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              role="status"
-            >
-              <span>AI 특화 알고리즘은 최대 {MAX_AI_ALGOS}개까지 동시 활성화 가능합니다</span>
-              <span className={algoStyles.algoBannerCount}>
-                {aiEnabledCount} / {MAX_AI_ALGOS} 사용 중
-              </span>
-            </div>
-
-            <Card title="기본 알고리즘">
-              {basicAlgos.length === 0 ? (
-                <div className={algoStyles.algoEmpty}>등록된 기본 알고리즘이 없습니다</div>
-              ) : (
-                <div className={algoStyles.algoGrid}>
-                  {basicAlgos.map((a) => (
-                    <AlgorithmCard
-                      key={a.id}
-                      algo={a}
-                      active={a.id === activeAlgoId}
-                      onActivate={() => setActiveAlgoId(a.id)}
-                      onToggle={handleToggle}
-                      onSensitivity={handleSensitivity}
-                      onAddZone={handleAddZone}
-                      onRemoveZone={handleRemoveZone}
-                      onStartDraw={handleStartDraw}
-                      onRemovePolygon={handleRemovePolygonFromChip}
-                    />
-                  ))}
-                </div>
-              )}
-            </Card>
-
-            <Card title="AI 특화 알고리즘">
-              {aiAlgos.length === 0 ? (
-                <div className={algoStyles.algoEmpty}>등록된 AI 알고리즘이 없습니다</div>
-              ) : (
-                <div className={algoStyles.algoGrid}>
-                  {aiAlgos.map((a) => {
-                    const disabled = !a.enabled && aiLimitReached;
-                    return (
-                      <AlgorithmCard
-                        key={a.id}
-                        algo={a}
-                        disabled={disabled}
-                        active={a.id === activeAlgoId}
-                        onActivate={() => setActiveAlgoId(a.id)}
-                        onToggle={handleToggle}
-                        onSensitivity={handleSensitivity}
-                        onAddZone={handleAddZone}
-                        onRemoveZone={handleRemoveZone}
-                        onStartDraw={handleStartDraw}
-                        onRemovePolygon={handleRemovePolygonFromChip}
-                      />
-                    );
-                  })}
-                </div>
+            <Card title="프라이버시 마스크">
+              <ToggleRow
+                title="활성화"
+                desc={`지정 영역을 가립니다. 최대 ${PRIVACY_MAX_ZONES}개소 (초기값: 해제).`}
+                on={!!privacyAlgo?.enabled}
+                onToggle={togglePrivacy}
+              />
+              {privacyAlgo?.enabled && (
+                <>
+                  <Kv label="설정된 영역" value={`${privacyZoneCount} / ${PRIVACY_MAX_ZONES} 개소`} />
+                  <div className={page.settingsActions}>
+                    <button
+                      type="button"
+                      className={page.dangerLink}
+                      onClick={clearAllPrivacy}
+                      disabled={privacyZoneCount === 0}
+                      style={privacyZoneCount === 0 ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
+                    >
+                      전체 삭제
+                    </button>
+                    <div className={page.settingsActionsRight}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setPrivacyDraw(true)}
+                        disabled={privacyDraw || privacyFull}
+                      >
+                        {privacyFull ? '영역 가득 참' : '+ 영역 그리기'}
+                      </Button>
+                    </div>
+                  </div>
+                </>
               )}
             </Card>
           </div>
-        </div>
-      )}
 
-      {tab === 'system' && (
-        <Card title="시스템 정보">
-          <div className={page.sectionCaption}>카메라 정보</div>
-          <Kv label="접속 상태" value={cam.status === 'online' ? '온라인' : cam.status === 'recording' ? '녹화중' : '오프라인'} />
-          <Kv label="IP 주소" value={cam.ip} />
-          <Kv label="펌웨어 버전" value={cam.firmware} />
-          <Kv label="모델 이름" value={cam.model} />
-          <Kv label="제조번호 (S/N)" value={`S1CAM2024${cam.id.slice(-4).padStart(6, '0')}`} />
-          <Kv label="빌드 날짜" value="2024-01-15" />
-          <Kv label="하드웨어 버전" value="v1.2" />
-          <div className={page.sectionCaption}>스트림 정보</div>
-          <Kv label="해상도" value={cam.resolution} />
-          <Kv label="프레임레이트" value={`${cam.fps} FPS`} />
-          <Kv label="코덱" value={cam.codec} />
-        </Card>
-      )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Card title="영상 설정">
+              <div className={page.sectionCaption}>이미지 조정 (0~100)</div>
+              <EditSlider label="밝기" value={img.brightness} min={0} max={100} onChange={(v) => patchImg({ brightness: v })} />
+              <EditSlider label="선명도" value={img.sharpness} min={0} max={100} onChange={(v) => patchImg({ sharpness: v })} />
+              <EditSlider label="대비" value={img.contrast} min={0} max={100} onChange={(v) => patchImg({ contrast: v })} />
+              <EditSlider label="채도" value={img.saturation} min={0} max={100} onChange={(v) => patchImg({ saturation: v })} />
+              <EditSlider label="Gain" value={img.gain} min={0} max={100} onChange={(v) => patchImg({ gain: v })} />
 
-      {tab === 'osd' && (
-        <Card title="OSD · 영상 보정">
-          <div className={page.sectionCaption}>오버레이</div>
-          <Kv label="카메라 이름" value={cam.name.split(' ').slice(1).join(' ') || cam.name} />
-          <Kv label="시간 표시" value="활성" />
-          <Kv label="글꼴 크기" value="보통" />
-          <Kv label="위치" value="좌상단" />
-          <div className={page.sectionCaption}>영상 보정</div>
-          <Slider label="밝기" value={50} />
-          <Slider label="대비" value={52} />
-          <Slider label="채도" value={48} />
-          <Slider label="선명도" value={55} />
-          <Kv label="주야간 모드" value="자동" />
-        </Card>
-      )}
+              <div className={page.sectionCaption}>화이트 밸런스 · 노출</div>
+              <SelectField
+                label="화이트 밸런스"
+                value={wb}
+                onChange={setWb}
+                options={[
+                  { value: 'awb1', label: '자동 화이트 밸런스 1' },
+                  { value: 'awb2', label: '자동 화이트 밸런스 2' },
+                  { value: 'manual', label: '수동' },
+                  { value: 'lock', label: '화이트 밸런스 잠금' },
+                ]}
+              />
 
-      {tab === 'video' && (
-        <Card title="영상 스트림">
-          <div className={page.sectionCaption}>메인 스트림</div>
-          <Kv label="해상도" value={cam.resolution} />
-          <Kv label="프레임레이트" value={`${cam.fps} FPS`} />
-          <Kv label="코덱" value={cam.codec} />
-          <Kv label="비트레이트 제어" value="VBR" />
-          <Kv label="비트레이트" value="4096 Kbps" />
-          <Kv label="I-Frame 간격" value="30" />
-          <div className={page.sectionCaption}>서브 스트림</div>
-          <Kv label="해상도" value="640×360" />
-          <Kv label="프레임레이트" value="15 FPS" />
-          <Kv label="코덱" value="H.264" />
-          <Kv label="비트레이트" value="512 Kbps" />
-        </Card>
-      )}
+              <div className={page.sectionCaption}>주간 / 야간</div>
+              <SelectField
+                label="주야간 모드"
+                value={dayNight}
+                onChange={setDayNight}
+                options={[
+                  { value: 'auto', label: '자동' },
+                  { value: 'day', label: '주간' },
+                  { value: 'night', label: '야간' },
+                  { value: 'schedule', label: '스케줄 전환' },
+                ]}
+              />
+              <SelectField
+                label="IR 보조등"
+                value={irMode}
+                onChange={setIrMode}
+                options={[
+                  { value: 'auto', label: '자동' },
+                  { value: 'manual', label: '수동' },
+                  { value: 'off', label: '끄기' },
+                ]}
+              />
 
-      {tab === 'record' && (
-        <Card title="녹화 정책">
-          <Kv label="녹화 모드" value="연속 녹화" />
-          <Kv label="녹화 스트림" value="메인 스트림" />
-          <Kv label="저장 기간" value="30일" />
-          <Kv label="프리레코드" value="5초" />
-          <Kv label="포스트레코드" value="10초" />
-          <div className={page.sectionCaption}>스케줄</div>
-          <Kv label="녹화 시작" value="00:00" />
-          <Kv label="녹화 종료" value="23:59" />
-          <Kv label="오디오 녹음" value="비활성" />
-          <Kv label="오버라이트" value="활성" />
-        </Card>
-      )}
+              <div className={page.sectionCaption}>영상 보정</div>
+              <SelectField
+                label="영상 반전 / 회전"
+                value={flip}
+                onChange={setFlip}
+                options={[
+                  { value: 'off', label: '끄기' },
+                  { value: 'h', label: '좌우 반전' },
+                  { value: 'v', label: '상하 반전' },
+                  { value: '180', label: '180도 회전' },
+                ]}
+              />
+              <ToggleRow title="노이즈 제거" on={noiseOn} onToggle={() => setNoiseOn(!noiseOn)} />
+              {noiseOn && <EditSlider label="노이즈 감소 레벨 (5~100)" value={noiseLevel} min={5} max={100} onChange={setNoiseLevel} />}
+              <SelectField
+                label="WDR"
+                value={wdr}
+                onChange={setWdr}
+                options={[{ value: 'off', label: '끄기' }, { value: 'on', label: '켜기' }, { value: 'auto', label: '자동' }]}
+              />
+              <SelectField
+                label="역광 보정 (BLC)"
+                value={blc}
+                onChange={setBlc}
+                options={[{ value: 'off', label: '끄기' }, { value: 'on', label: '켜기' }]}
+              />
+            </Card>
 
-      {tab === 'network' && (
-        <Card title="네트워크 설정">
-          <div className={page.sectionCaption}>TCP / IP</div>
-          <Kv label="DHCP" value="활성" />
-          <Kv label="IP 주소" value={cam.ip} />
-          <Kv label="서브넷 마스크" value="255.255.255.0" />
-          <Kv label="게이트웨이" value={`${cam.ip.split('.').slice(0, 3).join('.')}.1`} />
-          <Kv label="DNS 서버" value="8.8.8.8" />
-          <div className={page.sectionCaption}>포트</div>
-          <Kv label="HTTP" value="80" />
-          <Kv label="RTSP" value="554" />
-          <Kv label="HTTPS" value="443" />
-          <Kv label="ONVIF" value="8000" />
-        </Card>
-      )}
-    </div>
-  );
-}
-
-interface AlgorithmCardProps {
-  algo: CameraAlgorithm;
-  disabled?: boolean;
-  active?: boolean;
-  onActivate: () => void;
-  onToggle: (a: CameraAlgorithm) => void;
-  onSensitivity: (a: CameraAlgorithm, s: AlgorithmSensitivity) => void;
-  onAddZone: (a: CameraAlgorithm) => void;
-  onRemoveZone: (a: CameraAlgorithm, zoneIdx: number) => void;
-  onStartDraw: (a: CameraAlgorithm) => void;
-  onRemovePolygon: (a: CameraAlgorithm, polygonId: string) => void;
-}
-
-function AlgorithmCard({
-  algo,
-  disabled = false,
-  active = false,
-  onActivate,
-  onToggle,
-  onSensitivity,
-  onAddZone,
-  onRemoveZone,
-  onStartDraw,
-  onRemovePolygon,
-}: AlgorithmCardProps) {
-  const cls = [
-    algoStyles.algoCard,
-    algo.enabled ? algoStyles.algoCardActive : '',
-    active ? algoStyles.algoCardSelected : '',
-    disabled ? algoStyles.algoCardDisabled : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  const polygons = algo.polygons ?? [];
-
-  return (
-    <div className={cls}>
-      <div
-        className={algoStyles.algoHeader}
-        onClick={() => {
-          if (disabled) return;
-          onActivate();
-        }}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (disabled) return;
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onActivate();
-          }
-        }}
-        style={{ cursor: disabled ? 'default' : 'pointer' }}
-      >
-        <div className={algoStyles.algoIcon} aria-hidden>
-          <AlgoIcon algoKey={algo.algoKey} />
-        </div>
-        <div className={algoStyles.algoTitleBox}>
-          <span className={algoStyles.algoLabel}>{algo.label}</span>
-          <span className={algoStyles.algoDesc}>{algo.desc}</span>
-        </div>
-        <div className={algoStyles.algoSwitchWrap}>
-          {disabled && (
-            <span
-              className={algoStyles.algoSwitchBadge}
-              title={`AI 알고리즘 최대 개수 도달 (${MAX_AI_ALGOS})`}
-            >
-              제한 초과
-            </span>
-          )}
-          <div
-            className={[page.switch, algo.enabled ? page.switchOn : '']
-              .filter(Boolean)
-              .join(' ')}
-            role="switch"
-            aria-checked={algo.enabled}
-            aria-disabled={disabled}
-            tabIndex={disabled ? -1 : 0}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (disabled) return;
-              onToggle(algo);
-            }}
-            onKeyDown={(e) => {
-              if (disabled) return;
-              if (e.key === ' ' || e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                onToggle(algo);
-              }
-            }}
-          >
-            <span className={page.switchThumb} />
+            <Card title="OSD 설정">
+              <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
+              {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
+              <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
+              {osdDate && (
+                <>
+                  <Seg
+                    label="시간 표시"
+                    value={timeFormat}
+                    onChange={setTimeFormat}
+                    options={[{ value: '24', label: '24시간' }, { value: '12', label: '12시간' }]}
+                  />
+                  <SelectField
+                    label="날짜 형식"
+                    value={dateFormat}
+                    onChange={setDateFormat}
+                    options={[
+                      { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+                      { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
+                      { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
+                      { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+                    ]}
+                  />
+                  <ToggleRow title="요일 표시" on={osdWeekday} onToggle={() => setOsdWeekday(!osdWeekday)} />
+                </>
+              )}
+              <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
+            </Card>
           </div>
         </div>
+      )}
+
+            {/* ===== 녹화 ===== */}
+            {tab === 'record' && (
+              <Card title="녹화 정책">
+                <Kv label="녹화 모드" value="연속 녹화" />
+                <Kv label="녹화 스트림" value="메인 스트림" />
+                <Kv label="저장 기간" value="30일" />
+                <Kv label="프리레코드" value="5초" />
+                <Kv label="포스트레코드" value="10초" />
+                <div className={page.sectionCaption}>스케줄</div>
+                <Kv label="녹화 시작" value="00:00" />
+                <Kv label="녹화 종료" value="23:59" />
+                <Kv label="오디오 녹음" value="비활성" />
+                <Kv label="오버라이트" value="활성" />
+              </Card>
+            )}
+          </div>
+        )}
       </div>
-
-      {algo.enabled && (
-        <>
-          <div className={algoStyles.algoRow}>
-            <span className={algoStyles.algoRowLabel}>감시 영역</span>
-            <div className={algoStyles.zoneList}>
-              <span className={algoStyles.zoneEmpty}>
-                {polygons.length === 0 ? 'ROI 없음' : `영역 ${polygons.length}개`}
-              </span>
-              {polygons.map((poly, i) => (
-                <button
-                  key={poly.id}
-                  type="button"
-                  className={algoStyles.zoneChip}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemovePolygon(algo, poly.id);
-                  }}
-                  title="클릭하여 삭제"
-                >
-                  <span>
-                    영역{i + 1} · {poly.points.length}점
-                  </span>
-                  <span className={algoStyles.zoneChipX} aria-hidden>
-                    ×
-                  </span>
-                </button>
-              ))}
-              <button
-                type="button"
-                className={algoStyles.zoneAddBtn}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onStartDraw(algo);
-                }}
-              >
-                + 영역 그리기
-              </button>
-            </div>
-          </div>
-
-          {algo.zones.length > 0 && (
-            <div className={algoStyles.algoRow}>
-              <span className={algoStyles.algoRowLabel}>라벨</span>
-              <div className={algoStyles.zoneList}>
-                {algo.zones.map((z, idx) => (
-                  <button
-                    key={`${algo.id}-${idx}-${z}`}
-                    type="button"
-                    className={algoStyles.zoneChip}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveZone(algo, idx);
-                    }}
-                    title="클릭하여 삭제"
-                  >
-                    <span>{z}</span>
-                    <span className={algoStyles.zoneChipX} aria-hidden>
-                      ×
-                    </span>
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className={algoStyles.zoneAddBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddZone(algo);
-                  }}
-                >
-                  + 라벨 추가
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className={algoStyles.algoRow}>
-            <span className={algoStyles.algoRowLabel}>민감도</span>
-            <BtnGroup>
-              {SENSITIVITY_OPTIONS.map((opt) => (
-                <BtnGroup.Btn
-                  key={opt.value}
-                  active={algo.sensitivity === opt.value}
-                  onClick={(e) => { e.stopPropagation(); onSensitivity(algo, opt.value); }}
-                >
-                  {opt.label}
-                </BtnGroup.Btn>
-              ))}
-            </BtnGroup>
-          </div>
-        </>
-      )}
     </div>
   );
 }

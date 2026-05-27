@@ -46,8 +46,8 @@ const STATUS_TONE: Record<UserStatus, BadgeTone> = {
 const PERMISSIONS: { key: string; label: string }[] = [
   { key: 'view', label: '영상 조회' },
   { key: 'record', label: '녹화 · 스냅샷' },
-  { key: 'config', label: '카메라 설정' },
-  { key: 'site', label: '사이트 관리' },
+  { key: 'config', label: '카메라 관리' },
+  { key: 'site', label: '매장 관리' },
   { key: 'user', label: '사용자 관리' },
   { key: 'audit', label: '감사 로그' },
 ];

@@ -4,6 +4,7 @@ import { useDataStore } from '@/store/dataStore';
 import { Button } from '@/components/ui/Button';
 import { BtnGroup } from '@/components/ui/BtnGroup';
 import { Tabs } from '@/components/ui/Tabs';
+import { Chip } from '@/components/ui/Chip';
 import { useToast } from '@/hooks/useToast';
 import type { AppEvent, Camera, EventType, Site } from '@/types';
 import styles from './Monitoring.module.css';
@@ -406,7 +407,7 @@ function VideoCell({ cam, slotIdx, isSelected, isDragOver, displayMode, onSelect
       onDoubleClick={onDoubleClick}
     >
       {!isOffline && (
-        <video ref={videoRef} className={styles.cellVideo} src={`/mock-cctv/cam_0${videoIdx}.mp4`} loop muted playsInline preload="auto" />
+        <video ref={videoRef} className={styles.cellVideo} src={`${import.meta.env.BASE_URL}mock-cctv/cam_0${videoIdx}.mp4`} loop muted playsInline preload="auto" />
       )}
       {isOffline && <span className={styles.cellOfflineLabel}>⊘ offline</span>}
 
@@ -587,9 +588,8 @@ export default function Monitoring() {
   const [panelTab, setPanelTab] = useState('events');
   const [cursorFraction, setCursorFraction] = useState(nowFraction);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [activeEventTypes, setActiveEventTypes] = useState<Set<EventType>>(
-    new Set<EventType>(['motion', 'intrusion', 'line_crossing', 'face_match', 'lpr']),
-  );
+  // 이벤트 유형 필터 — '전체'(기본) 또는 단일 유형 선택
+  const [eventTypeFilter, setEventTypeFilter] = useState<EventType | 'all'>('all');
   const [eventPeriod, setEventPeriod] = useState<EventPeriod>('24h');
   const [ptzVisible, setPtzVisible] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -634,9 +634,9 @@ export default function Monitoring() {
       '30d': Date.now() - 30 * 86400000,
     };
     return [...events]
-      .filter((e) => e.cameraId === selectedCamId && activeEventTypes.has(e.type) && Date.parse(e.occurredAt) >= cutoffs[eventPeriod])
+      .filter((e) => e.cameraId === selectedCamId && (eventTypeFilter === 'all' || e.type === eventTypeFilter) && Date.parse(e.occurredAt) >= cutoffs[eventPeriod])
       .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt));
-  }, [events, selectedCamId, activeEventTypes, eventPeriod]);
+  }, [events, selectedCamId, eventTypeFilter, eventPeriod]);
 
   const timelineMarkers = useMemo(
     () => events.filter((e) => e.cameraId === selectedCamId).map((e) => ({ fraction: fractionOfDay(e.occurredAt), level: e.level })),
@@ -709,7 +709,7 @@ export default function Monitoring() {
           <div className={styles.canvasArea}>
             <div className={styles.videoFrame}>
               {selectedCam && selectedCam.status !== 'offline' ? (
-                <video className={styles.singleVideo} src={`/mock-cctv/cam_0${videoIdx}.mp4`} autoPlay loop muted playsInline />
+                <video className={styles.singleVideo} src={`${import.meta.env.BASE_URL}mock-cctv/cam_0${videoIdx}.mp4`} autoPlay loop muted playsInline />
               ) : (
                 <div className={styles.videoOffline}>⊘ offline</div>
               )}
@@ -742,26 +742,22 @@ export default function Monitoring() {
                   <div className={styles.filterSection}>
                     <span className={styles.filterLabel}>이벤트 유형</span>
                     <div className={styles.filterChips}>
-                      {EVENT_FILTER_DEFS.map((f) => {
-                        const active = activeEventTypes.has(f.type);
-                        return (
-                          <button
-                            key={f.type}
-                            type="button"
-                            className={[styles.filterChip, active ? styles.filterChipActive : ''].join(' ')}
-                            onClick={() =>
-                              setActiveEventTypes((prev) => {
-                                const next = new Set(prev);
-                                next.has(f.type) ? next.delete(f.type) : next.add(f.type);
-                                return next;
-                              })
-                            }
-                          >
-                            <span className={styles.filterChipDot} style={{ background: active ? (EVENT_DOT_COLOR[f.type] ?? 'var(--color-accent)') : 'var(--color-border)' }} />
-                            {f.label}
-                          </button>
-                        );
-                      })}
+                      <Chip
+                        selected={eventTypeFilter === 'all'}
+                        onClick={() => setEventTypeFilter('all')}
+                      >
+                        전체
+                      </Chip>
+                      {EVENT_FILTER_DEFS.map((f) => (
+                        <Chip
+                          key={f.type}
+                          selected={eventTypeFilter === f.type}
+                          dotColor={EVENT_DOT_COLOR[f.type] ?? 'var(--color-accent)'}
+                          onClick={() => setEventTypeFilter(f.type)}
+                        >
+                          {f.label}
+                        </Chip>
+                      ))}
                     </div>
                   </div>
                   <div className={styles.filterSection}>
@@ -808,8 +804,8 @@ export default function Monitoring() {
 
             {panelTab === 'settings' && (
               <div className={styles.settingsPanel}>
-                <p className={styles.settingsHint}>카메라 상세 설정은 카메라 설정 페이지에서 변경하세요.</p>
-                <Button variant="secondary" size="sm" block>카메라 설정으로 이동</Button>
+                <p className={styles.settingsHint}>카메라 상세 설정은 카메라 관리 페이지에서 변경하세요.</p>
+                <Button variant="secondary" size="sm" block>카메라 관리로 이동</Button>
               </div>
             )}
           </div>
@@ -830,7 +826,7 @@ export default function Monitoring() {
             className={[styles.siteChip, selectedSiteId === s.id ? styles.siteChipActive : ''].join(' ')}
             onClick={() => setSelectedSiteId(s.id)}
           >
-            {s.name}
+            {s.id === 's-06' ? '즐겨찾기' : s.name}
             <span className={styles.siteChipCount}>{s.cameraCount}</span>
           </button>
         ))}

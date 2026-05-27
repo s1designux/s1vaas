@@ -1,5 +1,6 @@
 // design_origin/src/App.jsx CameraSettingsPage (line 2020~2093) algos 초기값을
-// 카메라별 seed 로 확장한다. basic 2종 + ai 4종 = 카메라당 6 알고리즘.
+// 카메라별 seed 로 확장한다. basic 2종 + ai 6종 = 카메라당 8 알고리즘.
+// AI 이벤트는 AI 카메라 Process Flow(V0.76) 710 계열: 침입·배회·가상펜스·화재·주정차·피플카운팅.
 import type { CameraAlgorithm } from '@/types/algorithm';
 import { camerasSeed } from './cameras';
 
@@ -66,6 +67,24 @@ const TEMPLATE: AlgoTemplate[] = [
     desc: '연기 및 화염을 감지합니다',
     enabled: false,
     sensitivity: 'high',
+    zones: ['전체 영역'],
+  },
+  {
+    algoKey: 'parking',
+    kind: 'ai',
+    label: '주정차 감시',
+    desc: '지정 영역의 차량 주정차를 감지합니다',
+    enabled: false,
+    sensitivity: 'balanced',
+    zones: ['전체 영역'],
+  },
+  {
+    algoKey: 'people_counting',
+    kind: 'ai',
+    label: '피플카운팅',
+    desc: '영역을 지나는 사람 수를 집계합니다',
+    enabled: false,
+    sensitivity: 'balanced',
     zones: ['전체 영역'],
   },
 ];
