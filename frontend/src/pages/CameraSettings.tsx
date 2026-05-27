@@ -1,18 +1,16 @@
 // TODO: replace with fetch('/api/v1/cameras/{id}') + PATCH
 // 카메라 관리 — AI 카메라 Process Flow(V0.76) 사양 기반 상세화.
-//   설정 체계: 시스템 / 네트워크 / 비디오 / 이미지 / 녹화
-//   AI 이벤트(침입·배회·가상펜스·화재·주정차·피플카운팅)와 움직임 감지·감지 스케줄은
-//   [안심 AI 설정]으로 이관 — 여기서는 다루지 않는다(상단 참조 배너).
-//   단, 프라이버시 마스크는 PPTX상 [이미지] 설정에 속하므로 이미지 탭에서 ROI로 관리한다.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+//   설정 체계: 시스템(310/320) / 네트워크(410/420) / 비디오(510) / 이미지(610·620) / 녹화
+//   AI 이벤트(침입·배회·가상펜스·화재·주정차·피플카운팅)·움직임 감지·감지 스케줄,
+//   그리고 프라이버시 마스크(630)는 [안심 AI 설정]으로 이관 — 여기서는 다루지 않는다.
+//   ※ 녹화 탭은 V0.76 PPTX에 미정의 — 기획 확인 필요(현재 표준 가정값 표시).
+import { useEffect, useMemo, useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
-import { useToast } from '@/hooks/useToast';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import type { CameraAlgorithm, ZonePoint, ZonePolygon } from '@/types';
 import page from './Page.module.css';
 import cs from './CameraSettings.module.css';
 
@@ -25,27 +23,6 @@ const SETTINGS_TABS: { key: SettingsTab; label: string }[] = [
   { key: 'image', label: '이미지' },
   { key: 'record', label: '녹화' },
 ];
-
-/** 프라이버시 마스크 최대 영역 수 (PPTX 630). */
-const PRIVACY_MAX_ZONES = 4;
-
-// ROI accent palette — 해시 기반 색 순환.
-const ROI_PALETTE = [
-  { stroke: 'var(--color-accent)', fill: 'rgba(21, 83, 198, 0.34)' },
-  { stroke: 'var(--color-warn)', fill: 'rgba(217, 119, 6, 0.34)' },
-  { stroke: 'var(--color-success)', fill: 'rgba(22, 163, 74, 0.34)' },
-  { stroke: 'var(--color-info)', fill: 'rgba(21, 83, 198, 0.32)' },
-  { stroke: 'var(--color-danger)', fill: 'rgba(220, 38, 38, 0.32)' },
-];
-
-/** Close 자동 인식 반경 (정규화 좌표 — 2%) */
-const CLOSE_RADIUS = 0.02;
-
-function hashIdx(key: string): number {
-  let h = 0;
-  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-  return h % ROI_PALETTE.length;
-}
 
 /* ---------- 공용 폼 헬퍼 ---------- */
 
@@ -221,423 +198,7 @@ function EditSlider({
   );
 }
 
-/* ---------- 프라이버시 마스크 Live preview (ROI) ---------- */
-
-interface LivePreviewProps {
-  camName: string;
-  camStatus: string;
-  videoIdx: number; // 1..6
-  offline: boolean;
-  algos: CameraAlgorithm[];
-  activeAlgoId: string | null;
-  drawMode: boolean;
-  onDrawComplete: (polygon: Omit<ZonePolygon, 'id'>) => void;
-  onPolygonRemove: (algoId: string, polygonId: string) => void;
-  onPolygonUpdate: (algoId: string, polygonId: string, points: ZonePoint[]) => void;
-  onCancelDraw: () => void;
-}
-
-interface DragPoly {
-  algoId: string;
-  polyId: string;
-  origPoints: ZonePoint[];
-  startX: number;
-  startY: number;
-  dx: number;
-  dy: number;
-  moved: boolean;
-}
-
-function polygonBounds(points: ZonePoint[]) {
-  const xs = points.map((p) => p.x);
-  const ys = points.map((p) => p.y);
-  return {
-    minX: Math.min(...xs),
-    maxX: Math.max(...xs),
-    minY: Math.min(...ys),
-    maxY: Math.max(...ys),
-  };
-}
-
-function LivePreview({
-  camName,
-  camStatus,
-  videoIdx,
-  offline,
-  algos,
-  activeAlgoId,
-  drawMode,
-  onDrawComplete,
-  onPolygonRemove,
-  onPolygonUpdate,
-  onCancelDraw,
-}: LivePreviewProps) {
-  const boxRef = useRef<HTMLDivElement>(null);
-  const [vertices, setVertices] = useState<ZonePoint[]>([]);
-  const [cursor, setCursor] = useState<ZonePoint | null>(null);
-  const [selectedPolygon, setSelectedPolygon] = useState<string | null>(null);
-  const [dragPoly, setDragPoly] = useState<DragPoly | null>(null);
-
-  const resetDraw = useCallback(() => {
-    setVertices([]);
-    setCursor(null);
-  }, []);
-
-  const completeDraw = useCallback(
-    (pts: ZonePoint[]) => {
-      if (pts.length < 3) return;
-      onDrawComplete({ points: pts });
-      setVertices([]);
-      setCursor(null);
-    },
-    [onDrawComplete],
-  );
-
-  useEffect(() => {
-    if (!drawMode) {
-      setVertices([]);
-      setCursor(null);
-    }
-  }, [drawMode]);
-
-  useEffect(() => {
-    if (!drawMode) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        resetDraw();
-        onCancelDraw();
-      } else if (e.key === 'Enter') {
-        if (vertices.length >= 3) {
-          e.preventDefault();
-          completeDraw(vertices);
-        }
-      } else if (e.key === 'Backspace') {
-        if (vertices.length > 0) {
-          e.preventDefault();
-          setVertices((v) => v.slice(0, -1));
-        }
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [drawMode, vertices, resetDraw, onCancelDraw, completeDraw]);
-
-  const getXY = useCallback((e: React.MouseEvent): ZonePoint => {
-    const el = boxRef.current;
-    if (!el) return { x: 0, y: 0 };
-    const r = el.getBoundingClientRect();
-    const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-    const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-    return { x, y };
-  }, []);
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (!drawMode || offline) return;
-    if (e.detail >= 2) return;
-    e.preventDefault();
-    const pt = getXY(e);
-    if (vertices.length >= 3) {
-      const first = vertices[0];
-      const dx = pt.x - first.x;
-      const dy = pt.y - first.y;
-      if (Math.hypot(dx, dy) <= CLOSE_RADIUS) {
-        completeDraw(vertices);
-        return;
-      }
-    }
-    setVertices((v) => [...v, pt]);
-  };
-
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    if (!drawMode || offline) return;
-    e.preventDefault();
-    if (vertices.length >= 3) {
-      completeDraw(vertices);
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (dragPoly) {
-      const { x, y } = getXY(e);
-      let dx = x - dragPoly.startX;
-      let dy = y - dragPoly.startY;
-      const b = polygonBounds(dragPoly.origPoints);
-      dx = Math.max(-b.minX, Math.min(1 - b.maxX, dx));
-      dy = Math.max(-b.minY, Math.min(1 - b.maxY, dy));
-      const moved = dragPoly.moved || Math.abs(dx) > 0.005 || Math.abs(dy) > 0.005;
-      setDragPoly({ ...dragPoly, dx, dy, moved });
-      return;
-    }
-    if (!drawMode) return;
-    setCursor(getXY(e));
-  };
-
-  const handleMouseUp = () => {
-    if (!dragPoly) return;
-    if (dragPoly.moved) {
-      const nextPoints = dragPoly.origPoints.map((p) => ({
-        x: p.x + dragPoly.dx,
-        y: p.y + dragPoly.dy,
-      }));
-      onPolygonUpdate(dragPoly.algoId, dragPoly.polyId, nextPoints);
-    }
-    setDragPoly(null);
-  };
-
-  const handlePolyMouseDown = (e: React.MouseEvent, algoId: string, poly: ZonePolygon) => {
-    if (drawMode || algoId !== activeAlgoId) return;
-    e.stopPropagation();
-    e.preventDefault();
-    const { x, y } = getXY(e);
-    setDragPoly({
-      algoId,
-      polyId: poly.id,
-      origPoints: poly.points,
-      startX: x,
-      startY: y,
-      dx: 0,
-      dy: 0,
-      moved: false,
-    });
-  };
-
-  const handleMouseLeave = () => {
-    if (drawMode) setCursor(null);
-    if (dragPoly) setDragPoly(null);
-  };
-
-  const cursorStyle: React.CSSProperties = drawMode && !offline
-    ? { cursor: 'crosshair' }
-    : dragPoly
-      ? { cursor: 'grabbing' }
-      : {};
-
-  const lastVertex = vertices.length > 0 ? vertices[vertices.length - 1] : null;
-
-  return (
-    <Card title={camName} actions={<Badge tone={camStatus === 'offline' ? 'danger' : 'success'} dot>{camStatus}</Badge>}>
-      <div
-        ref={boxRef}
-        className={page.preview}
-        style={cursorStyle}
-        onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-      >
-        {!offline && (
-          <video
-            className={page.previewVideo}
-            src={`/mock-cctv/cam_0${videoIdx}.mp4`}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-          />
-        )}
-        {offline && <span style={{ position: 'relative', zIndex: 2 }}>OFFLINE</span>}
-
-        <svg
-          className={page.previewSvg}
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden={!drawMode}
-        >
-          <defs>
-            <mask id="roi-spotlight">
-              <rect x="0" y="0" width="100" height="100" fill="white" />
-              {algos.flatMap((a) =>
-                (a.polygons ?? []).map((poly) => {
-                  const shift =
-                    dragPoly && dragPoly.polyId === poly.id
-                      ? { dx: dragPoly.dx, dy: dragPoly.dy }
-                      : { dx: 0, dy: 0 };
-                  const pts = poly.points
-                    .map((p) => `${(p.x + shift.dx) * 100},${(p.y + shift.dy) * 100}`)
-                    .join(' ');
-                  return <polygon key={`m-${poly.id}`} points={pts} fill="black" />;
-                }),
-              )}
-              {drawMode && vertices.length >= 3 && (
-                <polygon
-                  points={vertices.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')}
-                  fill="black"
-                />
-              )}
-            </mask>
-          </defs>
-          <rect
-            x="0"
-            y="0"
-            width="100"
-            height="100"
-            fill="black"
-            opacity="0.52"
-            mask="url(#roi-spotlight)"
-            style={{ pointerEvents: 'none' }}
-          />
-
-          {algos.flatMap((a) => {
-            const isActive = a.id === activeAlgoId;
-            const pal = ROI_PALETTE[hashIdx(a.id)];
-            const op = isActive ? 1 : 0.55;
-            return (a.polygons ?? []).map((poly, i) => {
-              const sel = selectedPolygon === poly.id;
-              const isDragging = dragPoly?.polyId === poly.id;
-              const shift = isDragging ? { dx: dragPoly!.dx, dy: dragPoly!.dy } : { dx: 0, dy: 0 };
-              const pointsAttr = poly.points
-                .map((p) => `${(p.x + shift.dx) * 100},${(p.y + shift.dy) * 100}`)
-                .join(' ');
-              const first = poly.points[0];
-              const firstShifted = first ? { x: first.x + shift.dx, y: first.y + shift.dy } : null;
-              return (
-                <g key={poly.id} opacity={op} style={{ pointerEvents: drawMode ? 'none' : 'auto' }}>
-                  <polygon
-                    points={pointsAttr}
-                    fill={pal.fill}
-                    stroke={pal.stroke}
-                    strokeWidth={sel || isDragging ? 4 : 3.2}
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
-                    style={{
-                      cursor: isActive && !drawMode ? (isDragging ? 'grabbing' : 'grab') : 'default',
-                      filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))',
-                    }}
-                    onMouseDown={(ev) => handlePolyMouseDown(ev, a.id, poly)}
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      if (!isActive || drawMode) return;
-                      if (dragPoly?.moved) return;
-                      setSelectedPolygon(sel ? null : poly.id);
-                    }}
-                  />
-                  {isActive &&
-                    poly.points.map((p, vi) => (
-                      <circle
-                        key={`v-${vi}`}
-                        cx={(p.x + shift.dx) * 100}
-                        cy={(p.y + shift.dy) * 100}
-                        r={1.2}
-                        fill="var(--color-base-white)"
-                        stroke={pal.stroke}
-                        strokeWidth={2}
-                        vectorEffect="non-scaling-stroke"
-                        style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))', pointerEvents: 'none' }}
-                      />
-                    ))}
-                  {firstShifted && (
-                    <text
-                      x={firstShifted.x * 100 + 1.4}
-                      y={firstShifted.y * 100 - 1.2}
-                      fontSize={3.2}
-                      fontWeight="700"
-                      fill={pal.stroke}
-                      stroke="rgba(0,0,0,0.65)"
-                      strokeWidth={0.6}
-                      paintOrder="stroke fill"
-                      fontFamily="var(--font-mono)"
-                      style={{ pointerEvents: 'none' }}
-                    >
-                      {a.label.slice(0, 6)}·{i + 1}
-                    </text>
-                  )}
-                </g>
-              );
-            });
-          })}
-
-          {drawMode && vertices.length > 0 && (
-            <g style={{ pointerEvents: 'none' }}>
-              {vertices.length >= 2 && (
-                <polyline
-                  points={vertices.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')}
-                  fill="none"
-                  stroke="var(--color-accent)"
-                  strokeWidth={2.5}
-                  strokeLinejoin="round"
-                  vectorEffect="non-scaling-stroke"
-                  opacity={0.95}
-                />
-              )}
-              {lastVertex && cursor && (
-                <line
-                  x1={lastVertex.x * 100}
-                  y1={lastVertex.y * 100}
-                  x2={cursor.x * 100}
-                  y2={cursor.y * 100}
-                  stroke="var(--color-accent)"
-                  strokeWidth={1.5}
-                  strokeDasharray="1.2 0.8"
-                  vectorEffect="non-scaling-stroke"
-                  opacity={0.9}
-                />
-              )}
-              {vertices.map((p, idx) => (
-                <circle
-                  key={idx}
-                  cx={p.x * 100}
-                  cy={p.y * 100}
-                  r={0.9}
-                  fill="var(--color-base-white)"
-                  stroke="var(--color-accent)"
-                  strokeWidth={1.5}
-                  vectorEffect="non-scaling-stroke"
-                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.45))' }}
-                />
-              ))}
-            </g>
-          )}
-        </svg>
-
-        {!drawMode &&
-          algos.flatMap((a) => {
-            if (a.id !== activeAlgoId) return [];
-            return (a.polygons ?? [])
-              .filter((poly) => poly.id === selectedPolygon)
-              .map((poly) => {
-                const b = polygonBounds(poly.points);
-                return (
-                  <button
-                    key={`x-${poly.id}`}
-                    type="button"
-                    className={page.rectRemoveBtn}
-                    style={{ left: `${b.maxX * 100}%`, top: `${b.minY * 100}%` }}
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      onPolygonRemove(a.id, poly.id);
-                      setSelectedPolygon(null);
-                    }}
-                    aria-label="영역 삭제"
-                    title="영역 삭제"
-                  >
-                    ×
-                  </button>
-                );
-              });
-          })}
-
-        {drawMode && (
-          <div className={page.previewHint}>
-            클릭으로 vertex 추가 · Enter/더블클릭/첫점 근접 클릭으로 완료 · Backspace 되돌리기 · ESC 취소
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
-
 /* ---------- 트리 헬퍼 ---------- */
-
-function StatusDot({ status }: { status: string }) {
-  const cls =
-    status === 'recording' ? cs.dotRecording
-    : status === 'online'  ? cs.dotOnline
-    : cs.dotOffline;
-  return <span className={`${cs.dot} ${cls}`} />;
-}
 
 /** contractId (c-0001) → 고객번호 표기 (n000001) */
 function fmtContract(id: string) {
@@ -666,11 +227,6 @@ const QUALITY_OPTIONS: Opt<string>[] = ['매우 좋음', '좋음', '보통', '�
 export default function CameraSettings() {
   const cameras  = useDataStore((s) => s.cameras);
   const sites    = useDataStore((s) => s.sites);
-  const algorithms = useDataStore((s) => s.algorithms);
-  const patchAlgorithm = useDataStore((s) => s.patchAlgorithm);
-  const addAlgorithmPolygon = useDataStore((s) => s.addAlgorithmPolygon);
-  const removeAlgorithmPolygon = useDataStore((s) => s.removeAlgorithmPolygon);
-  const toast = useToast();
 
   // 계약처 그룹 (contractId 기준)
   const contractGroups = useMemo(() => {
@@ -704,11 +260,6 @@ export default function CameraSettings() {
   const [tab, setTab] = useState<SettingsTab>('system');
 
   const cam = cameras.find((c) => c.id === activeId);
-
-  const videoIdx = useMemo(() => {
-    const idx = cameras.findIndex((c) => c.id === activeId);
-    return ((idx < 0 ? 0 : idx) % 6) + 1;
-  }, [cameras, activeId]);
 
   // ---- 시스템 / 날짜·시간 ----
   const [timezone, setTimezone] = useState('GMT+09:00');
@@ -765,6 +316,11 @@ export default function CameraSettings() {
   const [wdr, setWdr] = useState('off');
   const [blc, setBlc] = useState('off');
   const [wb, setWb] = useState('awb1');
+  // ---- 이미지 / 노출 (PPTX 610-1/3) ----
+  const [aperture, setAperture] = useState('auto');
+  const [exposureTime, setExposureTime] = useState('auto');
+  // IR 조명 밝기 (PPTX 610-2/3, IR 수동 시)
+  const [irBrightness, setIrBrightness] = useState(100);
 
   // ---- 이미지 / OSD ----
   const [osdName, setOsdName] = useState(true);
@@ -774,56 +330,10 @@ export default function CameraSettings() {
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
   const [osdWeekday, setOsdWeekday] = useState(false);
 
-  // ---- 이미지 / 프라이버시 마스크 ----
-  const camAlgos = useMemo(() => algorithms.filter((a) => a.cameraId === activeId), [algorithms, activeId]);
-  const privacyAlgo = camAlgos.find((a) => a.algoKey === 'privacy') ?? null;
-  const [privacyDraw, setPrivacyDraw] = useState(false);
-  const privacyZoneCount = privacyAlgo?.polygons?.length ?? 0;
-  const privacyFull = privacyZoneCount >= PRIVACY_MAX_ZONES;
-
-  // 카메라 전환 시 상태 초기화
+  // 카메라 전환 시 OSD 이름 초기화
   useEffect(() => {
-    setPrivacyDraw(false);
     if (cam) setCamLabel(cam.name.split(' ')[0]);
   }, [activeId, cam]);
-
-  const offline = cam?.status === 'offline';
-
-  const togglePrivacy = () => {
-    if (!privacyAlgo) return;
-    patchAlgorithm(privacyAlgo.cameraId, privacyAlgo.id, { enabled: !privacyAlgo.enabled });
-    if (privacyAlgo.enabled) setPrivacyDraw(false);
-  };
-
-  const handleDrawComplete = (polygon: Omit<ZonePolygon, 'id'>) => {
-    if (!privacyAlgo || polygon.points.length < 3) return;
-    if (privacyFull) {
-      toast.warn('영역 제한', `프라이버시 마스크는 최대 ${PRIVACY_MAX_ZONES}개소까지 설정할 수 있습니다`);
-      setPrivacyDraw(false);
-      return;
-    }
-    addAlgorithmPolygon(privacyAlgo.cameraId, privacyAlgo.id, polygon);
-    setPrivacyDraw(false);
-    toast.success('영역 추가됨', `프라이버시 마스크 · ${polygon.points.length}개 vertex`);
-  };
-
-  const handlePolygonRemove = (algoId: string, polygonId: string) => {
-    if (!privacyAlgo) return;
-    removeAlgorithmPolygon(privacyAlgo.cameraId, algoId, polygonId);
-    toast.info('영역 삭제됨', '프라이버시 마스크');
-  };
-
-  const handlePolygonUpdate = (algoId: string, polygonId: string, points: ZonePoint[]) => {
-    if (!privacyAlgo) return;
-    const next = (privacyAlgo.polygons ?? []).map((p) => (p.id === polygonId ? { ...p, points } : p));
-    patchAlgorithm(privacyAlgo.cameraId, algoId, { polygons: next });
-  };
-
-  const clearAllPrivacy = () => {
-    if (!privacyAlgo) return;
-    (privacyAlgo.polygons ?? []).forEach((p) => removeAlgorithmPolygon(privacyAlgo.cameraId, privacyAlgo.id, p.id));
-    toast.info('전체 삭제', '프라이버시 마스크 영역을 모두 삭제했습니다');
-  };
 
   const serial  = cam ? `S1CAM2026${cam.id.slice(-4).padStart(6, '0')}` : '';
   const macAddr = cam ? `A4:5E:60:${cam.id.slice(-2).toUpperCase().padStart(2, '0')}:1B:7C` : '';
@@ -841,6 +351,7 @@ export default function CameraSettings() {
 
   return (
     <div className={cs.wrap}>
+      <div className={cs.container}>
       <div className={cs.body}>
         {/* ── 좌측 아코디언 사이드바 ── */}
         <aside className={cs.sidebar}>
@@ -1209,56 +720,6 @@ export default function CameraSettings() {
       {tab === 'image' && (
         <div className={page.csGrid}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <LivePreview
-              camName={cam.name}
-              camStatus={cam.status}
-              videoIdx={videoIdx}
-              offline={offline}
-              algos={privacyAlgo && privacyAlgo.enabled ? [privacyAlgo] : []}
-              activeAlgoId={privacyAlgo?.id ?? null}
-              drawMode={privacyDraw}
-              onDrawComplete={handleDrawComplete}
-              onPolygonRemove={handlePolygonRemove}
-              onPolygonUpdate={handlePolygonUpdate}
-              onCancelDraw={() => setPrivacyDraw(false)}
-            />
-            <Card title="프라이버시 마스크">
-              <ToggleRow
-                title="활성화"
-                desc={`지정 영역을 가립니다. 최대 ${PRIVACY_MAX_ZONES}개소 (초기값: 해제).`}
-                on={!!privacyAlgo?.enabled}
-                onToggle={togglePrivacy}
-              />
-              {privacyAlgo?.enabled && (
-                <>
-                  <Kv label="설정된 영역" value={`${privacyZoneCount} / ${PRIVACY_MAX_ZONES} 개소`} />
-                  <div className={page.settingsActions}>
-                    <button
-                      type="button"
-                      className={page.dangerLink}
-                      onClick={clearAllPrivacy}
-                      disabled={privacyZoneCount === 0}
-                      style={privacyZoneCount === 0 ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
-                    >
-                      전체 삭제
-                    </button>
-                    <div className={page.settingsActionsRight}>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => setPrivacyDraw(true)}
-                        disabled={privacyDraw || privacyFull}
-                      >
-                        {privacyFull ? '영역 가득 참' : '+ 영역 그리기'}
-                      </Button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </Card>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Card title="영상 설정">
               <div className={page.sectionCaption}>이미지 조정 (0~100)</div>
               <EditSlider label="밝기" value={img.brightness} min={0} max={100} onChange={(v) => patchImg({ brightness: v })} />
@@ -1267,7 +728,31 @@ export default function CameraSettings() {
               <EditSlider label="채도" value={img.saturation} min={0} max={100} onChange={(v) => patchImg({ saturation: v })} />
               <EditSlider label="Gain" value={img.gain} min={0} max={100} onChange={(v) => patchImg({ gain: v })} />
 
-              <div className={page.sectionCaption}>화이트 밸런스 · 노출</div>
+              <div className={page.sectionCaption}>노출</div>
+              <SelectField
+                label="조리개 모드"
+                value={aperture}
+                onChange={setAperture}
+                options={[
+                  { value: 'auto', label: '자동' },
+                  { value: 'manual', label: '수동' },
+                ]}
+              />
+              <SelectField
+                label="노출 시간"
+                value={exposureTime}
+                onChange={setExposureTime}
+                options={[
+                  { value: 'auto', label: '자동' },
+                  { value: '1/30', label: '1/30초' },
+                  { value: '1/60', label: '1/60초' },
+                  { value: '1/100', label: '1/100초' },
+                  { value: '1/250', label: '1/250초' },
+                  { value: '1/500', label: '1/500초' },
+                ]}
+              />
+
+              <div className={page.sectionCaption}>화이트 밸런스</div>
               <SelectField
                 label="화이트 밸런스"
                 value={wb}
@@ -1302,6 +787,9 @@ export default function CameraSettings() {
                   { value: 'off', label: '끄기' },
                 ]}
               />
+              {irMode === 'manual' && (
+                <EditSlider label="IR 조명 밝기 (1~100)" value={irBrightness} min={1} max={100} onChange={setIrBrightness} />
+              )}
 
               <div className={page.sectionCaption}>영상 보정</div>
               <SelectField
@@ -1329,6 +817,22 @@ export default function CameraSettings() {
                 onChange={setBlc}
                 options={[{ value: 'off', label: '끄기' }, { value: 'on', label: '켜기' }]}
               />
+            </Card>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Card>
+              <div className={page.securityMsg} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.5 }}>
+                <span aria-hidden style={{ color: 'var(--color-accent)', flexShrink: 0, marginTop: 1 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 8h.01M11 12h1v4h1" />
+                  </svg>
+                </span>
+                <span>
+                  <b>프라이버시 마스크</b>(영역 가리기)는 <b>안심 AI 설정</b>에서 카메라별로 관리합니다.
+                </span>
+              </div>
             </Card>
 
             <Card title="OSD 설정">
@@ -1382,5 +886,6 @@ export default function CameraSettings() {
         )}
       </div>
     </div>
+  </div>
   );
 }
