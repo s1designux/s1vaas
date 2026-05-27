@@ -45,7 +45,6 @@ export default function Site() {
   const sites = useDataStore((s) => s.sites);
   const cameras = useDataStore((s) => s.cameras);
   const favorites = useDataStore((s) => s.favorites);
-  const companies = useDataStore((s) => s.companies);
   const currentCompanyId = useDataStore((s) => s.currentCompanyId);
   const updateSite = useDataStore((s) => s.updateSite);
   const addSite = useDataStore((s) => s.addSite);
@@ -63,7 +62,6 @@ export default function Site() {
   const myContracts = useMemo(() => contracts.filter((c) => c.companyId === currentCompanyId), [contracts, currentCompanyId]);
   const myContractIds = useMemo(() => new Set(myContracts.map((c) => c.id)), [myContracts]);
   const myFavorites = useMemo(() => favorites.filter((f) => f.ownerId === currentCompanyId), [favorites, currentCompanyId]);
-  const currentCompany = companies.find((c) => c.id === currentCompanyId);
   const ownerId = currentCompanyId;
 
   const [openContracts, setOpenContracts] = useState<Set<string>>(() => new Set(myContracts.slice(0, 1).map((c) => c.id)));
@@ -138,7 +136,7 @@ export default function Site() {
 
   return (
     <div className={page.page}>
-      <div className={page.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+      <div className={page.header}>
         <div>
           <div className={page.headerKicker}>사이트 관리</div>
           <h1 className={page.headerTitle}>사이트 관리</h1>
@@ -146,15 +144,6 @@ export default function Site() {
             한 고객(계정)이 여러 계약처를 가질 수 있어요. 계약처별로 카메라를 사이트(장소)로 묶고,
             여러 계약처를 가로지르는 즐겨찾기 보기를 만들 수 있어요. 여기서 만든 구성이 카메라 관리 메뉴에 반영됩니다.
           </p>
-        </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-tertiary)' }}>고객 (계정)</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{currentCompany?.name ?? '—'}</div>
-          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
-            계약번호 {myContracts.map((c) => c.code).join(' · ') || '—'}
-            <br />
-            카메라 {cameras.filter((c) => myContractIds.has(c.contractId)).length}대
-          </div>
         </div>
       </div>
 
