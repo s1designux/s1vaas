@@ -174,16 +174,8 @@
   border-bottom: none;
 }
 
-.accordionItem:hover {
-  background: var(--color-surface-default);
-}
-
 .accordionItemActive {
   background: color-mix(in srgb, var(--color-action-primary-default) 8%, transparent);
-}
-
-.accordionItemActive:hover {
-  background: color-mix(in srgb, var(--color-action-primary-default) 12%, transparent);
 }
 
 /* 상태 chip */
