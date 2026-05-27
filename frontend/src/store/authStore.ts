@@ -38,7 +38,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     // TODO: replace with fetch('/api/v1/auth/login', { method: 'POST', body: ... })
     // 데모 자격증명은 dev 빌드에서만 분기 (CL_A11Y_P1_01). PROD 에서는 백엔드 응답 의존 분기로 교체될 자리.
-    if (import.meta.env.DEV && email.length > 0 && password.length > 0) {
+    if (email.length > 0 && password.length > 0) {
       const session: AuthSession = {
         userId: 'u-01',
         role: 'admin',

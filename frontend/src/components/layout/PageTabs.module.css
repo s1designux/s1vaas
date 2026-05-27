@@ -1,0 +1,307 @@
+/* ================================================================
+   Page Tabs — monitoring-only browser-style tab bar below GNB
+
+   Light mode palette (5-6 shades brighter than original #4b5263):
+     bar bg       #cdd2de  (visual-gray-200)
+     tab hover    #bcc3cf  (visual-gray-250 방향으로 살짝 어둡게)
+     separator    #b8bfc9
+
+   Dark mode palette (add [data-theme=dark] to <html> when theme is implemented):
+     bar bg       #2e2f38  (--color-gray-dark-300)
+     tab hover    #35363f  (--color-gray-dark-400)
+     separator    #3e4049  (--color-gray-dark-500)
+     active tab   var(--color-bg-home) -> dark override needed in tokens
+   ================================================================ */
+
+.pageTabs {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--spacing-16);
+  background-color: var(--color-visual-gray-200);
+  overflow: hidden;
+}
+
+.pageTabs ul {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 4px;
+  overflow: hidden;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Tab item — auto-width: content + 32px padding (16px each side) */
+.pageTabs li {
+  position: relative;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 0 var(--spacing-16);
+  border-radius: var(--radius-8) var(--radius-8) 0 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Separator between tabs */
+.pageTabs li::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  transform: translateY(-50%);
+  display: block;
+  width: 1px;
+  height: 12px;
+  background-color: var(--color-visual-gray-250);
+}
+
+/* Active tab */
+.active {
+  background-color: var(--color-bg-home);
+}
+
+.active a {
+  font-weight: var(--font-weight-bold) !important;
+  color: var(--color-text-primary) !important;
+  opacity: 1 !important;
+}
+
+/* Hide separator after active tab */
+.active + li::before {
+  display: none;
+}
+
+/* Hover: inactive tab */
+.pageTabs li:hover:not(.active) {
+  background-color: var(--color-visual-gray-200);
+}
+
+.pageTabs li:hover:not(.active)::before,
+.pageTabs li:hover:not(.active) + li::before {
+  display: none;
+}
+
+.pageTabs li:hover:not(.active) a {
+  opacity: 0.9;
+}
+
+/* Tab link */
+.pageTabs li a {
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  line-height: 28px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+/* Camera count — shown as (N) next to label */
+.camCount {
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  opacity: 0.65;
+}
+
+.active .camCount {
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+/* Drag-over indicator */
+.dragOver {
+  outline: 2px solid rgba(0, 0, 0, 0.2);
+  outline-offset: -2px;
+}
+
+/* ── Settings button ── */
+.settingsBtn {
+  margin-left: auto;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-4);
+  border: none;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.settingsBtn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.settingsBtnOpen {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.65);
+}
+
+/* ── Tab edit popup (position: fixed to escape overflow ancestors) ── */
+.settingsPopup {
+  position: fixed;
+  z-index: 400;
+  width: 248px;
+  background: var(--color-surface-default, var(--color-base-white));
+  border: 1px solid var(--color-border-subtle, #e2e5ea);
+  border-radius: var(--radius-card-md, 10px);
+  box-shadow: var(--shadow-modal, 0 8px 24px rgba(0, 0, 0, 0.14));
+  overflow: hidden;
+}
+
+.settingsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border-subtle, #e2e5ea);
+}
+
+.settingsTitle {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.settingsClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-4);
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.settingsClose:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.settingsList {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.settingsItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-control-sm, 6px);
+  cursor: grab;
+  transition: background-color var(--transition-fast);
+}
+
+.settingsItem:active {
+  cursor: grabbing;
+}
+
+.settingsItem:hover {
+  background: var(--color-bg-subtle);
+}
+
+.settingsItemDragOver {
+  outline: 2px solid var(--color-brand, #3b5bdb);
+  outline-offset: -2px;
+}
+
+.dragHandle {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--color-text-quaternary, #ced4da);
+}
+
+.settingsItemLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settingsItemCount {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+}
+
+.settingsItemRemove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-4);
+  border: none;
+  background: transparent;
+  color: var(--color-text-quaternary, #ced4da);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.settingsItemRemove:hover {
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--color-danger, #dc2626);
+}
+
+/* ── Dark mode ── */
+[data-theme="dark"] .pageTabs {
+  background-color: var(--color-gray-dark-100);   /* #1c1d23 */
+}
+
+[data-theme="dark"] .pageTabs li::before {
+  background-color: var(--color-gray-dark-300);   /* #2e2f38 */
+}
+
+[data-theme="dark"] .pageTabs li:hover:not(.active) {
+  background-color: var(--color-gray-dark-200);   /* #24252c */
+}
+
+[data-theme="dark"] .pageTabs li a {
+  color: var(--color-coolgray-dark-400);           /* #989ca8 — readable on dark bar */
+}
+
+[data-theme="dark"] .pageTabs li.active a {
+  color: var(--color-text-primary) !important;     /* #ecedf0 — bright on dark active tab */
+}
+
+/* Settings gear icon — flip to light on dark bar */
+[data-theme="dark"] .settingsBtn {
+  color: rgba(255, 255, 255, 0.35);
+}
+[data-theme="dark"] .settingsBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+}
+[data-theme="dark"] .settingsBtnOpen {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}

@@ -1,0 +1,365 @@
+/* ================================================================
+   DataListTable — data-list-table 컴포넌트
+   ================================================================ */
+
+/* ── Root ─────────────────────────────────────────────────────── */
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--spacing-16);
+  margin-bottom: var(--spacing-8);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+}
+
+.titleBox {
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.subtitle {
+  display: inline-block;
+  margin-left: var(--spacing-12);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-link);
+}
+
+.infoBox {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-left: var(--spacing-12);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+}
+
+.countBox {
+  display: flex;
+  gap: var(--spacing-4);
+}
+
+.countLabel {
+  font-weight: var(--font-weight-regular);
+}
+
+.countData {
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.headerRight {
+  display: flex;
+  gap: var(--spacing-8);
+  align-items: center;
+}
+
+/* ── Icon button ─────────────────────────────────────────────── */
+.btnIcon {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-control-sm);
+  background: var(--color-surface-default);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-icon-default);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.btnIcon:hover:not(:disabled) {
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.05) 100%),
+    var(--color-surface-default);
+  border-color: var(--color-border-strong);
+}
+
+.btnIcon:disabled {
+  background: var(--color-bg-subtle);
+  color: var(--color-icon-muted);
+  cursor: not-allowed;
+}
+
+/* ── Settings text button ────────────────────────────────────── */
+.btnListSetting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.btnListSetting:hover {
+  color: var(--color-action-primary-default);
+}
+
+/* ── Vertical divider ─────────────────────────────────────────── */
+.dividerV {
+  align-self: center;
+  display: inline-block;
+  width: 1px;
+  height: 21px;
+  margin: 0 var(--spacing-4);
+  background: var(--color-border-default);
+  flex-shrink: 0;
+}
+
+/* ================================================================
+   Table area
+   ================================================================ */
+.tableWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-top: 2px solid var(--color-border-emphasis);
+  border-bottom: 1px solid var(--color-border-emphasis);
+  overflow-y: auto;
+}
+
+.tableWrap table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* thead */
+.tableWrap thead {
+  background: var(--table-header-bg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.tableWrap thead th {
+  height: 34px;
+  padding: 0 12px;
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-medium);
+  color: var(--table-header-text);
+  vertical-align: middle;
+  text-align: center;
+  white-space: nowrap;
+  border-bottom: var(--border-width-default) solid var(--table-header-border);
+}
+
+/* tbody rows */
+.tableWrap tbody tr {
+  border-bottom: var(--border-width-default) solid var(--table-cell-border);
+}
+
+.tableWrap tbody tr:last-child {
+  border-bottom: none;
+}
+
+.tableWrap tbody tr:hover {
+  background: var(--table-row-hover-bg);
+}
+
+/* tbody cells */
+.tableWrap tbody td {
+  height: 34px;
+  padding: 6px 12px;
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  color: var(--table-cell-text);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tableWrap tbody td:has(button) {
+  padding: 0;
+}
+
+/* ── Row states ──────────────────────────────────────────────── */
+.rowSelected {
+  background: var(--table-row-selected-bg) !important;
+}
+
+.rowBgGray {
+  background: var(--table-header-bg) !important;
+}
+
+/* ── Cell states ─────────────────────────────────────────────── */
+.cellLink {
+  cursor: pointer !important;
+  font-weight: var(--font-weight-medium) !important;
+  color: var(--color-text-link) !important;
+  text-decoration: underline;
+}
+
+.cellCaution {
+  color: var(--color-text-danger) !important;
+}
+
+/* ── Empty row ───────────────────────────────────────────────── */
+.emptyMessageRow td {
+  height: 200px !important;
+  padding: var(--spacing-24) !important;
+  vertical-align: middle;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.emptyIcon {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--spacing-12);
+  color: var(--color-icon-muted);
+}
+
+/* ── Grid type (vertical cell borders) ────────────────────────── */
+.typeGrid tbody td {
+  height: 28px;
+  border-right: var(--border-width-default) solid var(--table-cell-border);
+}
+
+.typeGrid tbody td:last-child {
+  border-right: none;
+}
+
+/* ================================================================
+   Footer
+   ================================================================ */
+.footer {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  position: relative;
+  margin-top: var(--spacing-8);
+  min-height: 28px;
+  padding: 0 var(--spacing-16);
+}
+
+.footerRight {
+  display: flex;
+  align-items: center;
+}
+
+.pageSizeSelect {
+  width: 112px;
+  height: var(--sizing-form-control-height-xxs);
+  padding: 0 var(--spacing-8);
+  background: var(--input-default-bg);
+  border: var(--border-width-default) solid var(--input-default-border);
+  border-radius: var(--radius-control-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-12);
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.pageSizeSelect:hover {
+  border-color: var(--input-hover-border);
+}
+
+.pageSizeSelect:focus {
+  border-color: var(--input-focus-border);
+}
+
+/* ================================================================
+   Pagination
+   ================================================================ */
+.paging {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* nav buttons: first / prev / next / last */
+.pagingNav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-control-sm);
+  background: var(--color-surface-default);
+  color: var(--color-icon-default);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.pagingNav:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-subtle);
+}
+
+.pagingNavDisabled {
+  color: var(--color-icon-muted);
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-default);
+  cursor: not-allowed;
+}
+
+/* page number buttons */
+.pagingPage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--spacing-4);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-control-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-12);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.pagingPage:hover {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-border-default);
+}
+
+.pagingPageActive {
+  background: var(--pagination-active-bg);
+  color: var(--pagination-active-text);
+  border-color: var(--pagination-active-bg);
+  font-weight: var(--font-weight-medium);
+  cursor: default;
+}
+
+.pagingPageActive:hover {
+  background: var(--pagination-active-bg);
+  border-color: var(--pagination-active-bg);
+}

@@ -1,0 +1,132 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+  padding: var(--spacing-12) var(--spacing-16);
+  background: var(--color-bg-subtle);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-top: none;
+  flex-wrap: wrap;
+}
+
+.fields {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-16);
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  flex-shrink: 0;
+}
+
+.fieldLabel {
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.fieldControl {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+/* ── 액션 버튼 그룹 ── */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  flex-shrink: 0;
+}
+
+.resetBtn {
+  height: var(--sizing-button-height-xs);
+  padding: 0 var(--spacing-12);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-default);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-button-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.resetBtn:hover {
+  background: var(--color-bg-muted);
+  border-color: var(--color-border-strong);
+}
+
+.searchBtn {
+  height: var(--sizing-button-height-xs);
+  padding: 0 var(--spacing-16);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-action-primary-text);
+  background: var(--color-action-primary-default);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-button-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.searchBtn:hover {
+  background: var(--color-action-primary-hover);
+}
+
+/* ── 툴바 내 공용 셀렉트 ── */
+.toolbar select {
+  height: var(--sizing-button-height-xs);
+  padding: 0 var(--spacing-8);
+  font-size: var(--font-size-14);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-default);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-control-sm);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.toolbar select:focus {
+  border-color: var(--color-border-focus);
+}
+
+/* ── 툴바 내 공용 인풋 ── */
+.toolbar input[type='date'],
+.toolbar input[type='text'] {
+  height: var(--sizing-button-height-xs);
+  padding: 0 var(--spacing-8);
+  font-size: var(--font-size-14);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-default);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-control-sm);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.toolbar input:focus {
+  border-color: var(--color-border-focus);
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-10);
+  }
+  .actions {
+    justify-content: flex-end;
+  }
+}

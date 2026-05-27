@@ -2,76 +2,91 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-base);
+  gap: var(--spacing-4);
+  height: var(--sizing-button-height-xs);
+  padding: 0 var(--spacing-8);
+  font-size: var(--font-size-14);
   font-weight: var(--font-weight-medium);
   line-height: 1;
-  border: 1px solid transparent;
+  letter-spacing: -0.028em;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-button-md);
   cursor: pointer;
   user-select: none;
-  transition:
-    background-color var(--transition-fast),
-    color var(--transition-fast),
-    border-color var(--transition-fast),
-    transform 0.12s ease-out,
-    box-shadow 0.12s ease-out;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  outline: none;
 }
+.btn:active { transform: scale(0.97); }
 
-.btn:active {
-  transform: scale(0.97);
-}
+/* 사이즈 */
+.md { height: var(--sizing-button-height-md); padding: 0 var(--spacing-16); }
+.sm { height: var(--sizing-chip-height-sm); padding: 0 var(--spacing-8); }
 
+/* Block */
+.block { width: 100%; }
+
+/* Primary */
 .primary {
-  background: var(--color-accent);
-  color: var(--color-accent-on);
-  border-color: var(--color-accent);
+  background: var(--button-primary-default-bg);
+  color: var(--button-primary-default-text);
 }
-.primary:hover {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-card-hover);
+.primary:hover { background: var(--button-primary-hover-bg); }
+.primary:active { background: var(--button-primary-pressed-bg); }
+.primary:focus-visible {
+  outline: var(--border-width-strong) solid var(--button-primary-focus-ring);
+  outline-offset: -2px;
+}
+.primary:disabled {
+  background: var(--button-primary-disabled-bg);
+  color: var(--button-primary-disabled-text);
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
+/* Secondary */
 .secondary {
-  background: var(--color-surface);
-  color: var(--color-text);
-  border-color: var(--color-border);
+  background: var(--button-secondary-default-bg);
+  color: var(--button-secondary-default-text);
+  border-color: var(--button-secondary-default-border);
 }
 .secondary:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-  transform: translateY(-1px);
+  background: var(--button-secondary-hover-bg);
+  border-color: var(--button-secondary-hover-border);
+}
+.secondary:active { background: var(--button-secondary-pressed-bg); }
+.secondary:focus-visible {
+  outline: var(--border-width-strong) solid var(--button-secondary-focus-ring);
+  outline-offset: -2px;
+}
+.secondary:disabled {
+  background: var(--button-secondary-disabled-bg);
+  color: var(--button-secondary-disabled-text);
+  border-color: var(--button-secondary-disabled-border);
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-.ghost {
-  background: transparent;
-  color: var(--color-text-muted);
-  border-color: transparent;
+/* Blue-line */
+.blueLine {
+  background: var(--button-blue-line-default-bg);
+  color: var(--button-blue-line-default-text);
+  border-color: var(--button-blue-line-default-border);
 }
-.ghost:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
+.blueLine:hover {
+  background: var(--button-blue-line-hover-bg);
+  border-color: var(--button-blue-line-hover-border);
 }
-
-.danger {
-  background: var(--color-danger);
-  color: var(--color-text-inverse);
-  border-color: var(--color-danger);
+.blueLine:active { background: var(--button-blue-line-pressed-bg); }
+.blueLine:focus-visible {
+  outline: var(--border-width-strong) solid var(--button-blue-line-focus-ring);
+  outline-offset: -2px;
 }
-.danger:hover {
-  filter: brightness(0.92);
-  transform: translateY(-1px);
-}
-
-.sm {
-  padding: 6px 10px;
-  font-size: var(--font-size-sm);
-}
-
-.block {
-  width: 100%;
+.blueLine:disabled {
+  background: var(--button-blue-line-disabled-bg);
+  color: var(--button-blue-line-disabled-text);
+  border-color: var(--button-blue-line-disabled-border);
+  cursor: not-allowed;
+  pointer-events: none;
 }

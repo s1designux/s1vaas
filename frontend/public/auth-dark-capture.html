@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body>
+<script>
+const now = new Date().toISOString();
+localStorage.setItem('s1vaas-session', JSON.stringify({ userId: 'u-01', role: 'admin', issuedAt: now }));
+localStorage.setItem('s1vaas-user', JSON.stringify({ id: 'u-01', email: 'admin@s1vaas.test', displayName: '김관리', role: 'admin' }));
+localStorage.setItem('s1vaas-theme', 'dark');
+const p = new URLSearchParams(location.search);
+const path = p.get('path');
+const cid = p.get('cid');
+const EP = 'https%3A%2F%2Fmcp.figma.com%2Fmcp%2Fcapture';
+if (path && cid) {
+  location.replace('http://localhost:5173' + path + '?theme=dark#figmacapture=' + cid + '&figmaendpoint=' + EP + '%2F' + cid + '%2Fsubmit&figmadelay=4000');
+}
+</script>
+</body></html>

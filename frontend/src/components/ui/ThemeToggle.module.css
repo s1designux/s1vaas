@@ -1,24 +1,26 @@
 .btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button-md);
+  background: transparent;
+  color: var(--color-icon-default);
+  border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
   position: relative;
-  overflow: hidden;
 }
 
 .btn:hover {
-  background: var(--color-accent-muted);
-  color: var(--color-accent);
-  border-color: var(--color-accent);
-  transform: translateY(-1px);
+  background: var(--color-bg-subtle);
+  color: var(--color-icon-emphasis);
+}
+
+.btn:focus-visible {
+  outline: var(--border-width-strong) solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .icon {

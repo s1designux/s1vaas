@@ -401,13 +401,6 @@ export default function Health() {
   return (
     <div className={page.page}>
       <div className={page.header}>
-        <div>
-          <div className={page.headerKicker}>INFRASTRUCTURE</div>
-          <div className={page.headerTitle}>장비 상태</div>
-          <div className={page.headerSubtitle}>
-            전체 카메라의 펌웨어, 가동률, 저장소 상태를 한 화면에서
-          </div>
-        </div>
         <div className={page.actions}>
           <Button
             variant="secondary"
@@ -519,7 +512,7 @@ export default function Health() {
                         </td>
                         <td onClick={(e) => e.stopPropagation()}>
                           <Button
-                            variant="ghost"
+                            variant="secondary"
                             size="sm"
                             onClick={() => setDrawerCamId(cam.id)}
                           >

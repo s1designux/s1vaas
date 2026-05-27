@@ -13,8 +13,8 @@ interface LogoProps {
 export function Logo({ size = 32, className, variant = 'aperture' }: LogoProps) {
   if (variant === 'symbol' || variant === 'symbol-inverse') {
     const inverse = variant === 'symbol-inverse';
-    const tagFill = inverse ? '#FFFFFF' : 'var(--color-accent)';
-    const txtFill = inverse ? 'var(--color-accent)' : '#FFFFFF';
+    const tagFill = inverse ? 'var(--color-base-white)' : 'var(--color-accent)';
+    const txtFill = inverse ? 'var(--color-accent)' : 'var(--color-base-white)';
     return (
       <svg
         xmlns="http://www.w3.org/2000/svg"

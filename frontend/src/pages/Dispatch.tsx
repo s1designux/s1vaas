@@ -1,6 +1,7 @@
 // TODO: replace with fetch('/api/v1/dispatch')
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { BtnGroup } from '@/components/ui/BtnGroup';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Drawer } from '@/components/ui/Drawer';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -329,13 +330,6 @@ export default function Dispatch() {
   return (
     <div className={page.page}>
       <div className={page.header}>
-        <div>
-          <div className={page.headerKicker}>OPERATIONS</div>
-          <div className={page.headerTitle}>출동 관제</div>
-          <div className={page.headerSubtitle}>
-            현장 대응 진행 상황과 출동 이력을 실시간으로 관리합니다.
-          </div>
-        </div>
         <div className={page.actions}>
           <Button
             variant="secondary"
@@ -345,7 +339,7 @@ export default function Dispatch() {
             지도에서 보기
           </Button>
           <Button
-            variant="danger"
+            variant="secondary"
             size="sm"
             onClick={() =>
               toast.warn('긴급 출동 요청', '관제 콜센터로 라우팅됩니다 (모의 동작).')
@@ -466,7 +460,7 @@ export default function Dispatch() {
             <div className={styles.sectionTitle}>출동 이력</div>
             <div className={styles.sectionSub}>완료된 출동 건의 처리 결과 및 도착 소요 시간.</div>
           </div>
-          <div className={styles.rangeToggle} role="radiogroup" aria-label="기간 선택">
+          <BtnGroup>
             {(
               [
                 { k: 'today', label: '오늘' },
@@ -474,20 +468,11 @@ export default function Dispatch() {
                 { k: 'month', label: '이번 달' },
               ] as { k: RangeKey; label: string }[]
             ).map((opt) => (
-              <button
-                key={opt.k}
-                type="button"
-                role="radio"
-                aria-checked={range === opt.k}
-                className={[styles.rangeBtn, range === opt.k ? styles.rangeBtnActive : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => setRange(opt.k)}
-              >
+              <BtnGroup.Btn key={opt.k} active={range === opt.k} onClick={() => setRange(opt.k)}>
                 {opt.label}
-              </button>
+              </BtnGroup.Btn>
             ))}
-          </div>
+          </BtnGroup>
         </div>
 
         <table className={page.dataTable}>
@@ -544,7 +529,7 @@ export default function Dispatch() {
                     </Badge>
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="sm" onClick={() => setDrawerTicket(t)}>
+                    <Button variant="secondary" size="sm" onClick={() => setDrawerTicket(t)}>
                       상세
                     </Button>
                   </td>

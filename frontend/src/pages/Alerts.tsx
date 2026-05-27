@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useToast } from '@/hooks/useToast';
 import { relativeTime, formatDateTime } from '@/lib/time';
@@ -311,13 +312,6 @@ export default function Alerts() {
   return (
     <div className={page.page}>
       <div className={page.header}>
-        <div>
-          <div className={page.headerKicker}>OPERATIONS</div>
-          <div className={page.headerTitle}>알림 센터</div>
-          <div className={page.headerSubtitle}>
-            보안 이벤트 알림과 대응을 한곳에서
-          </div>
-        </div>
         <div className={page.actions}>
           <Button variant="secondary" size="sm" onClick={resetFilters}>
             필터 초기화
@@ -378,32 +372,30 @@ export default function Alerts() {
           <div className={styles.filterGroup}>
             <div className={styles.filterTitle}>우선순위</div>
             {PRIORITY_OPTIONS.map((opt) => (
-              <label key={opt.value} className={styles.filterRow}>
-                <input
-                  type="checkbox"
-                  checked={priorityFilter.includes(opt.value)}
-                  onChange={() => togglePriority(opt.value)}
-                />
-                <span>{opt.label}</span>
-              </label>
+              <Checkbox
+                key={opt.value}
+                checked={priorityFilter.includes(opt.value)}
+                onChange={() => togglePriority(opt.value)}
+              >
+                {opt.label}
+              </Checkbox>
             ))}
           </div>
 
           <div className={styles.filterGroup}>
             <div className={styles.filterTitle}>유형</div>
             {TYPE_OPTIONS.map((opt) => (
-              <label key={opt.value} className={styles.filterRow}>
-                <input
-                  type="checkbox"
-                  checked={typeFilter.includes(opt.value)}
-                  onChange={() => toggleType(opt.value)}
-                />
-                <span>{opt.label}</span>
-              </label>
+              <Checkbox
+                key={opt.value}
+                checked={typeFilter.includes(opt.value)}
+                onChange={() => toggleType(opt.value)}
+              >
+                {opt.label}
+              </Checkbox>
             ))}
           </div>
 
-          <Button variant="ghost" size="sm" block onClick={resetFilters}>
+          <Button variant="secondary" size="sm" block onClick={resetFilters}>
             초기화
           </Button>
         </aside>
@@ -532,7 +524,7 @@ export default function Alerts() {
                 <Button variant="secondary" size="sm" onClick={handleResolve}>
                   Resolve
                 </Button>
-                <Button variant="danger" size="sm" onClick={handleEscalate}>
+                <Button variant="secondary" size="sm" onClick={handleEscalate}>
                   Escalate
                 </Button>
               </div>

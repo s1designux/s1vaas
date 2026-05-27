@@ -1,3 +1,92 @@
+/* ── TopSearch filter bar ── */
+.filterWrap {
+  margin-bottom: var(--space-4);
+}
+
+.filterInput {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.filterInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.filterInput:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
+}
+
+.filterDate {
+  width: 130px;
+  height: 32px;
+  padding: 0 8px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.filterDate:focus {
+  border-color: var(--color-accent);
+}
+
+.filterSelect {
+  width: 100%;
+  height: var(--sizing-form-control-height-xxs);
+  padding: 0 var(--spacing-8);
+  background: var(--input-default-bg);
+  border: var(--border-width-default) solid var(--input-default-border);
+  border-radius: var(--radius-control-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-12);
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.filterSelect:hover {
+  border-color: var(--input-hover-border);
+}
+
+.filterSelect:focus {
+  border-color: var(--input-focus-border);
+}
+
+.resetBtn {
+  height: 32px;
+  padding: 0 16px;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.resetBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
 .searchBar {
   display: flex;
   align-items: center;
@@ -40,41 +129,9 @@
   color: var(--color-text-muted);
 }
 
-.modeTabs {
-  display: inline-flex;
-  align-items: center;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 3px;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.modeTab {
-  padding: 6px 12px;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: var(--font-weight-medium);
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.modeTab:hover {
-  color: var(--color-text);
-}
-
-.modeTabActive {
-  background: var(--color-surface);
-  color: var(--color-accent);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
 
 .searchSubmit {
-  height: 40px;
+  height: 32px;
   padding: 0 18px;
   background: var(--color-accent);
   color: var(--color-accent-on);
@@ -251,26 +308,31 @@
 }
 
 .sortSelect {
-  height: 34px;
-  padding: 0 28px 0 12px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-sans);
+  height: var(--sizing-form-control-height-xxs);
+  padding: 0 28px 0 var(--spacing-12);
+  background: var(--input-default-bg);
+  border: var(--border-width-default) solid var(--input-default-border);
+  border-radius: var(--radius-control-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-12);
+  font-family: inherit;
   cursor: pointer;
+  outline: none;
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
-    linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-text-tertiary) 50%),
+    linear-gradient(135deg, var(--color-text-tertiary) 50%, transparent 50%);
   background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
+  transition: border-color var(--transition-fast);
+}
+
+.sortSelect:hover {
+  border-color: var(--input-hover-border);
 }
 
 .sortSelect:focus {
-  outline: none;
-  border-color: var(--color-accent);
+  border-color: var(--input-focus-border);
 }
 
 .grid {

@@ -1,31 +1,30 @@
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-6);
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card-md);
+  padding: var(--spacing-24);
   box-shadow: var(--shadow-card);
   transition: box-shadow 0.12s ease-out, transform 0.12s ease-out, border-color var(--transition-base);
 }
 
-/* default variant — design.md §9: 카드 hover 는 border-color 만 전환 */
 .card:hover {
-  border-color: var(--color-action);
+  border-color: var(--color-border-default);
 }
 
-/* lift variant — SiteCard 한정 (-1px translate + shadow-modal) */
+/* lift variant — SiteCard 한정 */
 .cardLift:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-modal);
-  border-color: var(--color-action);
+  border-color: var(--color-action-primary-default);
 }
 
 .title {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-  margin-bottom: var(--space-4);
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-16);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--spacing-8);
 }

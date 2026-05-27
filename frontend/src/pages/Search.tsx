@@ -1,10 +1,11 @@
 // TODO: replace with POST /api/v1/search
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
+import { BtnGroup } from '@/components/ui/BtnGroup';
+import { TopSearch } from '@/components/ui/TopSearch';
 import { useToast } from '@/hooks/useToast';
 import { relativeTime } from '@/lib/time';
 import {
-  CAM_OPTIONS,
   MOCK_RESULTS_BY_QUERY,
   RECENT_QUERIES,
   SITE_OPTIONS,
@@ -31,12 +32,6 @@ const MODE_PLACEHOLDER: Record<SearchMode, string> = {
 };
 
 const MODES: SearchMode[] = ['natural', 'person', 'vehicle', 'lpr'];
-
-const SENSITIVITY: { value: SearchSensitivity; label: string; desc: string }[] = [
-  { value: 'low', label: '낮음', desc: '관련도 높은 결과만' },
-  { value: 'mid', label: '중간', desc: '균형 (추천)' },
-  { value: 'high', label: '높음', desc: '폭넓게 보기' },
-];
 
 const SEED_PALETTES: Record<string, [string, string, string]> = {
   red: ['var(--color-danger)', 'var(--color-warn)', 'var(--color-video-bg)'],
@@ -145,25 +140,6 @@ function SkeletonCard() {
   );
 }
 
-function SearchIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="M20 20l-4-4" />
-    </svg>
-  );
-}
-
 export default function Search() {
   const toast = useToast();
   const [mode, setMode] = useState<SearchMode>('natural');
@@ -188,14 +164,9 @@ export default function Search() {
     };
   }, []);
 
-  const camerasInScope = useMemo(() => {
-    if (siteIds.length === 0) return CAM_OPTIONS;
-    return CAM_OPTIONS.filter((c) => siteIds.includes(c.siteId));
-  }, [siteIds]);
-
   const runSearch = (query: string) => {
     const q = query.trim();
-    if (!q) return;
+    if (phase === 'loading') return;
     setActiveQuery(q);
     setPhase('loading');
     setElapsedMs(0);
@@ -225,154 +196,98 @@ export default function Search() {
     return arr;
   }, [results, sortKey]);
 
-  const toggle = (id: string, list: string[], setter: (v: string[]) => void) => {
-    if (list.includes(id)) setter(list.filter((x) => x !== id));
-    else setter([...list, id]);
-  };
-
   const handleCardClick = (r: SearchResult) => {
     toast.info('재생 페이지는 준비 중입니다 (mockup)', `${r.cameraName} · ${r.caption}`);
   };
 
+  const handleReset = () => {
+    setInput('');
+    setFrom('');
+    setTo('');
+    setSiteIds([]);
+    setCameraIds([]);
+    setSensitivity('mid');
+    setPhase('idle');
+    setResults([]);
+    setActiveQuery('');
+  };
+
   return (
     <div className={page.page}>
-      <div className={page.header}>
-        <div>
-          <div className={page.headerKicker}>INTELLIGENCE</div>
-          <div className={page.headerTitle}>AI 영상 검색</div>
-          <div className={page.headerSubtitle}>자연어로 영상에서 사람·차량·이벤트를 찾습니다</div>
-        </div>
-      </div>
-
-      {/* Search bar */}
-      <div className={styles.searchBar}>
-        <span className={styles.searchIcon}>
-          <SearchIcon size={20} />
-        </span>
-        <input
-          type="text"
-          className={styles.searchInput}
-          placeholder={MODE_PLACEHOLDER[mode]}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              runSearch(input);
-            }
-          }}
-        />
-        <div className={styles.modeTabs} role="tablist" aria-label="검색 모드">
-          {MODES.map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="tab"
-              aria-selected={mode === m}
-              className={[styles.modeTab, mode === m ? styles.modeTabActive : ''].join(' ')}
-              onClick={() => setMode(m)}
-            >
-              {MODE_LABEL[m]}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          className={styles.searchSubmit}
-          onClick={() => runSearch(input)}
-          disabled={!input.trim() || phase === 'loading'}
+      {/* Filter bar */}
+      <div className={styles.filterWrap}>
+        <TopSearch
+          onSubmit={() => runSearch(input)}
+          buttons={
+            <>
+              <button type="button" className={styles.resetBtn} onClick={handleReset}>초기화</button>
+              <button
+                type="button"
+                className={styles.searchSubmit}
+                onClick={() => runSearch(input)}
+                disabled={phase === 'loading'}
+              >
+                검색
+              </button>
+            </>
+          }
         >
-          검색
-        </button>
+          <TopSearch.Row>
+            <BtnGroup>
+              {MODES.map((m) => (
+                <BtnGroup.Btn key={m} active={mode === m} onClick={() => setMode(m)}>
+                  {MODE_LABEL[m]}
+                </BtnGroup.Btn>
+              ))}
+            </BtnGroup>
+            <TopSearch.Field stretch>
+              <input
+                type="text"
+                className={styles.filterInput}
+                placeholder={MODE_PLACEHOLDER[mode]}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') runSearch(input); }}
+              />
+            </TopSearch.Field>
+            <TopSearch.Divider />
+            <TopSearch.Field label="기간" wide>
+              <TopSearch.DateRange>
+                <input
+                  type="date"
+                  className={styles.filterDate}
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  aria-label="시작일"
+                />
+                <TopSearch.Between />
+                <input
+                  type="date"
+                  className={styles.filterDate}
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  aria-label="종료일"
+                />
+              </TopSearch.DateRange>
+            </TopSearch.Field>
+            <TopSearch.Field label="위치">
+              <select
+                className={styles.filterSelect}
+                value={siteIds[0] ?? ''}
+                onChange={(e) => setSiteIds(e.target.value ? [e.target.value] : [])}
+              >
+                <option value="">전체</option>
+                {SITE_OPTIONS.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </TopSearch.Field>
+          </TopSearch.Row>
+        </TopSearch>
       </div>
 
-      {/* Layout */}
-      <div className={styles.layout}>
-        {/* Filter panel */}
-        <aside className={styles.filterPanel}>
-          <div className={styles.filterTitle}>필터</div>
-
-          <div className={styles.filterSection}>
-            <div className={styles.filterLabel}>사이트</div>
-            <div className={styles.chipMulti}>
-              {SITE_OPTIONS.map((s) => {
-                const active = siteIds.includes(s.id);
-                return (
-                  <button
-                    type="button"
-                    key={s.id}
-                    className={[styles.chipPick, active ? styles.chipPickActive : ''].join(' ')}
-                    onClick={() => toggle(s.id, siteIds, setSiteIds)}
-                  >
-                    {s.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className={styles.filterSection}>
-            <div className={styles.filterLabel}>카메라</div>
-            <div className={styles.chipMulti}>
-              {camerasInScope.slice(0, 12).map((c) => {
-                const active = cameraIds.includes(c.id);
-                return (
-                  <button
-                    type="button"
-                    key={c.id}
-                    className={[styles.chipPick, active ? styles.chipPickActive : ''].join(' ')}
-                    onClick={() => toggle(c.id, cameraIds, setCameraIds)}
-                  >
-                    {c.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className={styles.filterSection}>
-            <div className={styles.filterLabel}>기간</div>
-            <div className={styles.dateRow}>
-              <input
-                type="date"
-                className={styles.dateInput}
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                aria-label="시작일"
-              />
-              <input
-                type="date"
-                className={styles.dateInput}
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                aria-label="종료일"
-              />
-            </div>
-          </div>
-
-          <div className={styles.filterSection}>
-            <div className={styles.filterLabel}>민감도</div>
-            <div className={styles.radioRow}>
-              {SENSITIVITY.map((s) => (
-                <label key={s.value} className={styles.radioItem}>
-                  <input
-                    type="radio"
-                    name="sensitivity"
-                    value={s.value}
-                    checked={sensitivity === s.value}
-                    onChange={() => setSensitivity(s.value)}
-                  />
-                  <span>
-                    {s.label} <span style={{ color: 'var(--color-text-muted)' }}>· {s.desc}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* Results */}
-        <section className={styles.results}>
+      {/* Results */}
+      <section className={styles.results}>
           {phase === 'idle' && (
             <div className={styles.idle}>
               <svg
@@ -464,7 +379,6 @@ export default function Search() {
             </>
           )}
         </section>
-      </div>
     </div>
   );
 }

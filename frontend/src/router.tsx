@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { RequireAuth } from '@/components/layout/RequireAuth';
 import { PublicOnly } from '@/components/layout/PublicOnly';
 import { AppShell } from '@/components/layout/AppShell';

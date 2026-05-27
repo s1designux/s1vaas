@@ -12,12 +12,15 @@ const THEME_KEY = 's1vaas-theme';
 
 function readInitial(): Theme {
   if (typeof window === 'undefined') return 'light';
+  const urlTheme = new URLSearchParams(window.location.search).get('theme');
+  if (urlTheme === 'dark' || urlTheme === 'light') {
+    localStorage.setItem(THEME_KEY, urlTheme);
+    return urlTheme;
+  }
   const saved = localStorage.getItem(THEME_KEY);
   if (saved === 'light' || saved === 'dark') return saved;
-  const prefersDark =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-color-scheme: dark)').matches;
-  return prefersDark ? 'dark' : 'light';
+  localStorage.setItem(THEME_KEY, 'light');
+  return 'light';
 }
 
 function apply(theme: Theme) {

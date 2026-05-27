@@ -21,28 +21,32 @@
 }
 
 .accent {
-  background: var(--color-accent-muted);
-  color: var(--color-accent);
+  background: var(--color-action-primary-subtle);
+  color: var(--color-action-primary-default);
   border-color: transparent;
 }
 .success {
-  background: rgba(22, 163, 74, 0.12);
-  color: var(--color-success);
+  background: var(--badge-success-bg);
+  color: var(--badge-success-fg);
+  border-color: var(--badge-success-border);
 }
 .warn {
-  background: rgba(217, 119, 6, 0.14);
-  color: var(--color-warn);
+  background: var(--badge-warning-bg);
+  color: var(--badge-warning-fg);
+  border-color: var(--badge-warning-border);
 }
 .danger {
-  background: rgba(220, 38, 38, 0.12);
-  color: var(--color-danger);
+  background: var(--badge-danger-bg);
+  color: var(--badge-danger-fg);
+  border-color: var(--badge-danger-border);
 }
 .neutral {
-  background: var(--color-surface-alt);
-  color: var(--color-text-muted);
-  border-color: var(--color-border);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-tertiary);
+  border-color: var(--color-border-default);
 }
 .info {
-  background: var(--color-accent-muted);
-  color: var(--color-accent);
+  background: var(--badge-info-bg);
+  color: var(--badge-info-fg);
+  border-color: var(--badge-info-border);
 }

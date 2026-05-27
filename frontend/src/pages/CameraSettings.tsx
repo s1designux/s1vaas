@@ -4,6 +4,7 @@ import { useDataStore } from '@/store/dataStore';
 import { useToast } from '@/hooks/useToast';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { BtnGroup } from '@/components/ui/BtnGroup';
 import { Badge } from '@/components/ui/Badge';
 import { Tabs } from '@/components/ui/Tabs';
 import type {
@@ -448,7 +449,7 @@ function LivePreview({
                         cx={(p.x + shift.dx) * 100}
                         cy={(p.y + shift.dy) * 100}
                         r={1.2}
-                        fill="#fff"
+                        fill="var(--color-base-white)"
                         stroke={pal.stroke}
                         strokeWidth={2}
                         vectorEffect="non-scaling-stroke"
@@ -515,7 +516,7 @@ function LivePreview({
                   cx={p.x * 100}
                   cy={p.y * 100}
                   r={0.9}
-                  fill="#ffffff"
+                  fill="var(--color-base-white)"
                   stroke="var(--color-accent)"
                   strokeWidth={1.5}
                   vectorEffect="non-scaling-stroke"
@@ -688,11 +689,6 @@ export default function CameraSettings() {
   return (
     <div className={page.page}>
       <div className={page.header}>
-        <div>
-          <div className={page.headerKicker}>CAMERA CONFIGURATION</div>
-          <div className={page.headerTitle}>카메라 설정</div>
-          <div className={page.headerSubtitle}>사이트별 개별 카메라의 오버레이·알고리즘·녹화·네트워크 설정을 관리합니다.</div>
-        </div>
         <div className={page.actions}>
           <Button variant="secondary" size="sm">
             초기화
@@ -1103,29 +1099,17 @@ function AlgorithmCard({
 
           <div className={algoStyles.algoRow}>
             <span className={algoStyles.algoRowLabel}>민감도</span>
-            <div className={algoStyles.sensiRow}>
-              {SENSITIVITY_OPTIONS.map((opt) => {
-                const sactive = algo.sensitivity === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={[
-                      algoStyles.sensiBtn,
-                      sactive ? algoStyles.sensiBtnActive : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSensitivity(algo, opt.value);
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
+            <BtnGroup>
+              {SENSITIVITY_OPTIONS.map((opt) => (
+                <BtnGroup.Btn
+                  key={opt.value}
+                  active={algo.sensitivity === opt.value}
+                  onClick={(e) => { e.stopPropagation(); onSensitivity(algo, opt.value); }}
+                >
+                  {opt.label}
+                </BtnGroup.Btn>
+              ))}
+            </BtnGroup>
           </div>
         </>
       )}

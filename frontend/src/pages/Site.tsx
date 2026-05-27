@@ -257,11 +257,6 @@ export default function Site() {
   return (
     <div className={page.page}>
       <div className={page.header}>
-        <div>
-          <div className={page.headerKicker}>INFRASTRUCTURE</div>
-          <div className={page.headerTitle}>사이트 관리</div>
-          <div className={page.headerSubtitle}>지사·지점의 카메라 배치와 계약 상태를 한 눈에 확인합니다.</div>
-        </div>
         <div className={page.actions}>
           <Button variant="secondary" size="sm">
             CSV 내보내기
@@ -345,7 +340,7 @@ export default function Site() {
                   </Badge>
                 </td>
                 <td onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm" onClick={() => openEdit(s)}>
+                  <Button variant="secondary" size="sm" onClick={() => openEdit(s)}>
                     편집
                   </Button>
                 </td>
@@ -401,55 +396,65 @@ export default function Site() {
             <div className={form.sectionCaption}>기본 정보</div>
             <div className={form.field}>
               <label className={form.label}>사이트 이름</label>
-              <input
-                className={form.input}
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="예: 강남 본점"
-              />
-            </div>
-            <div className={form.field}>
-              <label className={form.label}>주소</label>
-              <input
-                className={form.input}
-                value={formAddress}
-                onChange={(e) => setFormAddress(e.target.value)}
-                placeholder="서울특별시 …"
-              />
-            </div>
-            <div className={form.rowCols2}>
-              <div className={form.field}>
-                <label className={form.label}>계약</label>
-                <select
-                  className={form.select}
-                  value={formContractId}
-                  onChange={(e) => setFormContractId(e.target.value)}
-                >
-                  {contracts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.code} — {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={form.field}>
-                <label className={form.label}>설치일</label>
+              <div className={form.inputWrap}>
                 <input
-                  type="date"
                   className={form.input}
-                  value={formInstalledAt}
-                  onChange={(e) => setFormInstalledAt(e.target.value)}
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="예: 강남 본점"
                 />
               </div>
             </div>
             <div className={form.field}>
+              <label className={form.label}>주소</label>
+              <div className={form.inputWrap}>
+                <input
+                  className={form.input}
+                  value={formAddress}
+                  onChange={(e) => setFormAddress(e.target.value)}
+                  placeholder="서울특별시 …"
+                />
+              </div>
+            </div>
+            <div className={form.rowCols2}>
+              <div className={form.field}>
+                <label className={form.label}>계약</label>
+                <div className={form.inputWrap}>
+                  <select
+                    className={form.select}
+                    value={formContractId}
+                    onChange={(e) => setFormContractId(e.target.value)}
+                  >
+                    {contracts.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.code} — {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className={form.field}>
+                <label className={form.label}>설치일</label>
+                <div className={form.inputWrap}>
+                  <input
+                    type="date"
+                    className={form.input}
+                    value={formInstalledAt}
+                    onChange={(e) => setFormInstalledAt(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className={form.field}>
               <label className={form.label}>담당자</label>
-              <input
-                className={form.input}
-                value={formManager}
-                onChange={(e) => setFormManager(e.target.value)}
-                placeholder="담당자 이름"
-              />
+              <div className={form.inputWrap}>
+                <input
+                  className={form.input}
+                  value={formManager}
+                  onChange={(e) => setFormManager(e.target.value)}
+                  placeholder="담당자 이름"
+                />
+              </div>
             </div>
 
             {drawer.mode === 'edit' && drawerSite && (

@@ -1,11 +1,13 @@
 // TODO: replace with fetch('/api/v1/users')
 import { useMemo, useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import UserLog from './UserLog';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Drawer } from '@/components/ui/Drawer';
 import { Modal } from '@/components/ui/Modal';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useToast } from '@/hooks/useToast';
 import { formatDateTime } from '@/lib/time';
@@ -111,7 +113,11 @@ function UserKpi({
   );
 }
 
+type UserTab = 'permission' | 'log';
+
 export default function User() {
+  const [tab, setTab] = useState<UserTab>('permission');
+
   const users = useDataStore((s) => s.users);
   const sites = useDataStore((s) => s.sites);
   const inviteUser = useDataStore((s) => s.inviteUser);
@@ -214,12 +220,39 @@ export default function User() {
   };
 
   return (
-    <div className={page.page}>
+    <div
+      className={page.page}
+      style={tab === 'log' ? { height: '100%', overflow: 'hidden' } : undefined}
+    >
+      {/* 2-depth tab chips */}
+      <div className={page.chips}>
+        <button
+          type="button"
+          className={[page.chip, tab === 'permission' ? page.chipActive : ''].filter(Boolean).join(' ')}
+          onClick={() => setTab('permission')}
+        >
+          사용자 권한
+        </button>
+        <button
+          type="button"
+          className={[page.chip, tab === 'log' ? page.chipActive : ''].filter(Boolean).join(' ')}
+          onClick={() => setTab('log')}
+        >
+          사용자 로그
+        </button>
+      </div>
+
+      {/* ── 사용자 로그 탭 ── */}
+      {tab === 'log' && (
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <UserLog />
+        </div>
+      )}
+
+      {/* ── 사용자 권한 탭 ── */}
+      {tab === 'permission' && <>
       <Breadcrumb items={['에스원 클라우드', '사용자 관리']} />
       <div className={page.header}>
-        <div>
-          <div className={page.headerTitle}>사용자 관리</div>
-        </div>
         <div className={page.actions}>
           <Button variant="primary" size="sm" onClick={openInvite}>
             + 사용자 추가
@@ -418,51 +451,56 @@ export default function User() {
       >
         <div className={form.field}>
           <label className={form.label}>이메일</label>
-          <input
-            className={form.input}
-            type="email"
-            value={invEmail}
-            onChange={(e) => setInvEmail(e.target.value)}
-            placeholder="user@company.com"
-          />
+          <div className={form.inputWrap}>
+            <input
+              className={form.input}
+              type="email"
+              value={invEmail}
+              onChange={(e) => setInvEmail(e.target.value)}
+              placeholder="user@company.com"
+            />
+          </div>
         </div>
         <div className={form.field}>
           <label className={form.label}>역할</label>
-          <select
-            className={form.select}
-            value={invRole}
-            onChange={(e) => setInvRole(e.target.value as UserRole)}
-          >
-            {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABEL[r]}
-              </option>
-            ))}
-          </select>
+          <div className={form.inputWrap}>
+            <select
+              className={form.select}
+              value={invRole}
+              onChange={(e) => setInvRole(e.target.value as UserRole)}
+            >
+              {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABEL[r]}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className={form.field}>
           <label className={form.label}>접근 사이트</label>
-          <div className={form.checkboxGrid}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', marginTop: '4px' }}>
             {sites.map((s) => (
-              <label key={s.id} className={form.checkboxItem}>
-                <input
-                  type="checkbox"
-                  checked={invSites.includes(s.id)}
-                  onChange={() => toggleInvSite(s.id)}
-                />
+              <Checkbox
+                key={s.id}
+                checked={invSites.includes(s.id)}
+                onChange={() => toggleInvSite(s.id)}
+              >
                 {s.name}
-              </label>
+              </Checkbox>
             ))}
           </div>
         </div>
         <div className={form.field}>
           <label className={form.label}>환영 메시지 (선택)</label>
-          <textarea
-            className={form.textarea}
-            value={invMessage}
-            onChange={(e) => setInvMessage(e.target.value)}
-            placeholder="초대 메일에 포함될 메시지"
-          />
+          <div className={form.inputWrap}>
+            <textarea
+              className={form.textarea}
+              value={invMessage}
+              onChange={(e) => setInvMessage(e.target.value)}
+              placeholder="초대 메일에 포함될 메시지"
+            />
+          </div>
         </div>
       </Modal>
 
@@ -488,58 +526,65 @@ export default function User() {
             <div className={form.sectionCaption}>기본 정보</div>
             <div className={form.field}>
               <label className={form.label}>이름</label>
-              <input
-                className={form.input}
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-              />
+              <div className={form.inputWrap}>
+                <input
+                  className={form.input}
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                />
+              </div>
             </div>
             <div className={form.field}>
               <label className={form.label}>이메일 (읽기 전용)</label>
-              <input className={form.input} value={editUser.email} disabled readOnly />
+              <div className={form.inputWrap}>
+                <input className={form.input} value={editUser.email} disabled readOnly />
+              </div>
             </div>
             <div className={form.rowCols2}>
               <div className={form.field}>
                 <label className={form.label}>역할</label>
-                <select
-                  className={form.select}
-                  value={editRole}
-                  onChange={(e) => setEditRole(e.target.value as UserRole)}
-                >
-                  {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-                    <option key={r} value={r}>
-                      {ROLE_LABEL[r]}
-                    </option>
-                  ))}
-                </select>
+                <div className={form.inputWrap}>
+                  <select
+                    className={form.select}
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as UserRole)}
+                  >
+                    {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
+                      <option key={r} value={r}>
+                        {ROLE_LABEL[r]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className={form.field}>
                 <label className={form.label}>상태</label>
-                <select
-                  className={form.select}
-                  value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value as UserStatus)}
-                >
-                  {(Object.keys(STATUS_LABEL) as UserStatus[]).map((st) => (
-                    <option key={st} value={st}>
-                      {STATUS_LABEL[st]}
-                    </option>
-                  ))}
-                </select>
+                <div className={form.inputWrap}>
+                  <select
+                    className={form.select}
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as UserStatus)}
+                  >
+                    {(Object.keys(STATUS_LABEL) as UserStatus[]).map((st) => (
+                      <option key={st} value={st}>
+                        {STATUS_LABEL[st]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
             <div className={form.sectionCaption}>접근 사이트</div>
-            <div className={form.checkboxGrid}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', marginTop: '4px' }}>
               {sites.map((s) => (
-                <label key={s.id} className={form.checkboxItem}>
-                  <input
-                    type="checkbox"
-                    checked={editSiteIds.includes(s.id)}
-                    onChange={() => toggleEditSite(s.id)}
-                  />
+                <Checkbox
+                  key={s.id}
+                  checked={editSiteIds.includes(s.id)}
+                  onChange={() => toggleEditSite(s.id)}
+                >
                   {s.name}
-                </label>
+                </Checkbox>
               ))}
             </div>
 
@@ -550,10 +595,10 @@ export default function User() {
                 <Badge tone={editMfa ? 'success' : 'neutral'} dot>
                   {editMfa ? '활성' : '비활성'}
                 </Badge>
-                <Button variant="ghost" size="sm" onClick={() => setEditMfa(!editMfa)}>
+                <Button variant="secondary" size="sm" onClick={() => setEditMfa(!editMfa)}>
                   {editMfa ? '끄기' : '켜기'}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={resetMfa}>
+                <Button variant="secondary" size="sm" onClick={resetMfa}>
                   초기화
                 </Button>
               </div>
@@ -577,7 +622,7 @@ export default function User() {
             <Button variant="secondary" size="sm" onClick={() => setDeleteUser(null)}>
               취소
             </Button>
-            <Button variant="danger" size="sm" onClick={confirmDelete}>
+            <Button variant="secondary" size="sm" onClick={confirmDelete}>
               삭제
             </Button>
           </>
@@ -592,6 +637,7 @@ export default function User() {
           </div>
         )}
       </Modal>
+      </>}
     </div>
   );
 }

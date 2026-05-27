@@ -456,7 +456,10 @@ export default function Dashboard() {
                 <div key={s.id} className={styles.sitePulseRow}>
                   <span className={styles.siteDot} data-ok={s.onlineCount === s.camCount} />
                   <span className={styles.sitePulseName}>{s.name}</span>
-                  <span className={styles.sitePulseStatus}>
+                  <span className={[
+                    styles.sitePulseStatus,
+                    s.onlineCount !== s.camCount ? styles.sitePulseStatusWarn : '',
+                  ].join(' ')}>
                     {s.onlineCount === s.camCount ? '안정적' : '주의'}
                   </span>
                 </div>

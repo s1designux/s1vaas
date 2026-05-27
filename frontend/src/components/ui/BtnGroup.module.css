@@ -1,0 +1,86 @@
+/* ── Container ── */
+.btnGroup {
+  display: flex;
+}
+
+/* ── Base button ── */
+.btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  min-width: 60px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: var(--radius-control-sm, 4px);
+  border: 1px solid var(--color-border-default, #d1d5db);
+  background: var(--color-surface-default, var(--color-base-white));
+  color: var(--color-text-primary);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.btn:hover:not(:disabled) {
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.05) 100%),
+    var(--color-surface-default, var(--color-base-white));
+}
+
+/* ── Active (.on) ── */
+.btn.active {
+  border-color: var(--color-action-primary-default);
+  background-color: var(--color-action-primary-default);
+  color: var(--color-action-primary-text);
+}
+
+.btn.active:hover:not(:disabled) {
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 100%),
+    var(--color-action-primary-default);
+  border-color: var(--color-action-primary-hover);
+}
+
+/* ── Disabled ── */
+.btn:disabled {
+  border-color: var(--color-border-subtle);
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+/* ── Group: first button ── */
+.btnGroup .btn:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: 0;
+}
+
+/* ── Group: middle buttons ── */
+.btnGroup .btn:not(:first-child):not(:last-child) {
+  border-radius: 0;
+  border-right: 0;
+}
+
+/* ── Group: last button ── */
+.btnGroup .btn:last-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 0;
+}
+
+/* ── Separator between buttons ── */
+.btnGroup .btn + .btn {
+  border-left: 1px solid var(--color-border-default, #d1d5db);
+}
+
+/* Hide separator around the active button */
+.btnGroup .btn + .btn.active { border-left: 0; }
+.btnGroup .btn.active + .btn { border-left: 0; }

@@ -1,8 +1,8 @@
 import { useEffect, type ReactElement } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Logo } from '@/components/ui/Logo';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
+import { useMenuStore } from '@/store/menuStore';
 import styles from './Sidebar.module.css';
 
 interface NavItem {
@@ -27,7 +27,7 @@ function Icon({ d }: { d: string }) {
   );
 }
 
-const ITEMS: NavItem[] = [
+export const ALL_ITEMS: NavItem[] = [
   { path: '/dashboard',       label: '대시보드',     icon: <Icon d="M3 13h8V3H3v10zm10 8h8V11h-8v10zM3 21h8v-6H3v6zm10-18v6h8V3h-8z" /> },
   { path: '/monitoring',      label: '모니터링',     icon: <Icon d="M2 4h20v12H2zM2 20h20M10 16v4M14 16v4" /> },
   { path: '/alerts',          label: '알림 센터',    icon: <Icon d="M10 5a2 2 0 1 1 4 0v.5a6 6 0 0 1 3 5.5v3l1.5 2H5.5L7 14v-3a6 6 0 0 1 3-5.5V5zM9 19a3 3 0 0 0 6 0" /> },
@@ -45,8 +45,11 @@ export function Sidebar() {
   const mobileNavOpen = useUIStore((s) => s.mobileNavOpen);
   const closeMobileNav = useUIStore((s) => s.closeMobileNav);
   const logout = useAuthStore((s) => s.logout);
+  const hiddenPaths = useMenuStore((s) => s.hiddenPaths);
   const nav = useNavigate();
   const loc = useLocation();
+
+  const ITEMS = ALL_ITEMS.filter((item) => !hiddenPaths.includes(item.path));
 
   // Close drawer on route change (mobile)
   useEffect(() => {
@@ -83,13 +86,6 @@ export function Sidebar() {
           .filter(Boolean)
           .join(' ')}
       >
-        <div className={styles.brand}>
-          <Logo size={32} variant="symbol" />
-          <div className={styles.brandName}>
-            <span className={styles.brandTitle}>에스원 클라우드</span>
-            <span className={styles.brandSub}>영상관제시스템</span>
-          </div>
-        </div>
         <nav className={styles.nav}>
           {ITEMS.map((item) => (
             <NavLink

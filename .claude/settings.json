@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_figma_figma__get_design_context",
+      "mcp__plugin_figma_figma__get_metadata",
+      "mcp__plugin_figma_figma__whoami",
+      "Bash(bash /tmp/capture-light-v6.sh)",
+      "Bash(bash /tmp/capture-dark-v6.sh)",
+      "Bash(chmod +x /tmp/capture-dark-v7.sh)",
+      "Bash(bash /tmp/capture-dark-v7.sh)"
+    ]
+  }
+}

@@ -385,13 +385,6 @@ export default function Cases() {
   return (
     <div className={page.page}>
       <div className={page.header}>
-        <div>
-          <div className={page.headerKicker}>INVESTIGATIONS</div>
-          <div className={page.headerTitle}>사건철</div>
-          <div className={page.headerSubtitle}>
-            보안 사건 조사와 대응 기록을 케이스 단위로 관리합니다
-          </div>
-        </div>
         <div className={page.actions}>
           <Button variant="secondary" size="sm" onClick={onBulkExport}>
             보고서 일괄 다운
@@ -709,27 +702,31 @@ export default function Cases() {
       >
         <div className={form.field}>
           <label className={form.label}>제목</label>
-          <input
-            className={form.input}
-            value={nTitle}
-            onChange={(e) => setNTitle(e.target.value)}
-            placeholder="예: 강남본점 후문 침입 의심 (4/30)"
-          />
+          <div className={form.inputWrap}>
+            <input
+              className={form.input}
+              value={nTitle}
+              onChange={(e) => setNTitle(e.target.value)}
+              placeholder="예: 강남본점 후문 침입 의심 (4/30)"
+            />
+          </div>
         </div>
 
         <div className={form.field}>
           <label className={form.label}>우선순위</label>
-          <select
-            className={form.select}
-            value={nPriority}
-            onChange={(e) => setNPriority(e.target.value as CasePriority)}
-          >
-            {(['high', 'mid', 'low'] as CasePriority[]).map((p) => (
-              <option key={p} value={p}>
-                {PRIORITY_LABEL[p]}
-              </option>
-            ))}
-          </select>
+          <div className={form.inputWrap}>
+            <select
+              className={form.select}
+              value={nPriority}
+              onChange={(e) => setNPriority(e.target.value as CasePriority)}
+            >
+              {(['high', 'mid', 'low'] as CasePriority[]).map((p) => (
+                <option key={p} value={p}>
+                  {PRIORITY_LABEL[p]}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className={form.field}>
@@ -797,13 +794,15 @@ export default function Cases() {
 
         <div className={form.field}>
           <label className={form.label}>설명</label>
-          <textarea
-            className={form.textarea}
-            value={nDescription}
-            onChange={(e) => setNDescription(e.target.value)}
-            rows={5}
-            placeholder="사건의 발생 시각, 장소, 상황, 1차 조치 내용 등을 기록합니다."
-          />
+          <div className={form.inputWrap}>
+            <textarea
+              className={form.textarea}
+              value={nDescription}
+              onChange={(e) => setNDescription(e.target.value)}
+              rows={5}
+              placeholder="사건의 발생 시각, 장소, 상황, 1차 조치 내용 등을 기록합니다."
+            />
+          </div>
         </div>
       </Drawer>
     </div>

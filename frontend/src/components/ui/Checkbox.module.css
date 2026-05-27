@@ -1,0 +1,76 @@
+/* ── Root label ── */
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  cursor: pointer;
+  user-select: none;
+}
+
+.disabled {
+  cursor: not-allowed;
+}
+
+/* size scale — cascade via CSS custom props */
+.sm { --cb-size: 16px; --cb-radius: 3px; }
+.md { --cb-size: 18px; --cb-radius: var(--radius-4, 4px); }
+
+/* ── Hidden native input ── */
+.nativeInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Visual box ── */
+.box {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--cb-size, 18px);
+  height: var(--cb-size, 18px);
+  border-radius: var(--cb-radius, 4px);
+  border: 1.5px solid var(--checkbox-default-border);
+  background: var(--checkbox-default-bg);
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.root:not(.disabled):hover .box {
+  border-color: var(--checkbox-hover-border);
+}
+
+.checkedBox {
+  background: var(--checkbox-checked-bg);
+  border-color: var(--checkbox-checked-border);
+}
+
+.disabledBox {
+  background: var(--checkbox-disabled-bg);
+  border-color: var(--checkbox-disabled-border);
+}
+
+/* ── Icon ── */
+.icon {
+  color: var(--checkbox-check-icon);
+}
+
+.disabledIcon {
+  color: var(--checkbox-disabled-check-icon);
+}
+
+/* ── Label text ── */
+.labelText {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-130);
+}
+
+.disabled .labelText {
+  color: var(--color-text-disabled);
+}

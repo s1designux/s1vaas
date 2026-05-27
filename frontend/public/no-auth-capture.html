@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body>
+<script>
+localStorage.removeItem('s1vaas-session');
+localStorage.removeItem('s1vaas-user');
+const p = new URLSearchParams(location.search);
+const path = p.get('path');
+const cid = p.get('cid');
+const theme = p.get('theme') || 'light';
+localStorage.setItem('s1vaas-theme', theme);
+const EP = 'https%3A%2F%2Fmcp.figma.com%2Fmcp%2Fcapture';
+if (path && cid) {
+  const themeParam = theme !== 'light' ? '?theme=' + theme : '';
+  location.replace('http://localhost:5173' + path + themeParam + '#figmacapture=' + cid + '&figmaendpoint=' + EP + '%2F' + cid + '%2Fsubmit&figmadelay=3500');
+}
+</script>
+</body></html>

@@ -1,0 +1,146 @@
+.page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: var(--space-4);
+}
+
+/* ── Filter bar ── */
+.filterWrap {
+  flex-shrink: 0;
+}
+
+.filterInput {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.filterInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.filterInput:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
+}
+
+.filterDate {
+  width: 130px;
+  height: 32px;
+  padding: 0 8px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.filterDate:focus {
+  border-color: var(--color-accent);
+}
+
+.filterSelect {
+  width: 100%;
+  height: var(--sizing-form-control-height-xxs);
+  padding: 0 var(--spacing-8);
+  background: var(--input-default-bg);
+  border: var(--border-width-default) solid var(--input-default-border);
+  border-radius: var(--radius-control-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-12);
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.filterSelect:hover { border-color: var(--input-hover-border); }
+.filterSelect:focus  { border-color: var(--input-focus-border); }
+
+.resetBtn {
+  height: 32px;
+  padding: 0 16px;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.resetBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.searchBtn {
+  height: 32px;
+  padding: 0 18px;
+  background: var(--color-accent);
+  color: var(--color-accent-on);
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.searchBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+/* ── Table card wrapper ── */
+.tableCard {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card-md, 10px);
+  box-shadow: var(--shadow-card);
+  padding: var(--spacing-16) var(--spacing-24) var(--spacing-12);
+}
+
+/* ── Table cell overrides ── */
+.tdMuted {
+  color: var(--color-text-muted) !important;
+  font-size: var(--font-size-12) !important;
+}
+
+.tdMono {
+  font-family: var(--font-mono) !important;
+  font-size: var(--font-size-12) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.tdBold {
+  font-weight: var(--font-weight-medium) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.tdTarget {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}

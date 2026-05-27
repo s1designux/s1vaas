@@ -1,0 +1,10 @@
+.header {
+  margin-bottom: var(--spacing-20);
+}
+
+.title {
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}

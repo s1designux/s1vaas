@@ -6,12 +6,14 @@ import { Badge } from '@/components/ui/Badge';
 import { Tabs } from '@/components/ui/Tabs';
 import { useThemeStore } from '@/store/themeStore';
 import { useAuthStore } from '@/store/authStore';
+import { useMenuStore } from '@/store/menuStore';
+import { ALL_ITEMS } from '@/components/layout/Sidebar';
 import { useNavigate } from 'react-router-dom';
 import page from './Page.module.css';
 // Phase G — panel-2026-04-28 GPT 에셋 (Dashboard dark variant 무드보드, GP_HIER_P1_01 후순위 결정 자료)
 import dashboardDarkMood from '@/assets/images/panel-2026-04-28/dashboard_dark_mockup_hint.png';
 
-type Section = 'account' | 'video' | 'notification' | 'security' | 'system';
+type Section = 'account' | 'video' | 'notification' | 'security' | 'system' | 'menu';
 type ThemeChoice = 'light' | 'dark' | 'system';
 type Resolution = '720p' | '1080p' | '4K';
 type Codec = 'H.264' | 'H.265';
@@ -84,6 +86,16 @@ export default function Settings() {
   const logout = useAuthStore((s) => s.logout);
   const nav = useNavigate();
 
+  const hiddenPaths = useMenuStore((s) => s.hiddenPaths);
+  const applyAll = useMenuStore((s) => s.applyAll);
+  const [draftHidden, setDraftHidden] = useState<string[]>(() => hiddenPaths);
+
+  const toggleDraft = (path: string) => {
+    setDraftHidden((prev) =>
+      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]
+    );
+  };
+
   const [section, setSection] = useState<Section>('account');
   const [retention, setRetention] = useState(90);
   const [sessionTimeout, setSessionTimeout] = useState(30);
@@ -125,6 +137,7 @@ export default function Settings() {
   }, [themeChoice, setTheme]);
 
   function handleSave() {
+    if (section === 'menu') applyAll(draftHidden);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1400);
   }
@@ -139,11 +152,6 @@ export default function Settings() {
   return (
     <div className={page.settingsPage}>
       <div className={page.settingsLeft}>
-        <div>
-          <div className={page.headerKicker}>SYSTEM PREFERENCES</div>
-          <div className={page.headerTitle}>환경 설정</div>
-        </div>
-
         <Tabs
           tabs={[
             { key: 'account', label: '계정 · 프로필' },
@@ -151,6 +159,7 @@ export default function Settings() {
             { key: 'notification', label: '알림' },
             { key: 'security', label: '보안' },
             { key: 'system', label: '시스템' },
+            { key: 'menu', label: '메뉴 옵션' },
           ]}
           active={section}
           onChange={(k) => setSection(k as Section)}
@@ -166,7 +175,9 @@ export default function Settings() {
                   ? '영상 · 저장'
                   : section === 'notification'
                     ? '알림 설정'
-                    : '보안'
+                    : section === 'menu'
+                      ? '메뉴 표시 설정'
+                      : '보안'
           }
         >
           {section === 'system' && (
@@ -390,6 +401,47 @@ export default function Settings() {
                   <button className={chipCls(receive === 'night')} type="button" onClick={() => setReceive('night')}>
                     야간만
                   </button>
+                </div>
+              </div>
+            </>
+          )}
+          {section === 'menu' && (
+            <>
+              <p className={page.menuSectionDesc}>
+                사이드바에 표시할 메뉴를 선택하세요. 저장 후 즉시 반영됩니다.
+              </p>
+              {ALL_ITEMS.map((item) => {
+                const locked = item.path === '/settings';
+                const visible = !draftHidden.includes(item.path);
+                return (
+                  <div key={item.path} className={page.menuItemRow}>
+                    <div className={page.menuItemInfo}>
+                      <span className={page.menuItemIcon}>{item.icon}</span>
+                      <span className={page.menuItemLabel}>{item.label}</span>
+                      {locked && (
+                        <span className={page.menuItemLocked}>고정</span>
+                      )}
+                    </div>
+                    <Switch
+                      on={visible}
+                      onToggle={() => !locked && toggleDraft(item.path)}
+                    />
+                  </div>
+                );
+              })}
+              <div className={page.settingsActions}>
+                <div />
+                <div className={page.settingsActionsRight}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setDraftHidden(hiddenPaths)}
+                  >
+                    취소
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleSave}>
+                    {saved ? '저장 완료' : '변경 사항 저장'}
+                  </Button>
                 </div>
               </div>
             </>

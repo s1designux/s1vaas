@@ -1,0 +1,130 @@
+/* ── Root ── */
+.root {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: var(--spacing-16) var(--spacing-24);
+  border-radius: var(--radius-card-md, 10px);
+  border: var(--border-width-default) solid var(--color-border-subtle);
+  background: var(--color-surface-default);
+}
+
+/* title-only variant */
+.titleMode {
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.titleBox {
+  display: flex;
+  align-items: baseline;
+}
+
+.title {
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-130);
+  color: var(--color-text-primary);
+}
+
+.subtitle {
+  margin-left: var(--spacing-8);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-130);
+  color: var(--color-text-tertiary);
+}
+
+/* ── Forms area ── */
+.forms {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Row ── */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 32px;
+}
+
+.row + .row {
+  margin-top: var(--spacing-8);
+}
+
+/* ── Field (input-group) ── */
+.inputGroup {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.legend {
+  width: 52px;
+  flex-shrink: 0;
+  margin-right: var(--spacing-8);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-130);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.inputWrap {
+  width: 200px;
+}
+
+.small .inputWrap {
+  width: 120px;
+}
+
+.wide .inputWrap {
+  width: auto;
+}
+
+.stretch {
+  flex: 1;
+  min-width: 0;
+}
+
+.stretch .inputWrap {
+  width: 100%;
+}
+
+/* ── Date range ── */
+.dateRange {
+  display: flex;
+  align-items: center;
+}
+
+.between {
+  margin: 0 var(--spacing-8);
+  font-size: var(--font-size-14);
+  color: var(--color-text-primary);
+  user-select: none;
+}
+
+/* ── Vertical divider ── */
+.dividerV {
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  margin: 0 var(--spacing-16);
+  background: var(--color-border-default);
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* ── Buttons ── */
+.btns {
+  display: flex;
+  gap: var(--spacing-8);
+  flex-shrink: 0;
+  margin-left: var(--spacing-24);
+}
+
+.btnsAuto {
+  margin-left: auto;
+}

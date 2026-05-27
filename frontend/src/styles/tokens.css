@@ -1,119 +1,883 @@
-:root {
-  /* Color — light */
-  --color-bg-app: #F5F7FA;
-  --color-bg-elevated: #FFFFFF;
-  --color-surface: #FFFFFF;
-  --color-surface-alt: #F2F4F6;
-  --color-surface-hover: #EFF3F9;
-  --color-border: #E2E8F0;
-  --color-border-subtle: #EFF1F3;
-  --color-text: #191C1E;
-  --color-text-muted: #444653;
-  --color-text-inverse: #FFFFFF;
-  /* Brand anchor (로고·핵심 면) — 라이트/다크 공통 */
-  --color-brand: #0033A0;
-  /* Action (텍스트·링크·버튼·focus ring) — 라이트는 brand 와 동일 */
-  --color-action: #0033A0;
-  --color-accent: #0033A0;
-  --color-accent-hover: #002577;
-  --color-accent-on: #FFFFFF;
-  --color-accent-muted: color-mix(in srgb, var(--color-action) 12%, transparent);
-  --color-accent-ring: color-mix(in srgb, var(--color-action) 18%, transparent);
-  --color-success: #16A34A;
-  --color-warn: #D97706;
-  --color-danger: #DC2626;
-  --color-info: #0033A0;
+/* ════════════════════════════════════════════════════════════════
+   SW 디자인 시스템 V2.4 — 공식 토큰 정의
+   ════════════════════════════════════════════════════════════════ */
 
+/* ══ 0. Foundation — Base & Brand ══ */
+:root {
+  --color-base-white: #ffffff;
+  --color-base-black: #000000;
+  --color-brand-blue: #0072ce;
+  --color-brand-red: #ff312c;
+  --color-brand-gray: #dfdede;
+  --color-brand-ci: #004097;
+}
+
+/* ══ 1. Foundation — Color Primitives ══ */
+:root {
+  /* Gray · Light */
+  --color-gray-0: #fafafa;
+  --color-gray-50: #f5f5f5;
+  --color-gray-100: #e9e9e9;
+  --color-gray-200: #d9d9d9;
+  --color-gray-300: #c4c4c4;
+  --color-gray-400: #9d9d9d;
+  --color-gray-500: #757575;
+  --color-gray-600: #555555;
+  --color-gray-700: #434343;
+  --color-gray-800: #353535;
+  --color-gray-900: #202020;
+
+  /* Gray · Dark */
+  --color-gray-dark-0: #0d0e12;
+  --color-gray-dark-50: #131418;
+  --color-gray-dark-100: #1c1d23;
+  --color-gray-dark-200: #24252c;
+  --color-gray-dark-300: #2e2f38;
+  --color-gray-dark-400: #35363f;
+  --color-gray-dark-500: #3e4049;
+  --color-gray-dark-600: #55575f;
+  --color-gray-dark-700: #8a8c96;
+  --color-gray-dark-800: #b8babf;
+  --color-gray-dark-900: #ecedf0;
+
+  /* Blue · Light */
+  --color-blue-50: #e2f1ff;
+  --color-blue-100: #c8e4ff;
+  --color-blue-150: #a4d4ff;
+  --color-blue-200: #8bc6ff;
+  --color-blue-250: #5bb2ff;
+  --color-blue-300: #2b9eff;
+  --color-blue-350: #268cf8;
+  --color-blue-400: #1d6ceb;
+  --color-blue-450: #2158c8;
+  --color-blue-500: #2747b9;
+
+  /* Blue · Dark */
+  --color-blue-dark-50: #0c1d38;
+  --color-blue-dark-100: #112b55;
+  --color-blue-dark-150: #1a3d72;
+  --color-blue-dark-200: #214ea0;
+  --color-blue-dark-250: #2a65c8;
+  --color-blue-dark-300: #3070d8;
+  --color-blue-dark-350: #4285e8;
+  --color-blue-dark-400: #6fa5f8;
+  --color-blue-dark-450: #96bef9;
+  --color-blue-dark-500: #c0d8fc;
+
+  /* Red · Light */
+  --color-red-50: #ffebef;
+  --color-red-100: #ffccd6;
+  --color-red-150: #fbb2ba;
+  --color-red-200: #f8979e;
+  --color-red-250: #fc6e79;
+  --color-red-300: #ff4554;
+  --color-red-350: #f22544;
+  --color-red-400: #e50533;
+  --color-red-450: #d60228;
+  --color-red-500: #c8001e;
+
+  /* Red · Dark */
+  --color-red-dark-50: #2a0f14;
+  --color-red-dark-100: #3d1520;
+  --color-red-dark-150: #5c1e2e;
+  --color-red-dark-200: #8a2a3e;
+  --color-red-dark-250: #c03850;
+  --color-red-dark-300: #e04860;
+  --color-red-dark-350: #f06070;
+  --color-red-dark-400: #f48890;
+  --color-red-dark-450: #f8a8b0;
+  --color-red-dark-500: #fcd0d5;
+
+  /* Orange · Light */
+  --color-orange-50: #ffede0;
+  --color-orange-100: #fddbbf;
+  --color-orange-150: #fec6a0;
+  --color-orange-200: #ffb482;
+  --color-orange-250: #ff954e;
+  --color-orange-300: #ff761a;
+  --color-orange-350: #ee680d;
+  --color-orange-400: #da4c00;
+  --color-orange-450: #b63c00;
+  --color-orange-500: #8e2e00;
+
+  /* Orange · Dark */
+  --color-orange-dark-50: #2e1505;
+  --color-orange-dark-100: #42200a;
+  --color-orange-dark-150: #6b3512;
+  --color-orange-dark-200: #a05020;
+  --color-orange-dark-250: #d06828;
+  --color-orange-dark-300: #e88038;
+  --color-orange-dark-350: #f09548;
+  --color-orange-dark-400: #f5aa68;
+  --color-orange-dark-450: #f8c090;
+  --color-orange-dark-500: #fcd8b8;
+
+  /* Yellow · Light */
+  --color-yellow-50: #fff4ce;
+  --color-yellow-100: #fee89a;
+  --color-yellow-150: #fede6c;
+  --color-yellow-200: #ffd53d;
+  --color-yellow-250: #ffcc1e;
+  --color-yellow-300: #ffc200;
+  --color-yellow-350: #f5b900;
+  --color-yellow-400: #dba400;
+  --color-yellow-450: #ba8900;
+  --color-yellow-500: #8f6a00;
+
+  /* Yellow · Dark */
+  --color-yellow-dark-50: #2a2005;
+  --color-yellow-dark-100: #3d2e08;
+  --color-yellow-dark-150: #605010;
+  --color-yellow-dark-200: #907818;
+  --color-yellow-dark-250: #c09828;
+  --color-yellow-dark-300: #d8b038;
+  --color-yellow-dark-350: #e8c048;
+  --color-yellow-dark-400: #f0d068;
+  --color-yellow-dark-450: #f5de90;
+  --color-yellow-dark-500: #faeab8;
+
+  /* Green · Light */
+  --color-green-50: #e3f2ea;
+  --color-green-100: #caecda;
+  --color-green-150: #9cd8bd;
+  --color-green-200: #6fc4a2;
+  --color-green-250: #47bb8e;
+  --color-green-300: #1fb279;
+  --color-green-350: #10a86c;
+  --color-green-400: #009e5e;
+  --color-green-450: #008650;
+  --color-green-500: #006f42;
+
+  /* Green · Dark */
+  --color-green-dark-50: #0a2018;
+  --color-green-dark-100: #102e22;
+  --color-green-dark-150: #184530;
+  --color-green-dark-200: #206840;
+  --color-green-dark-250: #288a55;
+  --color-green-dark-300: #30a868;
+  --color-green-dark-350: #3fbe7e;
+  --color-green-dark-400: #68d098;
+  --color-green-dark-450: #98e0b8;
+  --color-green-dark-500: #c5f0d8;
+
+  /* Skyblue · Light */
+  --color-skyblue-50: #c4eef7;
+  --color-skyblue-100: #a5e5f3;
+  --color-skyblue-150: #7bd6ea;
+  --color-skyblue-200: #51c7e1;
+  --color-skyblue-250: #3bc0dd;
+  --color-skyblue-300: #25b9da;
+  --color-skyblue-350: #1daacb;
+  --color-skyblue-400: #159bbc;
+  --color-skyblue-450: #1284a0;
+  --color-skyblue-500: #0f6c84;
+
+  /* Skyblue · Dark */
+  --color-skyblue-dark-50: #081e28;
+  --color-skyblue-dark-100: #102a38;
+  --color-skyblue-dark-150: #184050;
+  --color-skyblue-dark-200: #205a70;
+  --color-skyblue-dark-250: #287890;
+  --color-skyblue-dark-300: #3090a8;
+  --color-skyblue-dark-350: #40a8c0;
+  --color-skyblue-dark-400: #68c0d8;
+  --color-skyblue-dark-450: #98d8e8;
+  --color-skyblue-dark-500: #c0e8f0;
+
+  /* Purple · Light */
+  --color-purple-50: #e8e9fc;
+  --color-purple-100: #cfd1f9;
+  --color-purple-150: #c0c0fc;
+  --color-purple-200: #b0b0ff;
+  --color-purple-250: #8b8bee;
+  --color-purple-300: #6666dd;
+  --color-purple-350: #4e4ec3;
+  --color-purple-400: #3535a8;
+  --color-purple-450: #2d2d8f;
+  --color-purple-500: #252576;
+
+  /* Purple · Dark */
+  --color-purple-dark-50: #14142a;
+  --color-purple-dark-100: #1e1e3d;
+  --color-purple-dark-150: #2a2a58;
+  --color-purple-dark-200: #383878;
+  --color-purple-dark-250: #4848a0;
+  --color-purple-dark-300: #5858b8;
+  --color-purple-dark-350: #7070d0;
+  --color-purple-dark-400: #9090e0;
+  --color-purple-dark-450: #b0b0ea;
+  --color-purple-dark-500: #d0d0f5;
+
+  /* Brown · Light */
+  --color-brown-50: #f6eee9;
+  --color-brown-100: #e4d5c8;
+  --color-brown-150: #dbc6b3;
+  --color-brown-200: #d1b69f;
+  --color-brown-250: #a68c75;
+  --color-brown-300: #7c614a;
+  --color-brown-350: #685240;
+  --color-brown-400: #554435;
+  --color-brown-450: #483a2d;
+  --color-brown-500: #3b3025;
+
+  /* Brown · Dark */
+  --color-brown-dark-50: #1e1610;
+  --color-brown-dark-100: #2a2018;
+  --color-brown-dark-150: #3d3025;
+  --color-brown-dark-200: #584535;
+  --color-brown-dark-250: #786050;
+  --color-brown-dark-300: #907868;
+  --color-brown-dark-350: #a89080;
+  --color-brown-dark-400: #c0a898;
+  --color-brown-dark-450: #d8c0b0;
+  --color-brown-dark-500: #e8d8c8;
+
+  /* Visual Gray · Light */
+  --color-visual-gray-50: #f3f5f7;
+  --color-visual-gray-100: #e8ebef;
+  --color-visual-gray-150: #dadee5;
+  --color-visual-gray-200: #cdd2de;
+  --color-visual-gray-250: #abb2bf;
+  --color-visual-gray-300: #808796;
+  --color-visual-gray-350: #646a74;
+  --color-visual-gray-400: #3e4347;
+  --color-visual-gray-450: #2b2f32;
+  --color-visual-gray-500: #1b1d1f;
+
+  /* Cool Gray · Dark */
+  --color-coolgray-dark-50: #12141a;
+  --color-coolgray-dark-100: #1a1d25;
+  --color-coolgray-dark-150: #252830;
+  --color-coolgray-dark-200: #353840;
+  --color-coolgray-dark-250: #484c58;
+  --color-coolgray-dark-300: #606470;
+  --color-coolgray-dark-350: #787c88;
+  --color-coolgray-dark-400: #989ca8;
+  --color-coolgray-dark-450: #b8bcc5;
+  --color-coolgray-dark-500: #d8dbe0;
+
+  /* Status Dark Alias */
+  --color-status-dark-red: #f06070;
+  --color-status-dark-green: #3fbe7e;
+  --color-status-dark-yellow: #e8c048;
+}
+
+/* ══ 2. Foundation — Spacing, Radius, Typography ══ */
+:root {
   /* Spacing */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-7: 32px;
-  --space-8: 48px;
+  --spacing-2: 2px;
+  --spacing-4: 4px;
+  --spacing-6: 6px;
+  --spacing-8: 8px;
+  --spacing-10: 10px;
+  --spacing-12: 12px;
+  --spacing-14: 14px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  --spacing-32: 32px;
+  --spacing-36: 36px;
+  --spacing-40: 40px;
+  --spacing-44: 44px;
+  --spacing-48: 48px;
+  --spacing-56: 56px;
+  --spacing-64: 64px;
+  --spacing-80: 80px;
+  --spacing-96: 96px;
+  --spacing-128: 128px;
 
   /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-20: 20px;
   --radius-full: 9999px;
 
-  /* Typography */
-  --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
-    'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-  --font-mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
-  --font-size-xs: 10px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 24px;
-  --font-size-2xl: 32px;
+  /* Border Width */
+  --border-width-1: 1px;
+  --border-width-2: 2px;
+
+  /* Font Size */
+  --font-size-10: 10px;
+  --font-size-12: 12px;
+  --font-size-14: 14px;
+  --font-size-16: 16px;
+  --font-size-18: 18px;
+  --font-size-20: 20px;
+  --font-size-24: 24px;
+  --font-size-32: 32px;
+
+  /* Font Weight */
   --font-weight-regular: 400;
   --font-weight-medium: 500;
-  --font-weight-semibold: 600;
   --font-weight-bold: 700;
-  --line-height-tight: 1.2;
-  --line-height-base: 1.5;
-  --line-height-loose: 1.6;
 
-  /* Shadow */
+  /* Line Height */
+  --line-height-130: 1.3;
+}
+
+/* ══ 3. Semantic Tokens — Light ══ */
+:root {
+  /* Background */
+  --color-bg-default: var(--color-gray-0);
+  --color-bg-subtle: var(--color-gray-50);
+  --color-bg-muted: var(--color-gray-100);
+  --color-bg-elevated: var(--color-gray-100);
+  --color-bg-home: #f5f6fb;
+  --color-bg-selected: var(--color-blue-50);
+
+  /* Surface */
+  --color-surface-default: var(--color-base-white);
+  --color-surface-raised: var(--color-base-white);
+
+  /* Text */
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-800);
+  --color-text-tertiary: var(--color-gray-600);
+  --color-text-caption: var(--color-gray-500);
+  --color-text-placeholder: var(--color-gray-400);
+  --color-text-helper: var(--color-gray-400);
+  --color-text-link: var(--color-blue-400);
+  --color-text-correct: var(--color-blue-400);
+  --color-text-danger: var(--color-red-300);
+  --color-text-disabled: var(--color-gray-300);
+  --color-text-inverse: var(--color-base-white);
+
+  /* Border */
+  --color-border-subtle: var(--color-gray-100);
+  --color-border-default: var(--color-gray-200);
+  --color-border-strong: var(--color-gray-300);
+  --color-border-emphasis: var(--color-gray-800);
+  --color-border-focus: var(--color-blue-400);
+  --color-border-white: var(--color-base-white);
+  --color-border-danger: var(--color-red-300);
+  --color-border-correct: var(--color-blue-400);
+
+  /* Icon */
+  --color-icon-default: var(--color-gray-500);
+  --color-icon-muted: var(--color-gray-300);
+  --color-icon-emphasis: var(--color-gray-800);
+  --color-icon-accent: var(--color-blue-400);
+  --color-icon-inverse: var(--color-base-white);
+  --color-icon-danger: var(--color-red-300);
+
+  /* Action */
+  --color-action-primary-default: var(--color-blue-400);
+  --color-action-primary-hover: var(--color-blue-450);
+  --color-action-primary-pressed: var(--color-blue-500);
+  --color-action-primary-text: var(--color-base-white);
+  --color-action-primary-subtle: var(--color-blue-50);
+
+  /* Status */
+  --color-status-success: var(--color-blue-400);
+  --color-status-error: var(--color-red-400);
+  --color-status-warning: var(--color-yellow-400);
+  --color-status-info: var(--color-gray-500);
+
+  /* Overlay */
+  --color-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Semantic Spacing */
+  --spacing-padding-block-xxs: var(--spacing-8);
+  --spacing-padding-block-xs: var(--spacing-12);
+  --spacing-padding-block-sm: var(--spacing-16);
+  --spacing-padding-block-md: var(--spacing-20);
+  --spacing-padding-block-lg: var(--spacing-24);
+  --spacing-padding-inline-xxs: var(--spacing-8);
+  --spacing-padding-inline-xs: var(--spacing-12);
+  --spacing-padding-inline-sm: var(--spacing-16);
+  --spacing-padding-inline-md: var(--spacing-20);
+  --spacing-padding-inline-lg: var(--spacing-24);
+  --spacing-section-xs: var(--spacing-16);
+  --spacing-section-sm: var(--spacing-20);
+  --spacing-section-md: var(--spacing-24);
+  --spacing-section-lg: var(--spacing-32);
+  --spacing-section-xl: var(--spacing-40);
+  --spacing-section-xxl: var(--spacing-48);
+  --spacing-stack-xs: var(--spacing-12);
+  --spacing-stack-sm: var(--spacing-16);
+  --spacing-stack-md: var(--spacing-20);
+  --spacing-stack-lg: var(--spacing-24);
+  --spacing-cluster-xxs: var(--spacing-8);
+  --spacing-cluster-xs: var(--spacing-12);
+  --spacing-cluster-sm: var(--spacing-16);
+  --spacing-cluster-md: var(--spacing-20);
+  --spacing-label-gap-inline-sm: var(--spacing-8);
+  --spacing-label-gap-inline-md: var(--spacing-12);
+  --spacing-label-gap-inline-lg: var(--spacing-16);
+  --spacing-label-gap-block-sm: var(--spacing-4);
+  --spacing-label-gap-block-md: var(--spacing-8);
+
+  /* Semantic Sizing */
+  --sizing-form-control-height-xxs: var(--spacing-28);
+  --sizing-form-control-height-xs: 34px;
+  --sizing-form-control-height-md: var(--spacing-44);
+  --sizing-form-control-height-lg: var(--spacing-48);
+  --sizing-form-control-dataview-height-sm: var(--spacing-28);
+  --sizing-form-control-dataview-height-md: 32px;
+  --sizing-button-height-xs: 34px;
+  --sizing-button-height-sm: var(--spacing-40);
+  --sizing-button-height-md: var(--spacing-44);
+  --sizing-button-height-lg: var(--spacing-48);
+  --sizing-button-min-width: 80px;
+  --sizing-chip-height-sm: var(--spacing-28);
+  --sizing-chip-height-md: 30px;
+  --sizing-chip-height-lg: 34px;
+  --sizing-table-row-height-xs: 34px;
+  --sizing-table-row-height-sm: 38px;
+  --sizing-table-row-height-md: var(--spacing-44);
+  --sizing-icon-10: 10px;
+  --sizing-icon-16: var(--spacing-16);
+  --sizing-icon-18: 18px;
+  --sizing-icon-20: var(--spacing-20);
+  --sizing-icon-24: var(--spacing-24);
+  --sizing-icon-28: var(--spacing-28);
+  --sizing-icon-32: var(--spacing-32);
+
+  /* Semantic Radius / Border */
+  --radius-control-xs: var(--radius-2);
+  --radius-control-sm: var(--radius-4);
+  --radius-button-md: var(--radius-4);
+  --radius-card-md: var(--radius-10);
+  --radius-modal-md: var(--radius-8);
+  --border-width-default: var(--border-width-1);
+  --border-width-strong: var(--border-width-2);
+
+  /* KPI Icon Tints */
+  --kpi-info-bg: var(--color-blue-50);
+  --kpi-info-fg: var(--color-blue-400);
+  --kpi-success-bg: var(--color-green-50);
+  --kpi-success-fg: var(--color-green-400);
+  --kpi-warning-bg: var(--color-yellow-50);
+  --kpi-warning-fg: var(--color-yellow-400);
+  --kpi-danger-bg: var(--color-red-50);
+  --kpi-danger-fg: var(--color-red-400);
+
+  /* Event Badge */
+  --badge-success-bg: var(--color-green-50);
+  --badge-success-fg: var(--color-green-400);
+  --badge-success-border: var(--color-green-100);
+  --badge-info-bg: var(--color-blue-50);
+  --badge-info-fg: var(--color-blue-400);
+  --badge-info-border: var(--color-blue-100);
+  --badge-warning-bg: var(--color-yellow-50);
+  --badge-warning-fg: var(--color-yellow-400);
+  --badge-warning-border: var(--color-yellow-100);
+  --badge-danger-bg: var(--color-red-50);
+  --badge-danger-fg: var(--color-red-400);
+  --badge-danger-border: var(--color-red-100);
+
+  /* Danger Row */
+  --danger-row-bg: rgba(229, 5, 51, 0.03);
+  --danger-row-border: var(--color-red-300);
+
+  /* Progress */
+  --progress-track: var(--color-bg-muted);
+  --progress-info: var(--color-blue-400);
+  --progress-warning: var(--color-yellow-400);
+  --progress-success: var(--color-green-400);
+}
+
+/* ══ 4. Semantic Tokens — Dark ══ */
+[data-theme='dark'] {
+  --color-bg-default: var(--color-gray-dark-50);
+  --color-bg-subtle: var(--color-gray-dark-200);
+  --color-bg-muted: var(--color-gray-dark-300);
+  --color-bg-elevated: var(--color-gray-dark-400);
+  --color-bg-home: var(--color-gray-dark-50);
+  --color-bg-selected: var(--color-blue-dark-100);
+  --color-surface-default: var(--color-gray-dark-100);
+  --color-surface-raised: var(--color-gray-dark-400);
+  --color-text-primary: var(--color-gray-dark-900);
+  --color-text-secondary: var(--color-gray-dark-800);
+  --color-text-tertiary: var(--color-gray-dark-700);
+  --color-text-caption: var(--color-gray-dark-700);
+  --color-text-placeholder: var(--color-gray-dark-600);
+  --color-text-helper: var(--color-gray-dark-600);
+  --color-text-link: var(--color-blue-dark-400);
+  --color-text-correct: var(--color-blue-dark-400);
+  --color-text-danger: var(--color-status-dark-red);
+  --color-text-disabled: var(--color-gray-dark-400);
+  --color-text-inverse: var(--color-base-white);
+  --color-border-subtle: var(--color-gray-dark-200);
+  --color-border-default: var(--color-gray-dark-300);
+  --color-border-strong: var(--color-gray-dark-400);
+  --color-border-emphasis: var(--color-gray-dark-500);
+  --color-border-focus: var(--color-blue-dark-350);
+  --color-border-white: var(--color-base-white);
+  --color-border-danger: var(--color-status-dark-red);
+  --color-border-correct: var(--color-blue-dark-350);
+  --color-icon-default: var(--color-gray-dark-700);
+  --color-icon-muted: var(--color-gray-dark-400);
+  --color-icon-emphasis: var(--color-gray-dark-800);
+  --color-icon-accent: var(--color-blue-dark-400);
+  --color-icon-inverse: var(--color-base-white);
+  --color-icon-danger: var(--color-status-dark-red);
+  --color-action-primary-default: var(--color-blue-dark-300);
+  --color-action-primary-hover: var(--color-blue-dark-250);
+  --color-action-primary-pressed: var(--color-blue-dark-200);
+  --color-action-primary-text: var(--color-base-white);
+  --color-action-primary-subtle: var(--color-blue-dark-100);
+  --color-status-success: var(--color-status-dark-green);
+  --color-status-error: var(--color-status-dark-red);
+  --color-status-warning: var(--color-status-dark-yellow);
+  --color-status-info: var(--color-gray-dark-700);
+  --color-overlay: rgba(0, 0, 0, 0.75);
+
+  /* KPI Icon Tints — Dark */
+  --kpi-info-bg: var(--color-blue-dark-100);
+  --kpi-info-fg: var(--color-blue-dark-400);
+  --kpi-success-bg: var(--color-green-dark-100);
+  --kpi-success-fg: var(--color-status-dark-green);
+  --kpi-warning-bg: var(--color-yellow-dark-100);
+  --kpi-warning-fg: var(--color-status-dark-yellow);
+  --kpi-danger-bg: var(--color-red-dark-100);
+  --kpi-danger-fg: var(--color-status-dark-red);
+
+  /* Event Badge — Dark */
+  --badge-success-bg: var(--color-green-dark-100);
+  --badge-success-fg: var(--color-status-dark-green);
+  --badge-success-border: var(--color-green-dark-200);
+  --badge-info-bg: var(--color-blue-dark-100);
+  --badge-info-fg: var(--color-blue-dark-400);
+  --badge-info-border: var(--color-blue-dark-200);
+  --badge-warning-bg: var(--color-yellow-dark-100);
+  --badge-warning-fg: var(--color-status-dark-yellow);
+  --badge-warning-border: var(--color-yellow-dark-200);
+  --badge-danger-bg: var(--color-red-dark-100);
+  --badge-danger-fg: var(--color-status-dark-red);
+  --badge-danger-border: var(--color-red-dark-200);
+
+  /* Danger Row — Dark */
+  --danger-row-bg: rgba(240, 96, 112, 0.04);
+  --danger-row-border: var(--color-status-dark-red);
+
+  /* Progress — Dark */
+  --progress-track: var(--color-bg-subtle);
+  --progress-info: var(--color-blue-dark-300);
+  --progress-warning: var(--color-status-dark-yellow);
+  --progress-success: var(--color-status-dark-green);
+
+  /* Nav Active — Dark (한 단계 밝은 톤으로 가독성 개선) */
+  --nav-item-active-bg: var(--color-blue-dark-350);
+  --nav-item-active-text: var(--color-base-white);
+  --nav-item-active-icon: var(--color-base-white);
+}
+
+/* ══ 5. Component Tokens ══ */
+:root {
+  /* Button — Primary */
+  --button-primary-default-bg: var(--color-action-primary-default);
+  --button-primary-hover-bg: var(--color-action-primary-hover);
+  --button-primary-pressed-bg: var(--color-action-primary-pressed);
+  --button-primary-disabled-bg: var(--color-border-default);
+  --button-primary-default-text: var(--color-action-primary-text);
+  --button-primary-disabled-text: var(--color-text-disabled);
+  --button-primary-default-icon: var(--color-action-primary-text);
+  --button-primary-focus-ring: var(--color-border-focus);
+
+  /* Button — Secondary */
+  --button-secondary-default-bg: var(--color-surface-default);
+  --button-secondary-hover-bg: var(--color-bg-subtle);
+  --button-secondary-pressed-bg: var(--color-bg-muted);
+  --button-secondary-disabled-bg: var(--color-bg-subtle);
+  --button-secondary-default-border: var(--color-border-default);
+  --button-secondary-hover-border: var(--color-border-strong);
+  --button-secondary-disabled-border: var(--color-border-subtle);
+  --button-secondary-default-text: var(--color-text-secondary);
+  --button-secondary-disabled-text: var(--color-text-disabled);
+  --button-secondary-default-icon: var(--color-icon-default);
+  --button-secondary-disabled-icon: var(--color-icon-muted);
+  --button-secondary-focus-ring: var(--color-border-focus);
+
+  /* Button — Blue-line */
+  --button-blue-line-default-bg: var(--color-surface-default);
+  --button-blue-line-hover-bg: var(--color-action-primary-subtle);
+  --button-blue-line-pressed-bg: var(--color-action-primary-subtle);
+  --button-blue-line-disabled-bg: var(--color-bg-subtle);
+  --button-blue-line-default-border: var(--color-action-primary-default);
+  --button-blue-line-hover-border: var(--color-action-primary-default);
+  --button-blue-line-disabled-border: var(--color-border-default);
+  --button-blue-line-default-text: var(--color-text-link);
+  --button-blue-line-disabled-text: var(--color-text-disabled);
+  --button-blue-line-focus-ring: var(--color-border-focus);
+
+  /* Chip */
+  --chip-default-bg: var(--color-surface-default);
+  --chip-hover-bg: var(--color-bg-subtle);
+  --chip-selected-bg: var(--color-surface-default);
+  --chip-selected-hover-bg: var(--color-blue-50);
+  --chip-disabled-bg: var(--color-bg-subtle);
+  --chip-default-border: var(--color-border-subtle);
+  --chip-hover-border: var(--color-border-default);
+  --chip-selected-border: var(--color-blue-300);
+  --chip-disabled-border: var(--color-border-subtle);
+  --chip-default-text: var(--color-text-secondary);
+  --chip-selected-text: var(--color-action-primary-default);
+  --chip-disabled-text: var(--color-text-disabled);
+  --chip-default-icon: var(--color-icon-default);
+  --chip-selected-icon: var(--color-action-primary-default);
+  --chip-disabled-icon: var(--color-icon-muted);
+  --chip-focus-ring: var(--color-border-focus);
+
+  /* Dropdown */
+  --dropdown-trigger-default-bg: var(--color-surface-default);
+  --dropdown-trigger-hover-bg: var(--color-bg-subtle);
+  --dropdown-trigger-open-bg: var(--color-bg-subtle);
+  --dropdown-trigger-disabled-bg: var(--color-bg-subtle);
+  --dropdown-trigger-default-border: var(--color-border-default);
+  --dropdown-trigger-hover-border: var(--color-border-strong);
+  --dropdown-trigger-open-border: var(--color-border-focus);
+  --dropdown-trigger-disabled-border: var(--color-border-subtle);
+  --dropdown-trigger-default-text: var(--color-text-secondary);
+  --dropdown-trigger-disabled-text: var(--color-text-disabled);
+  --dropdown-list-bg: var(--color-surface-raised);
+  --dropdown-option-hover-bg: var(--color-bg-subtle);
+  --dropdown-option-selected-bg: var(--color-action-primary-subtle);
+
+  /* Input */
+  --input-default-bg: var(--color-surface-default);
+  --input-hover-bg: var(--color-surface-default);
+  --input-focus-bg: var(--color-surface-default);
+  --input-disabled-bg: var(--color-bg-subtle);
+  --input-error-bg: var(--color-surface-default);
+  --input-default-border: var(--color-border-default);
+  --input-hover-border: var(--color-border-strong);
+  --input-focus-border: var(--color-border-focus);
+  --input-error-border: var(--color-border-danger);
+  --input-correct-border: var(--color-border-correct);
+  --input-disabled-border: var(--color-border-default);
+  --select-disabled-border: var(--color-border-subtle);
+  --input-placeholder-text: var(--color-text-placeholder);
+  --input-helper-text: var(--color-text-helper);
+  --input-error-text: var(--color-text-danger);
+  --input-correct-text: var(--color-text-correct);
+  --input-disabled-text: var(--color-text-disabled);
+
+  /* Checkbox */
+  --checkbox-default-bg: var(--color-surface-default);
+  --checkbox-checked-bg: var(--color-action-primary-default);
+  --checkbox-indeterminate-bg: var(--color-action-primary-default);
+  --checkbox-disabled-bg: var(--color-bg-subtle);
+  --checkbox-default-border: var(--color-border-default);
+  --checkbox-hover-border: var(--color-border-focus);
+  --checkbox-checked-border: var(--color-action-primary-default);
+  --checkbox-disabled-border: var(--color-border-subtle);
+  --checkbox-check-icon: var(--color-action-primary-text);
+  --checkbox-disabled-check-icon: var(--color-border-strong);
+
+  /* Radio */
+  --radio-default-bg: var(--color-surface-default);
+  --radio-disabled-bg: var(--color-bg-subtle);
+  --radio-default-border: var(--color-border-default);
+  --radio-hover-border: var(--color-border-focus);
+  --radio-selected-border: var(--color-action-primary-default);
+  --radio-disabled-border: var(--color-border-subtle);
+  --radio-selected-dot: var(--color-action-primary-default);
+
+  /* Toggle */
+  --toggle-on-bg: var(--color-action-primary-default);
+  --toggle-off-bg: var(--color-border-default);
+  --toggle-disabled-bg: var(--color-border-subtle);
+  --toggle-knob: var(--color-action-primary-text);
+
+  /* Pagination */
+  --pagination-default-bg: var(--color-surface-default);
+  --pagination-hover-bg: var(--color-bg-subtle);
+  --pagination-active-bg: var(--color-action-primary-default);
+  --pagination-disabled-bg: var(--color-surface-default);
+  --pagination-default-text: var(--color-text-secondary);
+  --pagination-active-text: var(--color-action-primary-text);
+  --pagination-disabled-text: var(--color-text-disabled);
+  --pagination-border: var(--color-border-default);
+
+  /* Nav */
+  --nav-bg: var(--color-surface-default);
+  --nav-item-hover-bg: var(--color-bg-subtle);
+  --nav-item-active-bg: var(--color-action-primary-subtle);
+  --nav-item-default-text: var(--color-text-tertiary);
+  --nav-item-active-text: var(--color-action-primary-default);
+  --nav-item-default-icon: var(--color-icon-default);
+  --nav-item-active-icon: var(--color-action-primary-default);
+  --nav-item-indicator: var(--color-action-primary-default);
+  --nav-divider: var(--color-border-subtle);
+
+  /* Table */
+  --table-header-bg: var(--color-gray-0);
+  --table-header-text: var(--color-text-tertiary);
+  --table-header-border: var(--color-border-default);
+  --table-row-default-bg: var(--color-surface-default);
+  --table-row-hover-bg: var(--color-bg-subtle);
+  --table-row-selected-bg: var(--color-bg-selected);
+  --table-cell-border: var(--color-border-subtle);
+  --table-cell-text: var(--color-text-secondary);
+}
+
+/* ══ 앱 전용 토큰 (S1 범위 외) ══ */
+:root {
+  --font-sans:
+    'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
+
   --shadow-none: none;
   --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.04);
   --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
 
-  /* Motion */
   --transition-fast: 0.15s ease;
   --transition-base: 0.2s ease;
   --transition-slow: 0.5s ease;
 
-  /* Layout */
   --sidebar-width: 240px;
   --topbar-height: 52px;
 
-  /* Theme-independent (camera feed simulation) */
-  --color-video-bg: #0A0F18;
-  --color-video-bg-offline: #1A1A1A;
-  --color-rec: #FF3B3B;
-  --color-online: #22C55E;
-  --color-switch-thumb: #FFFFFF;
+  /* 영상 피드 */
+  --color-video-bg: #0a0f18;
+  --color-video-bg-offline: #1a1a1a;
+  --color-rec: #ff3b3b;
+  --color-online: #22c55e;
+  --color-switch-thumb: var(--color-base-white);
 
-  /* Login brand panel (always navy per §4) */
-  --color-login-brand-1: #001F66;
-  --color-login-brand-2: #0033A0;
-  --color-login-brand-3: #0F52CC;
-  --color-login-brand-text: #FFFFFF;
+  /* 영상 오버레이 텍스트 — video 위 흰색 텍스트 계열 (service-specific) */
+  --color-video-text-primary:   rgba(255, 255, 255, 0.85);
+  --color-video-text-secondary: rgba(255, 255, 255, 0.75);
+  --color-video-text-muted:     rgba(255, 255, 255, 0.55);
+  --color-video-text-caption:   rgba(255, 255, 255, 0.45);
+
+  /* 영상 오버레이 배경 */
+  --color-video-scrim:             rgba(0, 0, 0, 0.60);
+  --color-video-overlay-bg:        rgba(0, 0, 0, 0.55);
+  --color-video-overlay-bg-subtle: rgba(0, 0, 0, 0.35);
+
+  /* 영상 오버레이 테두리 */
+  --color-video-overlay-border:        rgba(255, 255, 255, 0.18);
+  --color-video-overlay-border-subtle: rgba(255, 255, 255, 0.12);
+
+  /* 영상 위 컨트롤 버튼 */
+  --color-video-control-bg:        rgba(255, 255, 255, 0.08);
+  --color-video-control-bg-hover:  rgba(255, 255, 255, 0.18);
+  --color-video-control-bg-active: rgba(255, 255, 255, 0.28);
+  --color-video-control-bg-strong: rgba(255, 255, 255, 0.40);
+
+  /* 영상 위 위험 상태 */
+  --color-video-danger-bg-subtle: rgba(220, 38, 38, 0.04);
+  --color-video-danger-bg:        rgba(220, 38, 38, 0.08);
+  --color-video-danger-bg-hover:  rgba(220, 38, 38, 0.12);
+  --color-video-danger-intense:   rgba(200, 40, 40, 0.80);
+
+  /* Live 상태 펄스 */
+  --color-video-live-pulse: rgba(34, 197, 94, 0.60);
+
+  /* 배경 장식 (그라디언트·노이즈) */
+  --color-video-accent-gradient: rgba(21, 83, 198, 0.12);
+  --color-video-accent-dark:     rgba(15, 40, 80, 0.50);
+  --color-video-grid-line:       rgba(255, 255, 255, 0.03);
+  --color-video-grid-line-xs:    rgba(255, 255, 255, 0.018);
+
+  /* 로그인 브랜드 패널 */
+  --color-login-brand-1: #001f66;
+  --color-login-brand-2: var(--color-brand-ci);
+  --color-login-brand-3: #0f52cc;
+  --color-login-brand-text: var(--color-text-inverse);
 }
 
 [data-theme='dark'] {
-  --color-bg-app: #0A0E17;
-  --color-bg-elevated: #0F1420;
-  --color-surface: #111827;
-  --color-surface-alt: #0F1520;
-  --color-surface-hover: #1A2233;
-  --color-border: #1E293B;
-  --color-border-subtle: #263045;
-  --color-text: #F1F5F9;
-  --color-text-muted: #94A3B8;
-  --color-text-inverse: #0A0E17;
-  /* Brand anchor 는 다크에서도 동일 — 로고 배지/면 */
-  --color-brand: #0033A0;
-  /* Action 은 WCAG AA 통과를 위해 #60A5FA 로 상향 (7.06:1 on #111827) */
-  --color-action: #60A5FA;
-  --color-accent: #60A5FA;
-  --color-accent-hover: #3B82F6;
-  --color-accent-on: #FFFFFF;
-  --color-accent-muted: color-mix(in srgb, var(--color-action) 18%, transparent);
-  --color-accent-ring: color-mix(in srgb, var(--color-action) 28%, transparent);
-  --color-success: #22C55E;
-  --color-warn: #F59E0B;
-  --color-danger: #EF4444;
-  --color-info: #60A5FA;
+  --table-header-bg: var(--color-bg-subtle);
 
   --shadow-card: none;
-  --shadow-card-hover: 0 0 0 1px var(--color-accent-muted);
-  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.40);
+  --shadow-card-hover: 0 0 0 1px var(--color-action-primary-subtle);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* Chip — dark overrides (must come after :root component tokens to win cascade) */
+  --chip-default-bg: transparent;
+  --chip-selected-bg: transparent;
+  --chip-hover-bg: var(--color-bg-subtle);
+  --chip-default-border: var(--color-border-strong);
+  --chip-hover-border: var(--color-border-emphasis);
+  --chip-selected-border: var(--color-action-primary-default);
+  --chip-selected-hover-bg: var(--color-action-primary-subtle);
+  --chip-selected-text: var(--color-action-primary-default);
+  --chip-selected-icon: var(--color-action-primary-default);
+}
+
+/* ══ 호환성 브릿지 — 구 토큰명 → S1 시맨틱 ══
+   기존 모듈 CSS가 이전 변수명을 참조할 경우 자동으로 S1 토큰으로 해소됩니다.
+   신규 코드는 반드시 S1 시맨틱 토큰을 직접 사용하세요.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  /* 배경 */
+  --color-bg-app: var(--color-bg-default);
+  --color-surface: var(--color-surface-default);
+  --color-surface-alt: var(--color-bg-subtle);
+  --color-surface-hover: var(--color-bg-muted);
+
+  /* 테두리 */
+  --color-border: var(--color-border-default);
+
+  /* 텍스트 */
+  --color-text: var(--color-text-primary);
+  --color-text-muted: var(--color-text-tertiary);
+
+  /* 액션·액센트 */
+  --color-brand: var(--color-brand-ci);
+  --color-action: var(--color-action-primary-default);
+  --color-accent: var(--color-action-primary-default);
+  --color-accent-hover: var(--color-action-primary-hover);
+  --color-accent-on: var(--color-action-primary-text);
+  --color-accent-muted: var(--color-action-primary-subtle);
+  --color-accent-ring: color-mix(
+    in srgb,
+    var(--color-action-primary-default) 18%,
+    transparent
+  );
+
+  /* 상태 */
+  --color-success: var(--color-status-success);
+  --color-warn: var(--color-status-warning);
+  --color-danger: var(--color-status-error);
+  --color-info: var(--color-status-info);
+  --color-success-bg-subtle: rgba(22, 163, 74, 0.12);
+  --color-warn-bg-subtle:    rgba(217, 119, 6, 0.12);
+
+  /* 텍스트 — 추가 단계 */
+  --color-text-quaternary: var(--color-text-caption);
+
+  /* 간격 */
+  --space-1: var(--spacing-4);
+  --space-2: var(--spacing-8);
+  --space-3: var(--spacing-12);
+  --space-4: var(--spacing-16);
+  --space-5: var(--spacing-20);
+  --space-6: var(--spacing-24);
+  --space-7: var(--spacing-32);
+  --space-8: var(--spacing-48);
+
+  /* 반경 */
+  --radius-sm: var(--radius-6);
+  --radius-md: var(--radius-10);
+  --radius-lg: var(--radius-16);
+
+  /* 서체 크기 */
+  --font-size-xs: var(--font-size-10);
+  --font-size-sm: var(--font-size-12);
+  --font-size-base: var(--font-size-14);
+  --font-size-md: var(--font-size-16);
+  --font-size-lg: var(--font-size-18);
+  --font-size-xl: var(--font-size-24);
+  --font-size-2xl: var(--font-size-32);
+
+  /* 서체 굵기 (S1에 없는 semibold=600 유지) */
+  --font-weight-semibold: 600;
+
+  /* 행간 */
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+  --line-height-loose: 1.6;
 }

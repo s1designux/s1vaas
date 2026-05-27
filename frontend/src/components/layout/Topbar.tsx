@@ -45,6 +45,7 @@ export function Topbar() {
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [eventDetail, setEventDetail] = useState<AppEvent | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const bellWrapRef = useRef<HTMLDivElement>(null);
 
   const unread = useMemo(
@@ -94,6 +95,12 @@ export function Topbar() {
     setNotifOpen(false);
   };
 
+  function handleSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      nav(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  }
+
   return (
     <header className={styles.topbar}>
       <div className={styles.left}>
@@ -114,6 +121,27 @@ export function Topbar() {
         </button>
         <span className={styles.title}>{title}</span>
       </div>
+
+      <div className={styles.center}>
+        <div className={styles.searchWrap}>
+          <input
+            type="search"
+            className={styles.searchInput}
+            placeholder="자연어로 사람·차량·이벤트를 검색하세요"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKey}
+            aria-label="빠른 검색"
+          />
+          <span className={styles.searchIcon} aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+          </span>
+        </div>
+      </div>
+
       <div className={styles.right}>
         <div className={styles.bellWrap} ref={bellWrapRef}>
           <button
@@ -181,7 +209,7 @@ export function Topbar() {
           </span>
         )}
         <span className={styles.desktopLogout}>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
+          <Button variant="secondary" size="sm" onClick={handleLogout}>
             로그아웃
           </Button>
         </span>

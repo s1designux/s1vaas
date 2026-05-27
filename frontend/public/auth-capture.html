@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Auth + Capture</title></head>
+<body>
+<script>
+// Set fresh auth session in localStorage
+const now = new Date().toISOString();
+localStorage.setItem('s1vaas-session', JSON.stringify({ userId: 'u-01', role: 'admin', issuedAt: now }));
+localStorage.setItem('s1vaas-user', JSON.stringify({ id: 'u-01', email: 'admin@s1vaas.test', displayName: '김관리', role: 'admin' }));
+
+// Pages to capture — set via URL param ?captures=JSON
+const params = new URLSearchParams(location.search);
+
+// Set theme (default: light)
+localStorage.setItem('s1vaas-theme', params.get('theme') || 'light');
+const captures = JSON.parse(decodeURIComponent(params.get('captures') || '[]'));
+
+if (captures.length === 0) {
+  document.body.innerText = 'No captures defined. Add ?captures=[...] param.';
+} else {
+  document.body.innerText = 'Auth set. Opening ' + captures.length + ' pages...';
+  const EP = 'https%3A%2F%2Fmcp.figma.com%2Fmcp%2Fcapture';
+  captures.forEach(({ path, captureId }, i) => {
+    setTimeout(() => {
+      const url = `http://localhost:5173${path}#figmacapture=${captureId}&figmaendpoint=${EP}%2F${captureId}%2Fsubmit&figmadelay=2500`;
+      window.open(url, '_blank');
+    }, i * 400);
+  });
+}
+</script>
+</body>
+</html>

@@ -188,55 +188,7 @@
   opacity: 0.7;
 }
 
-.sensiRow {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-2);
-}
 
-.sensiBtn {
-  position: relative;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  font-family: inherit;
-  transition: all var(--transition-fast);
-  overflow: hidden;
-}
-
-.sensiBtn:hover {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-}
-
-.sensiBtnActive {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-  background: var(--color-accent-muted);
-  font-weight: var(--font-weight-semibold);
-}
-
-.sensiBtnActive::after {
-  content: '';
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  bottom: 4px;
-  height: 2px;
-  border-radius: var(--radius-full);
-  background: var(--color-accent);
-  animation: sensi-slide 0.25s ease-out;
-}
-
-@keyframes sensi-slide {
-  from { transform: scaleX(0.2); opacity: 0; }
-  to   { transform: scaleX(1);   opacity: 1; }
-}
 
 /* Toggle switch aligned to card header top-right */
 .algoSwitchWrap {

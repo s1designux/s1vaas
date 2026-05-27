@@ -22,21 +22,21 @@ body,
 }
 
 body {
-  background: var(--color-bg-app);
-  color: var(--color-text);
+  background: var(--color-bg-default);
+  color: var(--color-text-primary);
   font-family: var(--font-sans);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-14);
   line-height: var(--line-height-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-action-primary-default);
   text-decoration: none;
 }
 a:hover {
-  color: var(--color-accent-hover);
+  color: var(--color-action-primary-hover);
 }
 
 button {
@@ -59,7 +59,7 @@ h2,
 h3,
 h4 {
   margin: 0;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
 }
 
@@ -73,11 +73,11 @@ p {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-border-default);
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: var(--color-text-tertiary);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -130,7 +130,7 @@ p {
 
 @keyframes highlight-fade {
   from {
-    background: var(--color-accent-muted);
+    background: var(--color-action-primary-subtle);
   }
   to {
     background: transparent;
@@ -155,7 +155,7 @@ p {
 @keyframes online-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 var(--color-success);
+    box-shadow: 0 0 0 0 var(--color-online);
   }
   50% {
     box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
@@ -184,13 +184,13 @@ p {
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--color-surface-alt) 0%,
+    var(--color-bg-subtle) 0%,
     var(--color-border-subtle) 50%,
-    var(--color-surface-alt) 100%
+    var(--color-bg-subtle) 100%
   );
   background-size: 800px 100%;
   animation: shimmer 1.4s linear infinite;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-card-md);
 }
 
 /* Accessibility: respect prefers-reduced-motion — disable transforms + long animations */
