@@ -47,7 +47,6 @@ export default function Site() {
   const favorites = useDataStore((s) => s.favorites);
   const companies = useDataStore((s) => s.companies);
   const currentCompanyId = useDataStore((s) => s.currentCompanyId);
-  const setCurrentCompany = useDataStore((s) => s.setCurrentCompany);
   const updateSite = useDataStore((s) => s.updateSite);
   const addSite = useDataStore((s) => s.addSite);
   const removeSite = useDataStore((s) => s.removeSite);
@@ -124,17 +123,6 @@ export default function Site() {
     setEditing(null);
   };
 
-  // 고객(계정) 전환 — 데모용. 실제 앱은 로그인 companyId 로 고정.
-  const switchCustomer = (id: string) => {
-    setCurrentCompany(id);
-    setSel(null);
-    setShowPool(false);
-    setPoolContract('');
-    const first = contracts.find((c) => c.companyId === id);
-    setOpenContracts(new Set(first ? [first.id] : []));
-    setOpenSites(new Set());
-  };
-
   /* ── 액션 ── */
   const handleAddFavorite = () => {
     const id = addFavorite(ownerId, '새 즐겨찾기');
@@ -159,19 +147,11 @@ export default function Site() {
             여러 계약처를 가로지르는 즐겨찾기 보기를 만들 수 있어요. 여기서 만든 구성이 카메라 관리 메뉴에 반영됩니다.
           </p>
         </div>
-        <div style={{ minWidth: 220, flexShrink: 0 }}>
-          <Select
-            label="고객 (계정)"
-            size="sm"
-            value={currentCompanyId}
-            options={companies.map((co) => ({
-              value: co.id,
-              label: `${co.name} · 계약처 ${contracts.filter((c) => c.companyId === co.id).length}`,
-            }))}
-            onChange={switchCustomer}
-          />
-          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--color-text-tertiary)', textAlign: 'right', lineHeight: 1.5 }}>
-            <b style={{ color: 'var(--color-text-secondary)' }}>{currentCompany?.name ?? '—'}</b> · 계약번호 {myContracts.map((c) => c.code).join(' · ') || '—'}
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-tertiary)' }}>고객 (계정)</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{currentCompany?.name ?? '—'}</div>
+          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
+            계약번호 {myContracts.map((c) => c.code).join(' · ') || '—'}
             <br />
             카메라 {cameras.filter((c) => myContractIds.has(c.contractId)).length}대
           </div>
@@ -198,8 +178,8 @@ export default function Site() {
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(setOpenContracts, c.id); select({ kind: 'contract', id: c.id }); } }}
                 >
                   <Chevron open={cOpen} />
-                  <span className={styles.nodeLabel} style={{ flex: '0 1 auto' }}>{c.name}</span>
-                  <span className={styles.nodeCode}>{c.code}</span>
+                  <span className={styles.nodeLabel} style={{ flex: '0 1 auto', fontWeight: 700 }}>{c.name}</span>
+                  <span className={styles.nodeCode} style={{ fontWeight: 700, color: 'var(--color-text-secondary)' }}>{c.code}</span>
                   <span style={{ flex: 1 }} aria-hidden />
                   <div className={styles.nodeActions}>
                     <button type="button" className={styles.iconBtn} title="사이트 추가" onClick={(e) => { e.stopPropagation(); handleAddSite(c.id); }}>＋</button>
@@ -333,7 +313,7 @@ export default function Site() {
                     <div className={styles.detailKicker}>계약처</div>
                     <h2 className={styles.detailTitle}>
                       {c.name}{' '}
-                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-mono)' }}>{c.code}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>{c.code}</span>
                     </h2>
                   </div>
                   <Badge tone={c.status === 'active' ? 'success' : 'warn'} dot>
