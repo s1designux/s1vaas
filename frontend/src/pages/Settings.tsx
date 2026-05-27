@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Tabs } from '@/components/ui/Tabs';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { useThemeStore } from '@/store/themeStore';
 import { useAuthStore } from '@/store/authStore';
 import { useMenuStore } from '@/store/menuStore';
@@ -182,40 +184,33 @@ export default function Settings() {
         >
           {section === 'system' && (
             <>
-              <div className={page.settingsField}>
-                <label className={page.settingsLabel}>시스템 명칭</label>
-                <input
-                  className={page.settingsInput}
-                  value={sysName}
-                  onChange={(e) => setSysName(e.target.value)}
-                />
-              </div>
+              <Input
+                label="시스템 명칭"
+                value={sysName}
+                onChange={(e) => setSysName(e.target.value)}
+              />
               <div className={page.rowCols2}>
-                <div className={page.settingsField}>
-                  <label className={page.settingsLabel}>영상 보관 기간 (일)</label>
-                  <select
-                    className={page.settingsSelect}
-                    value={retention}
-                    onChange={(e) => setRetention(Number(e.target.value))}
-                  >
-                    <option value={7}>7일 (단기)</option>
-                    <option value={30}>30일 (표준)</option>
-                    <option value={90}>90일 (장기)</option>
-                    <option value={180}>180일 (확장)</option>
-                  </select>
-                </div>
-                <div className={page.settingsField}>
-                  <label className={page.settingsLabel}>기본 녹화 해상도</label>
-                  <select
-                    className={page.settingsSelect}
-                    value={resolution}
-                    onChange={(e) => setResolution(e.target.value as Resolution)}
-                  >
-                    <option value="720p">720p HD</option>
-                    <option value="1080p">1080p Full HD</option>
-                    <option value="4K">4K UHD</option>
-                  </select>
-                </div>
+                <Select
+                  label="영상 보관 기간 (일)"
+                  value={String(retention)}
+                  options={[
+                    { value: '7', label: '7일 (단기)' },
+                    { value: '30', label: '30일 (표준)' },
+                    { value: '90', label: '90일 (장기)' },
+                    { value: '180', label: '180일 (확장)' },
+                  ]}
+                  onChange={(v) => setRetention(Number(v))}
+                />
+                <Select
+                  label="기본 녹화 해상도"
+                  value={resolution}
+                  options={[
+                    { value: '720p', label: '720p HD' },
+                    { value: '1080p', label: '1080p Full HD' },
+                    { value: '4K', label: '4K UHD' },
+                  ]}
+                  onChange={(v) => setResolution(v as Resolution)}
+                />
               </div>
               <div className={page.settingsRow}>
                 <div>

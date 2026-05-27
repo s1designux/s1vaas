@@ -672,6 +672,27 @@ export default function CameraSettings() {
   const removeAlgorithmPolygon = useDataStore((s) => s.removeAlgorithmPolygon);
   const toast = useToast();
 
+  // 계약처 그룹 (contractId 기준)
+  const contractGroups = useMemo(() => {
+    const map = new Map<string, typeof sites>();
+    for (const site of sites) {
+      if (!map.has(site.contractId)) map.set(site.contractId, []);
+      map.get(site.contractId)!.push(site);
+    }
+    return Array.from(map.entries()).map(([contractId, siteList]) => ({ contractId, siteList }));
+  }, [sites]);
+
+  // 계약처 열림 상태 (복수 허용)
+  const [openContractIds, setOpenContractIds] = useState<Set<string>>(
+    () => new Set(sites[0]?.contractId ? [sites[0].contractId] : []),
+  );
+  const toggleContract = (id: string) =>
+    setOpenContractIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
   // 아코디언 그룹: 사이트 단위 (하나만 펼침)
   const [openSiteId, setOpenSiteId] = useState<string>(() => sites[0]?.id ?? '');
 
@@ -832,63 +853,86 @@ export default function CameraSettings() {
       <div className={cs.body}>
         {/* ── 좌측 아코디언 사이드바 ── */}
         <aside className={cs.sidebar}>
-          {sites.map((site) => {
-            const isOpen     = openSiteId === site.id;
-            const siteCams   = cameras.filter((c) => c.siteId === site.id);
+          {contractGroups.map(({ contractId, siteList }) => {
+            const isContractOpen = openContractIds.has(contractId);
             return (
-              <div key={site.id} className={cs.accordionCard}>
-                {/* 헤더 */}
+              <div key={contractId} className={cs.contractSection}>
+                {/* ① 계약처 헤더 */}
                 <button
-                  className={cs.accordionHeader}
-                  onClick={() => toggleAccordion(site.id)}
+                  className={cs.contractHeader}
+                  onClick={() => toggleContract(contractId)}
                 >
-                  <span className={cs.accordionTitle}>
-                    {site.name}
-                    <span className={cs.accordionCount}>{siteCams.length}</span>
-                  </span>
                   <svg
-                    className={`${cs.accordionChevron} ${isOpen ? cs.accordionChevronOpen : ''}`}
-                    width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className={`${cs.contractChevron} ${isContractOpen ? cs.contractChevronOpen : ''}`}
+                    width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   >
                     <path d="M9 18l6-6-6-6" />
                   </svg>
+                  <span className={cs.contractLabel}>{fmtContract(contractId)}</span>
                 </button>
 
-                {/* 카메라 리스트 */}
-                {isOpen && (
-                  <div className={cs.accordionList}>
-                    {siteCams.map((c) => {
-                      const isActive = c.id === activeId;
-                      const chipCls =
-                        c.status === 'recording' ? cs.statusChipRecording
-                        : c.status === 'online'  ? cs.statusChipOnline
-                        : cs.statusChipOffline;
-                      const statusLabel =
-                        c.status === 'recording' ? '녹화중'
-                        : c.status === 'online'  ? '온라인'
-                        : '오프라인';
-                      return (
-                        <button
-                          key={c.id}
-                          className={`${cs.accordionItem} ${isActive ? cs.accordionItemActive : ''}`}
-                          onClick={() => setActiveId(c.id)}
-                          title={c.name}
+                {/* ② 사이트 아코디언 (계약처 하위) */}
+                {isContractOpen && siteList.map((site) => {
+                  const isOpen   = openSiteId === site.id;
+                  const siteCams = cameras.filter((c) => c.siteId === site.id);
+                  return (
+                    <div key={site.id} className={cs.accordionCard}>
+                      {/* 사이트 헤더 */}
+                      <button
+                        className={cs.accordionHeader}
+                        onClick={() => toggleAccordion(site.id)}
+                      >
+                        <span className={cs.accordionTitle}>
+                          {site.name}
+                          <span className={cs.accordionCount}>{siteCams.length}</span>
+                        </span>
+                        <svg
+                          className={`${cs.accordionChevron} ${isOpen ? cs.accordionChevronOpen : ''}`}
+                          width="24" height="24" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                         >
-                          <span className={`${cs.statusChip} ${chipCls}`}>
-                            {c.status === 'recording' ? '녹화' : c.status === 'online' ? 'ON' : 'OFF'}
-                          </span>
-                          <span className={cs.itemInfo}>
-                            <span className={`${cs.itemName} ${isActive ? cs.itemNameActive : ''}`}>
-                              {c.name}
-                            </span>
-                            <span className={cs.itemStatusText}>{statusLabel}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                      </button>
+
+                      {/* ③ 카메라 리스트 */}
+                      {isOpen && (
+                        <div className={cs.accordionList}>
+                          {siteCams.map((c) => {
+                            const isActive = c.id === activeId;
+                            const chipCls =
+                              c.status === 'recording' ? cs.statusChipRecording
+                              : c.status === 'online'  ? cs.statusChipOnline
+                              : cs.statusChipOffline;
+                            const statusLabel =
+                              c.status === 'recording' ? '녹화중'
+                              : c.status === 'online'  ? '온라인'
+                              : '오프라인';
+                            return (
+                              <button
+                                key={c.id}
+                                className={`${cs.accordionItem} ${isActive ? cs.accordionItemActive : ''}`}
+                                onClick={() => setActiveId(c.id)}
+                                title={c.name}
+                              >
+                                <span className={`${cs.statusChip} ${chipCls}`}>
+                                  {c.status === 'recording' ? '녹화' : c.status === 'online' ? 'ON' : 'OFF'}
+                                </span>
+                                <span className={cs.itemInfo}>
+                                  <span className={`${cs.itemName} ${isActive ? cs.itemNameActive : ''}`}>
+                                    {c.name}
+                                  </span>
+                                  <span className={cs.itemStatusText}>{statusLabel}</span>
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

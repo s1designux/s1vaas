@@ -44,11 +44,54 @@
   min-width: 260px;
   border-right: var(--border-width-default) solid var(--color-border-subtle);
   overflow-y: auto;
-  background: var(--color-bg-subtle);
+  background: var(--color-surface-default);
   padding: var(--spacing-12);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-8);
+}
+
+/* ══ 계약처 섹션 (최상위) ══ */
+.contractSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.contractHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-4) var(--spacing-8);
+  background: none;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+}
+
+.contractLabel {
+  font-size: var(--font-size-11);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  transition: color var(--transition-fast);
+}
+
+.contractHeader:hover .contractLabel {
+  color: var(--color-text-secondary);
+}
+
+.contractChevron {
+  flex-shrink: 0;
+  color: var(--color-icon-subtle);
+  transition: transform var(--transition-fast);
+}
+
+.contractChevronOpen {
+  transform: rotate(90deg);
 }
 
 /* ══ 아코디언 카드 ══ */

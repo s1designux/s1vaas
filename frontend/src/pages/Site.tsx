@@ -4,6 +4,8 @@ import { useDataStore } from '@/store/dataStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Drawer } from '@/components/ui/Drawer';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useToast } from '@/hooks/useToast';
@@ -394,68 +396,38 @@ export default function Site() {
         {drawer && (
           <>
             <div className={form.sectionCaption}>기본 정보</div>
-            <div className={form.field}>
-              <label className={form.label}>사이트 이름</label>
-              <div className={form.inputWrap}>
-                <input
-                  className={form.input}
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="예: 강남 본점"
-                />
-              </div>
-            </div>
-            <div className={form.field}>
-              <label className={form.label}>주소</label>
-              <div className={form.inputWrap}>
-                <input
-                  className={form.input}
-                  value={formAddress}
-                  onChange={(e) => setFormAddress(e.target.value)}
-                  placeholder="서울특별시 …"
-                />
-              </div>
-            </div>
+            <Input
+              label="사이트 이름"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="예: 강남 본점"
+            />
+            <Input
+              label="주소"
+              value={formAddress}
+              onChange={(e) => setFormAddress(e.target.value)}
+              placeholder="서울특별시 …"
+            />
             <div className={form.rowCols2}>
-              <div className={form.field}>
-                <label className={form.label}>계약</label>
-                <div className={form.inputWrap}>
-                  <select
-                    className={form.select}
-                    value={formContractId}
-                    onChange={(e) => setFormContractId(e.target.value)}
-                  >
-                    {contracts.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.code} — {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className={form.field}>
-                <label className={form.label}>설치일</label>
-                <div className={form.inputWrap}>
-                  <input
-                    type="date"
-                    className={form.input}
-                    value={formInstalledAt}
-                    onChange={(e) => setFormInstalledAt(e.target.value)}
-                  />
-                </div>
-              </div>
+              <Select
+                label="계약"
+                value={formContractId}
+                options={contracts.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
+                onChange={(v) => setFormContractId(v)}
+              />
+              <Input
+                label="설치일"
+                type="date"
+                value={formInstalledAt}
+                onChange={(e) => setFormInstalledAt(e.target.value)}
+              />
             </div>
-            <div className={form.field}>
-              <label className={form.label}>담당자</label>
-              <div className={form.inputWrap}>
-                <input
-                  className={form.input}
-                  value={formManager}
-                  onChange={(e) => setFormManager(e.target.value)}
-                  placeholder="담당자 이름"
-                />
-              </div>
-            </div>
+            <Input
+              label="담당자"
+              value={formManager}
+              onChange={(e) => setFormManager(e.target.value)}
+              placeholder="담당자 이름"
+            />
 
             {drawer.mode === 'edit' && drawerSite && (
               <>
