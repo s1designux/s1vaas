@@ -56,6 +56,8 @@ export default function Site() {
   const updateFavorite = useDataStore((s) => s.updateFavorite);
   const removeFavorite = useDataStore((s) => s.removeFavorite);
   const toggleFavoriteCamera = useDataStore((s) => s.toggleFavoriteCamera);
+  const moveSite = useDataStore((s) => s.moveSite);
+  const moveFavorite = useDataStore((s) => s.moveFavorite);
   const toast = useToast();
 
   // 현재 고객(계정) 기준 스코프 — 한 고객이 여러 계약처를 보유.
@@ -70,6 +72,13 @@ export default function Site() {
   const [sel, setSel] = useState<Sel>(null);
   const [showPool, setShowPool] = useState(false);
   const [poolContract, setPoolContract] = useState<string>(''); // 즐겨찾기 풀 계약처 필터
+  // 인라인 이름변경 / 드래그 순서변경
+  const [editing, setEditing] = useState<{ kind: 'site' | 'favorite'; id: string } | null>(null);
+  const [editVal, setEditVal] = useState('');
+  const [dragSite, setDragSite] = useState<string | null>(null);
+  const [dragOverSite, setDragOverSite] = useState<string | null>(null);
+  const [dragFav, setDragFav] = useState<string | null>(null);
+  const [dragOverFav, setDragOverFav] = useState<string | null>(null);
 
   const camsByContract = useMemo(() => {
     const m = new Map<string, Camera[]>();
@@ -99,6 +108,20 @@ export default function Site() {
     setSel(s);
     setShowPool(false);
     setPoolContract('');
+  };
+
+  const beginEdit = (kind: 'site' | 'favorite', id: string, current: string) => {
+    setEditing({ kind, id });
+    setEditVal(current);
+  };
+  const commitEdit = () => {
+    if (!editing) return;
+    const v = editVal.trim();
+    if (v) {
+      if (editing.kind === 'site') updateSite(editing.id, { name: v });
+      else updateFavorite(editing.id, { name: v });
+    }
+    setEditing(null);
   };
 
   // 고객(계정) 전환 — 데모용. 실제 앱은 로그인 companyId 로 고정.
@@ -158,12 +181,6 @@ export default function Site() {
       <div className={styles.layout}>
         {/* ───────── 좌측 트리 ───────── */}
         <div className={styles.tree}>
-          <div className={styles.treeActions}>
-            <button type="button" className={styles.addBtn} onClick={handleAddFavorite}>
-              + 즐겨찾기
-            </button>
-          </div>
-
           <div className={styles.sectionLabel}>내 장소 (계약처 ▸ 사이트)</div>
           {myContracts.map((c) => {
             const cOpen = openContracts.has(c.id);
@@ -172,44 +189,64 @@ export default function Site() {
             const unassigned = unassignedOf(c.id);
             return (
               <div key={c.id}>
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   className={[styles.node, sel?.kind === 'contract' && sel.id === c.id ? styles.nodeActive : '']
                     .filter(Boolean)
                     .join(' ')}
-                  onClick={() => {
-                    toggle(setOpenContracts, c.id);
-                    select({ kind: 'contract', id: c.id });
-                  }}
+                  onClick={() => { toggle(setOpenContracts, c.id); select({ kind: 'contract', id: c.id }); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(setOpenContracts, c.id); select({ kind: 'contract', id: c.id }); } }}
                 >
                   <Chevron open={cOpen} />
                   <span className={styles.nodeLabel}>{c.name}</span>
                   <span className={styles.nodeCode}>{c.code}</span>
+                  <div className={styles.nodeActions}>
+                    <button type="button" className={styles.iconBtn} title="사이트 추가" onClick={(e) => { e.stopPropagation(); handleAddSite(c.id); }}>＋</button>
+                  </div>
                   <span className={styles.nodeCount}>{cCamCount}</span>
-                </button>
+                </div>
 
                 {cOpen && (
                   <>
                     {cSites.map((st) => {
                       const sOpen = openSites.has(st.id);
                       const sCams = camsOf(st.id);
-                      const online = sCams.filter((x) => x.status !== 'offline').length;
+                      const isEditing = editing?.kind === 'site' && editing.id === st.id;
                       return (
                         <div key={st.id}>
-                          <button
-                            type="button"
-                            className={[styles.node, styles.lvl1, sel?.kind === 'site' && sel.id === st.id ? styles.nodeActive : '']
-                              .filter(Boolean)
-                              .join(' ')}
-                            onClick={() => {
-                              toggle(setOpenSites, st.id);
-                              select({ kind: 'site', id: st.id });
-                            }}
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            draggable={!isEditing}
+                            className={[styles.node, styles.lvl1,
+                              sel?.kind === 'site' && sel.id === st.id ? styles.nodeActive : '',
+                              dragOverSite === st.id ? styles.dragOver : '',
+                              dragSite === st.id ? styles.dragging : ''].filter(Boolean).join(' ')}
+                            onClick={() => { if (isEditing) return; toggle(setOpenSites, st.id); select({ kind: 'site', id: st.id }); }}
+                            onKeyDown={(e) => { if (isEditing) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(setOpenSites, st.id); select({ kind: 'site', id: st.id }); } }}
+                            onDragStart={() => setDragSite(st.id)}
+                            onDragOver={(e) => { e.preventDefault(); setDragOverSite(st.id); }}
+                            onDragLeave={() => setDragOverSite((p) => (p === st.id ? null : p))}
+                            onDrop={(e) => { e.preventDefault(); if (dragSite && dragSite !== st.id) moveSite(dragSite, st.id); setDragSite(null); setDragOverSite(null); }}
+                            onDragEnd={() => { setDragSite(null); setDragOverSite(null); }}
                           >
                             <Chevron open={sOpen} />
-                            <span className={styles.nodeLabel}>{st.name}</span>
+                            {isEditing ? (
+                              <input className={styles.inlineInput} autoFocus value={editVal}
+                                onChange={(e) => setEditVal(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEdit(); } else if (e.key === 'Escape') { e.preventDefault(); setEditing(null); } }}
+                                onBlur={commitEdit} />
+                            ) : (
+                              <span className={styles.nodeLabel}>{st.name}</span>
+                            )}
+                            <div className={styles.nodeActions}>
+                              <button type="button" className={styles.iconBtn} title="이름 변경" onClick={(e) => { e.stopPropagation(); beginEdit('site', st.id, st.name); }}>✎</button>
+                              <button type="button" className={[styles.iconBtn, styles.iconBtnDanger].join(' ')} title="삭제" onClick={(e) => { e.stopPropagation(); removeSite(st.id); if (sel?.kind === 'site' && sel.id === st.id) select({ kind: 'contract', id: c.id }); toast.info('사이트 삭제', '소속 카메라는 미지정으로'); }}>🗑</button>
+                            </div>
                             <span className={styles.nodeCount}>{sCams.length}</span>
-                          </button>
+                          </div>
                           {sOpen &&
                             sCams.map((cam) => (
                               <div key={cam.id} className={[styles.node, styles.lvl2].join(' ')}>
@@ -226,43 +263,72 @@ export default function Site() {
                       );
                     })}
 
-                    <button
-                      type="button"
+                    <div
+                      role="button"
+                      tabIndex={0}
                       className={[styles.node, styles.lvl1, sel?.kind === 'unassigned' && sel.id === c.id ? styles.nodeActive : '']
                         .filter(Boolean)
                         .join(' ')}
                       onClick={() => select({ kind: 'unassigned', id: c.id })}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select({ kind: 'unassigned', id: c.id }); } }}
                     >
                       <span style={{ width: 14 }} aria-hidden />
                       <span className={styles.nodeLabel}>📁 미지정</span>
                       <span className={styles.nodeCount}>{unassigned.length}</span>
-                    </button>
+                    </div>
                   </>
                 )}
               </div>
             );
           })}
 
-          <div className={styles.sectionLabel}>⭐ 즐겨찾기 (보기)</div>
+          <div className={styles.sectionLabel} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>⭐ 즐겨찾기 (보기)</span>
+            <button type="button" className={styles.iconBtn} title="즐겨찾기 추가" onClick={handleAddFavorite}>＋</button>
+          </div>
           {myFavorites.length === 0 && (
             <div className={styles.node} style={{ color: 'var(--color-text-tertiary)', cursor: 'default' }}>
               아직 없음
             </div>
           )}
-          {myFavorites.map((f) => (
-            <button
-              type="button"
-              key={f.id}
-              className={[styles.node, sel?.kind === 'favorite' && sel.id === f.id ? styles.nodeActive : '']
-                .filter(Boolean)
-                .join(' ')}
-              onClick={() => select({ kind: 'favorite', id: f.id })}
-            >
-              <span className={styles.fav} aria-hidden>★</span>
-              <span className={styles.nodeLabel}>{f.name}</span>
-              <span className={styles.nodeCount}>{f.cameraIds.length}</span>
-            </button>
-          ))}
+          {myFavorites.map((f) => {
+            const isEditing = editing?.kind === 'favorite' && editing.id === f.id;
+            return (
+              <div
+                key={f.id}
+                role="button"
+                tabIndex={0}
+                draggable={!isEditing}
+                className={[styles.node,
+                  sel?.kind === 'favorite' && sel.id === f.id ? styles.nodeActive : '',
+                  dragOverFav === f.id ? styles.dragOver : '',
+                  dragFav === f.id ? styles.dragging : ''].filter(Boolean).join(' ')}
+                onClick={() => { if (!isEditing) select({ kind: 'favorite', id: f.id }); }}
+                onKeyDown={(e) => { if (!isEditing && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select({ kind: 'favorite', id: f.id }); } }}
+                onDragStart={() => setDragFav(f.id)}
+                onDragOver={(e) => { e.preventDefault(); setDragOverFav(f.id); }}
+                onDragLeave={() => setDragOverFav((p) => (p === f.id ? null : p))}
+                onDrop={(e) => { e.preventDefault(); if (dragFav && dragFav !== f.id) moveFavorite(dragFav, f.id); setDragFav(null); setDragOverFav(null); }}
+                onDragEnd={() => { setDragFav(null); setDragOverFav(null); }}
+              >
+                <span className={styles.fav} aria-hidden>★</span>
+                {isEditing ? (
+                  <input className={styles.inlineInput} autoFocus value={editVal}
+                    onChange={(e) => setEditVal(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEdit(); } else if (e.key === 'Escape') { e.preventDefault(); setEditing(null); } }}
+                    onBlur={commitEdit} />
+                ) : (
+                  <span className={styles.nodeLabel}>{f.name}</span>
+                )}
+                <div className={styles.nodeActions}>
+                  <button type="button" className={styles.iconBtn} title="이름 변경" onClick={(e) => { e.stopPropagation(); beginEdit('favorite', f.id, f.name); }}>✎</button>
+                  <button type="button" className={[styles.iconBtn, styles.iconBtnDanger].join(' ')} title="삭제" onClick={(e) => { e.stopPropagation(); removeFavorite(f.id); if (sel?.kind === 'favorite' && sel.id === f.id) select(null); toast.info('즐겨찾기 삭제', f.name); }}>🗑</button>
+                </div>
+                <span className={styles.nodeCount}>{f.cameraIds.length}</span>
+              </div>
+            );
+          })}
         </div>
 
         {/* ───────── 우측 상세 ───────── */}

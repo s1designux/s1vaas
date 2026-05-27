@@ -59,6 +59,9 @@ interface DataState {
   updateFavorite: (id: string, patch: Partial<Pick<FavoriteView, 'name' | 'cameraIds'>>) => void;
   removeFavorite: (id: string) => void;
   toggleFavoriteCamera: (favoriteId: string, cameraId: string) => void;
+  /** 트리 순서변경 — dragged 를 target 앞 위치로 이동 */
+  moveSite: (draggedId: string, targetId: string) => void;
+  moveFavorite: (draggedId: string, targetId: string) => void;
   inviteUser: (input: InviteInput) => void;
   updateUser: (id: string, patch: Partial<AppUser>) => void;
   removeUser: (id: string) => void;
@@ -155,6 +158,30 @@ export const useDataStore = create<DataState>((set) => ({
             },
       ),
     })),
+  moveSite: (draggedId, targetId) =>
+    set((s) => {
+      if (draggedId === targetId) return {};
+      const arr = [...s.sites];
+      const from = arr.findIndex((x) => x.id === draggedId);
+      if (from < 0) return {};
+      const [moved] = arr.splice(from, 1);
+      const to = arr.findIndex((x) => x.id === targetId);
+      if (to < 0) return {};
+      arr.splice(to, 0, moved);
+      return { sites: arr };
+    }),
+  moveFavorite: (draggedId, targetId) =>
+    set((s) => {
+      if (draggedId === targetId) return {};
+      const arr = [...s.favorites];
+      const from = arr.findIndex((x) => x.id === draggedId);
+      if (from < 0) return {};
+      const [moved] = arr.splice(from, 1);
+      const to = arr.findIndex((x) => x.id === targetId);
+      if (to < 0) return {};
+      arr.splice(to, 0, moved);
+      return { favorites: arr };
+    }),
   inviteUser: (input) =>
     set((s) => ({
       users: [
