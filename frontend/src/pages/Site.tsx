@@ -81,8 +81,8 @@ export default function Site() {
     return m;
   }, [cameras]);
 
-  // 계약번호는 번호(N******) 그 자체로 표기 — 지점/사이트 별칭이 아님.
-  const contractLabel = (id: string) => contracts.find((x) => x.id === id)?.code ?? id;
+  // 계약처 참조 표시는 계약명(예: 에스원빌딩). 번호(N******)는 별도로 노출.
+  const contractLabel = (id: string) => contracts.find((x) => x.id === id)?.name ?? id;
   const sitesOf = (contractId: string) => sites.filter((s) => s.contractId === contractId);
   const camsOf = (siteId: string) => cameras.filter((c) => c.siteId === siteId);
   const unassignedOf = (contractId: string) =>
@@ -183,8 +183,8 @@ export default function Site() {
                   }}
                 >
                   <Chevron open={cOpen} />
-                  <span className={styles.nodeCode} style={{ marginRight: 2 }}>계약</span>
-                  <span className={styles.nodeLabel}>{c.code}</span>
+                  <span className={styles.nodeLabel}>{c.name}</span>
+                  <span className={styles.nodeCode}>{c.code}</span>
                   <span className={styles.nodeCount}>{cCamCount}</span>
                 </button>
 
@@ -278,8 +278,8 @@ export default function Site() {
               <>
                 <div className={styles.detailHead}>
                   <div>
-                    <div className={styles.detailKicker}>계약처 · 계약번호 (가입 시 자동발급)</div>
-                    <h2 className={styles.detailTitle}>{c.code}</h2>
+                    <div className={styles.detailKicker}>계약처 · {c.code}</div>
+                    <h2 className={styles.detailTitle}>{c.name}</h2>
                   </div>
                   <Badge tone={c.status === 'active' ? 'success' : 'warn'} dot>
                     {c.status === 'active' ? '활성' : c.status === 'suspended' ? '일시중지' : '만료'}
