@@ -1,7 +1,7 @@
 // 사이트 관리 — 계약처(트리 최상위) ▸ 사이트(장소그룹, 카메라 단일 홈) ▸ 카메라 + 미지정,
 // 그리고 계약처를 가로지르는 즐겨찾기(다중 참조). 여기서 만든 배치가 카메라관리 트리에 반영된다.
 // TODO: replace with fetch('/api/v1/{contracts,sites,cameras,favorites}')
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -9,9 +9,26 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useToast } from '@/hooks/useToast';
-import type { Camera } from '@/types';
+import type { Camera, Contract, Site as SiteRecord } from '@/types';
+import bldg01 from '@/assets/images/panel-2026-04-28/site_card_bldg_01.png';
+import bldg02 from '@/assets/images/panel-2026-04-28/site_card_bldg_02.png';
+import bldg03 from '@/assets/images/panel-2026-04-28/site_card_bldg_03.png';
 import page from './Page.module.css';
 import styles from './Site.module.css';
+
+const THUMB_IMGS = [bldg01, bldg02, bldg03];
+
+/** 카메라 ID 뒷자리 숫자로 썸네일 이미지 결정 */
+function thumbImg(camId: string) {
+  const n = parseInt(camId.replace(/\D/g, '') || '0', 10);
+  return THUMB_IMGS[n % THUMB_IMGS.length];
+}
+
+/** ISO 문자열 → HH:MM:SS */
+function fmtTime(iso: string) {
+  try { return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); }
+  catch { return '00:00:00'; }
+}
 
 type Sel =
   | { kind: 'contract'; id: string }
@@ -38,6 +55,196 @@ function Chevron({ open }: { open: boolean }) {
 
 function StatusDot({ online }: { online: boolean }) {
   return <span className={[styles.dot, online ? styles.dotOn : styles.dotOff].join(' ')} aria-hidden />;
+}
+
+const FLAG_TAGS: { key: keyof Camera['flags']; label: string }[] = [
+  { key: 'intrusionDetection', label: '침입감지' },
+  { key: 'faceMatching',       label: '얼굴인식' },
+  { key: 'lpr',                label: '번호판' },
+  { key: 'lineCrossing',       label: '선월경' },
+];
+
+const STATUS_MAP: Record<Camera['status'], { label: string; cls: string }> = {
+  recording: { label: '녹화중',   cls: styles.camThumbStatusRecording },
+  online:    { label: '온라인',   cls: styles.camThumbStatusOnline },
+  offline:   { label: '오프라인', cls: styles.camThumbStatusOffline },
+};
+
+function CamCard({ cam, footer }: { cam: Camera; footer?: React.ReactNode }) {
+  const tags   = FLAG_TAGS.filter((f) => cam.flags[f.key]).map((f) => f.label);
+  const status = STATUS_MAP[cam.status];
+  const isOffline = cam.status === 'offline';
+  return (
+    <div className={styles.camCard}>
+      {/* 영상 썸네일 — CCTV 뷰 */}
+      <div className={styles.camThumb}>
+        <img
+          src={thumbImg(cam.id)}
+          alt=""
+          className={[styles.camThumbImg, isOffline ? styles.camThumbImgOffline : ''].filter(Boolean).join(' ')}
+        />
+        {/* 어두운 틴트 + 스캔라인 */}
+        <div className={styles.camThumbOverlay} />
+        <div className={styles.camThumbScanlines} />
+        {/* 오프라인: NO SIGNAL */}
+        {isOffline && (
+          <div className={styles.camThumbNoSignal}>NO SIGNAL</div>
+        )}
+        {/* 좌하단: 카메라 ID + 타임스탬프 */}
+        {!isOffline && (
+          <div className={styles.camThumbHud}>
+            <span className={styles.camThumbHudId}>{cam.id.replace('cam-', 'CAM-').toUpperCase()}</span>
+            <span className={styles.camThumbHudTime}>{fmtTime(cam.updatedAt)}</span>
+          </div>
+        )}
+        {/* 우상단: 상태 배지 */}
+        <span className={[styles.camThumbStatus, status.cls].join(' ')}>{status.label}</span>
+      </div>
+      {/* 카드 본문 */}
+      <div className={styles.camCardBody}>
+        <div className={styles.camCardName}>{cam.name}</div>
+        <div className={styles.camCardModel}>{cam.model}</div>
+        {tags.length > 0 && (
+          <div className={styles.camCardTags}>
+            {tags.map((t) => <span key={t} className={styles.camCardTag}>{t}</span>)}
+          </div>
+        )}
+        {footer && <div className={styles.camCardFooter}>{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────
+   카메라 추가 모달
+───────────────────────────────────────────────────── */
+function CameraAddModal({
+  siteId,
+  siteName,
+  myContracts,
+  allCameras,
+  allSites,
+  onClose,
+  onConfirm,
+}: {
+  siteId: string;
+  siteName: string;
+  myContracts: Contract[];
+  allCameras: Camera[];
+  allSites: SiteRecord[];
+  onClose: () => void;
+  onConfirm: (ids: string[]) => void;
+}) {
+  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+
+  // ESC 닫기
+  React.useEffect(() => {
+    const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+  }, [onClose]);
+
+  // 이 사이트에 없는 카메라를 계약처별로 그룹핑
+  const groups = myContracts
+    .map((c) => ({
+      contract: c,
+      cams: allCameras.filter((cam) => cam.contractId === c.id && cam.siteId !== siteId),
+    }))
+    .filter((g) => g.cams.length > 0);
+
+  const toggleCam = (id: string) =>
+    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const toggleGroup = (cams: Camera[]) => {
+    const allSel = cams.every((c) => selected.has(c.id));
+    setSelected((prev) => {
+      const n = new Set(prev);
+      allSel ? cams.forEach((c) => n.delete(c.id)) : cams.forEach((c) => n.add(c.id));
+      return n;
+    });
+  };
+
+  const homeLabel = (cam: Camera) =>
+    cam.siteId ? allSites.find((s) => s.id === cam.siteId)?.name ?? '' : '미지정';
+
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.modal} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        {/* 헤더 */}
+        <div className={styles.modalHeader}>
+          <div>
+            <div className={styles.modalTitle}>카메라 추가</div>
+            <div className={styles.modalSub}>{siteName}에 추가할 카메라를 선택하세요</div>
+          </div>
+          <button type="button" className={styles.modalClose} onClick={onClose} aria-label="닫기">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* 본문 — 계약처 그룹 */}
+        <div className={styles.modalBody}>
+          {groups.length === 0 ? (
+            <div className={styles.empty2}>추가할 수 있는 카메라가 없습니다.</div>
+          ) : groups.map(({ contract, cams }) => {
+            const allSel = cams.every((c) => selected.has(c.id));
+            return (
+              <div key={contract.id} className={styles.modalGroup}>
+                <div className={styles.modalGroupHeader}>
+                  <span className={styles.modalGroupName}>{contract.name}</span>
+                  <span className={styles.modalGroupCode}>{contract.code}</span>
+                  <button type="button" className={styles.modalSelectAll} onClick={() => toggleGroup(cams)}>
+                    {allSel ? '전체 해제' : '전체 선택'}
+                  </button>
+                </div>
+                <div className={styles.modalCamList}>
+                  {cams.map((cam) => {
+                    const isSel = selected.has(cam.id);
+                    return (
+                      <label
+                        key={cam.id}
+                        className={[styles.modalCamRow, isSel ? styles.modalCamRowSelected : ''].filter(Boolean).join(' ')}
+                      >
+                        <input
+                          type="checkbox"
+                          className={styles.modalCheckbox}
+                          checked={isSel}
+                          onChange={() => toggleCam(cam.id)}
+                        />
+                        <StatusDot online={cam.status !== 'offline'} />
+                        <span className={styles.modalCamName}>{cam.name}</span>
+                        <span className={styles.modalCamHome}>{homeLabel(cam)}</span>
+                        <span className={styles.modalCamModel}>{cam.model}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 푸터 */}
+        <div className={styles.modalFooter}>
+          <span className={styles.modalCount}>
+            {selected.size > 0 ? `${selected.size}개 선택됨` : '카메라를 선택하세요'}
+          </span>
+          <div className={styles.modalFooterBtns}>
+            <button type="button" className={styles.rowBtn} onClick={onClose}>취소</button>
+            <button
+              type="button"
+              className={styles.rowBtnPrimary}
+              disabled={selected.size === 0}
+              onClick={() => onConfirm([...selected])}
+            >
+              이 사이트로 추가
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Site() {
@@ -68,6 +275,7 @@ export default function Site() {
   const [openSites, setOpenSites] = useState<Set<string>>(new Set());
   const [sel, setSel] = useState<Sel>(null);
   const [showPool, setShowPool] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [poolContract, setPoolContract] = useState<string>(''); // 즐겨찾기 풀 계약처 필터
   // 인라인 이름변경 / 드래그 순서변경
   const [editing, setEditing] = useState<{ kind: 'site' | 'favorite'; id: string } | null>(null);
@@ -104,6 +312,7 @@ export default function Site() {
   const select = (s: Sel) => {
     setSel(s);
     setShowPool(false);
+    setShowAddModal(false);
     setPoolContract('');
   };
 
@@ -307,16 +516,15 @@ export default function Site() {
                   </div>
                 </Card>
                 <Card title={`전체 카메라 (${cCams.length})`}>
-                  <div className={styles.camList}>
-                    {cCams.length === 0 && <div className={styles.empty2}>등록된 카메라가 없습니다.</div>}
-                    {cCams.map((cam) => (
-                      <div key={cam.id} className={styles.camItem}>
-                        <StatusDot online={cam.status !== 'offline'} />
-                        <span className={styles.camName}>{cam.name}</span>
-                        <span className={styles.camHome}>{cam.siteId ? sites.find((s) => s.id === cam.siteId)?.name ?? '' : '미지정'}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {cCams.length === 0 ? (
+                    <div className={styles.empty2}>등록된 카메라가 없습니다.</div>
+                  ) : (
+                    <div className={styles.camGrid}>
+                      {cCams.map((cam) => (
+                        <CamCard key={cam.id} cam={cam} />
+                      ))}
+                    </div>
+                  )}
                 </Card>
                 <Card title={`사이트 (${cSites.length})`} actions={<Button variant="primary" size="sm" onClick={() => handleAddSite(c.id)}>+ 사이트 추가</Button>}>
                   <div className={styles.camList}>
@@ -338,8 +546,8 @@ export default function Site() {
             const st = sites.find((x) => x.id === sel.id);
             if (!st) return null;
             const inSite = camsOf(st.id);
-            // 같은 계약처에서 이 사이트에 없는 카메라 = 이동 후보
-            const candidates = cameras.filter((c) => c.contractId === st.contractId && c.siteId !== st.id);
+            // 같은 계약처에서 이 사이트에 없는 카메라 = 이동 후보 (TODO: 카메라 이동 기능 구현 시 사용)
+            // const candidates = cameras.filter((c) => c.contractId === st.contractId && c.siteId !== st.id);
             return (
               <>
                 <div className={styles.detailHead}>
@@ -361,34 +569,29 @@ export default function Site() {
                 </Card>
                 <Card
                   title={`카메라 (${inSite.length})`}
-                  actions={<Button variant="secondary" size="sm" onClick={() => setShowPool((v) => !v)}>{showPool ? '닫기' : '+ 카메라 추가'}</Button>}
+                  actions={<Button variant="secondary" size="sm" onClick={() => setShowAddModal(true)}>+ 카메라 추가</Button>}
                 >
-                  {showPool && (
-                    <div style={{ marginBottom: 12 }}>
-                      <div className={page.kvLabel} style={{ marginBottom: 6 }}>이 계약처의 다른 카메라 (선택 시 이 사이트로 이동)</div>
-                      <div className={styles.camList}>
-                        {candidates.length === 0 && <div className={styles.empty2}>이동할 카메라가 없습니다.</div>}
-                        {candidates.map((c) => (
-                          <div key={c.id} className={styles.camItem}>
-                            <StatusDot online={c.status !== 'offline'} />
-                            <span className={styles.camName}>{c.name}</span>
-                            <span className={styles.camHome}>{c.siteId ? sites.find((s) => s.id === c.siteId)?.name ?? '' : '미지정'}</span>
-                            <button type="button" className={styles.rowBtn} onClick={() => { assignCameraToSite(c.id, st.id); toast.success('이동됨', `${c.name} → ${st.name}`); }}>이 사이트로 이동</button>
-                          </div>
-                        ))}
-                      </div>
+                  {inSite.length === 0 ? (
+                    <div className={styles.empty2}>이 사이트에 배치된 카메라가 없습니다.</div>
+                  ) : (
+                    <div className={styles.camGrid}>
+                      {inSite.map((c) => (
+                        <CamCard
+                          key={c.id}
+                          cam={c}
+                          footer={
+                            <button
+                              type="button"
+                              className={[styles.rowBtn, styles.rowBtnDanger, styles.rowBtnFull].join(' ')}
+                              onClick={() => { assignCameraToSite(c.id, null); toast.info('미지정으로', c.name); }}
+                            >
+                              사이트에서 빼기
+                            </button>
+                          }
+                        />
+                      ))}
                     </div>
                   )}
-                  <div className={styles.camList}>
-                    {inSite.length === 0 && <div className={styles.empty2}>이 사이트에 배치된 카메라가 없습니다.</div>}
-                    {inSite.map((c) => (
-                      <div key={c.id} className={styles.camItem}>
-                        <StatusDot online={c.status !== 'offline'} />
-                        <span className={styles.camName}>{c.name}</span>
-                        <button type="button" className={[styles.rowBtn, styles.rowBtnDanger].join(' ')} onClick={() => { assignCameraToSite(c.id, null); toast.info('미지정으로', c.name); }}>사이트에서 빼기</button>
-                      </div>
-                    ))}
-                  </div>
                 </Card>
               </>
             );
@@ -495,6 +698,27 @@ export default function Site() {
           })()}
         </div>
       </div>
+
+      {/* 카메라 추가 모달 */}
+      {showAddModal && sel?.kind === 'site' && (() => {
+        const st = sites.find((x) => x.id === sel.id);
+        if (!st) return null;
+        return (
+          <CameraAddModal
+            siteId={st.id}
+            siteName={st.name}
+            myContracts={myContracts}
+            allCameras={cameras}
+            allSites={sites}
+            onClose={() => setShowAddModal(false)}
+            onConfirm={(ids) => {
+              ids.forEach((id) => assignCameraToSite(id, st.id));
+              toast.success('카메라 추가', `${ids.length}대를 ${st.name}에 추가했습니다.`);
+              setShowAddModal(false);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
