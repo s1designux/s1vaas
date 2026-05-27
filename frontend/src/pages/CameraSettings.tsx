@@ -672,30 +672,15 @@ export default function CameraSettings() {
   const removeAlgorithmPolygon = useDataStore((s) => s.removeAlgorithmPolygon);
   const toast = useToast();
 
-  // 트리 그룹: contractId → sites → cameras
-  const contractGroups = useMemo(() => {
-    const map = new Map<string, typeof sites>();
-    sites.forEach((s) => {
-      if (!map.has(s.contractId)) map.set(s.contractId, []);
-      map.get(s.contractId)!.push(s);
-    });
-    return Array.from(map.entries()).map(([contractId, siteList]) => ({ contractId, sites: siteList }));
-  }, [sites]);
+  // 아코디언 그룹: 사이트 단위 (하나만 펼침)
+  const [openSiteId, setOpenSiteId] = useState<string>(() => sites[0]?.id ?? '');
+
+  const toggleAccordion = (siteId: string) =>
+    setOpenSiteId((prev) => (prev === siteId ? '' : siteId));
 
   // 초기 선택: 첫 번째 카메라
   const [activeId, setActiveId] = useState(() => cameras[0]?.id ?? '');
   const [tab, setTab] = useState<SettingsTab>('system');
-
-  // 트리 접힘 상태 (기본: 모두 펼침)
-  const allContractIds = useMemo(() => contractGroups.map((g) => g.contractId), [contractGroups]);
-  const allSiteIds     = useMemo(() => sites.map((s) => s.id), [sites]);
-  const [expandedContracts, setExpandedContracts] = useState<Set<string>>(() => new Set(allContractIds));
-  const [expandedSites,     setExpandedSites]     = useState<Set<string>>(() => new Set(allSiteIds));
-
-  const toggleContract = (id: string) =>
-    setExpandedContracts((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleSite = (id: string) =>
-    setExpandedSites((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const cam = cameras.find((c) => c.id === activeId);
 
@@ -845,61 +830,65 @@ export default function CameraSettings() {
       </div>
 
       <div className={cs.body}>
-        {/* ── 좌측 트리 ── */}
+        {/* ── 좌측 아코디언 사이드바 ── */}
         <aside className={cs.sidebar}>
-          {contractGroups.map(({ contractId, sites: siteList }) => {
-            const isContractOpen = expandedContracts.has(contractId);
+          {sites.map((site) => {
+            const isOpen     = openSiteId === site.id;
+            const siteCams   = cameras.filter((c) => c.siteId === site.id);
             return (
-              <div key={contractId}>
-                {/* 고객번호 */}
-                <button className={cs.treeContract} onClick={() => toggleContract(contractId)}>
+              <div key={site.id} className={cs.accordionCard}>
+                {/* 헤더 */}
+                <button
+                  className={cs.accordionHeader}
+                  onClick={() => toggleAccordion(site.id)}
+                >
+                  <span className={cs.accordionTitle}>
+                    {site.name}
+                    <span className={cs.accordionCount}>{siteCams.length}</span>
+                  </span>
                   <svg
-                    className={`${cs.treeChevron} ${isContractOpen ? cs.treeChevronOpen : ''}`}
-                    width="12" height="12" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                    className={`${cs.accordionChevron} ${isOpen ? cs.accordionChevronOpen : ''}`}
+                    width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                   >
                     <path d="M9 18l6-6-6-6" />
                   </svg>
-                  {fmtContract(contractId)}
                 </button>
 
-                {isContractOpen && siteList.map((site) => {
-                  const isSiteOpen   = expandedSites.has(site.id);
-                  const siteCameras  = cameras.filter((c) => c.siteId === site.id);
-                  return (
-                    <div key={site.id}>
-                      {/* 사이트 */}
-                      <button className={cs.treeSite} onClick={() => toggleSite(site.id)}>
-                        <svg
-                          className={`${cs.treeChevron} ${isSiteOpen ? cs.treeChevronOpen : ''}`}
-                          width="11" height="11" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-                        >
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
-                        <svg className={cs.treeSiteIcon} width="13" height="13" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        </svg>
-                        {site.name}
-                      </button>
-
-                      {isSiteOpen && siteCameras.map((c) => (
+                {/* 카메라 리스트 */}
+                {isOpen && (
+                  <div className={cs.accordionList}>
+                    {siteCams.map((c) => {
+                      const isActive = c.id === activeId;
+                      const chipCls =
+                        c.status === 'recording' ? cs.statusChipRecording
+                        : c.status === 'online'  ? cs.statusChipOnline
+                        : cs.statusChipOffline;
+                      const statusLabel =
+                        c.status === 'recording' ? '녹화중'
+                        : c.status === 'online'  ? '온라인'
+                        : '오프라인';
+                      return (
                         <button
                           key={c.id}
-                          className={`${cs.treeCam} ${c.id === activeId ? cs.treeCamActive : ''}`}
+                          className={`${cs.accordionItem} ${isActive ? cs.accordionItemActive : ''}`}
                           onClick={() => setActiveId(c.id)}
                           title={c.name}
                         >
-                          <StatusDot status={c.status} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {c.name}
+                          <span className={`${cs.statusChip} ${chipCls}`}>
+                            {c.status === 'recording' ? '녹화' : c.status === 'online' ? 'ON' : 'OFF'}
+                          </span>
+                          <span className={cs.itemInfo}>
+                            <span className={`${cs.itemName} ${isActive ? cs.itemNameActive : ''}`}>
+                              {c.name}
+                            </span>
+                            <span className={cs.itemStatusText}>{statusLabel}</span>
                           </span>
                         </button>
-                      ))}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
