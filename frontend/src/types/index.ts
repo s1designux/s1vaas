@@ -1,5 +1,6 @@
 export type { Contract, ContractStatus } from './contract';
 export type { Site } from './site';
+export type { FavoriteView } from './favorite';
 export type {
   Camera,
   CameraStatus,

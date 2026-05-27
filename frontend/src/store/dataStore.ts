@@ -10,6 +10,7 @@ import type {
   UserRole,
   CameraAlgorithm,
   ZonePolygon,
+  FavoriteView,
 } from '@/types';
 import { contractsSeed } from '@/mock/contracts';
 import { sitesSeed } from '@/mock/sites';
@@ -18,6 +19,7 @@ import { usersSeed } from '@/mock/users';
 import { eventsSeed } from '@/mock/events';
 import { schedulesSeed } from '@/mock/schedules';
 import { algorithmsSeed } from '@/mock/algorithms';
+import { favoritesSeed } from '@/mock/favorites';
 
 interface InviteInput {
   email: string;
@@ -34,12 +36,23 @@ interface DataState {
   events: AppEvent[];
   schedules: Schedule[];
   algorithms: CameraAlgorithm[];
+  favorites: FavoriteView[];
   patchCamera: (id: string, patch: Partial<Camera>) => void;
   ackEvent: (id: string) => void;
   patchEvent: (id: string, patch: Partial<AppEvent>) => void;
   patchUser: (id: string, patch: Partial<AppUser>) => void;
   updateSite: (id: string, patch: Partial<Site>) => void;
-  addSite: (input: Omit<Site, 'id' | 'cameraCount' | 'onlineCount'>) => void;
+  addSite: (input: Omit<Site, 'id' | 'cameraCount' | 'onlineCount'>) => string;
+  removeSite: (id: string) => void;
+  /** 카메라의 단일 홈 사이트 배치(소속 이동). null = 미지정으로. */
+  assignCameraToSite: (cameraId: string, siteId: string | null) => void;
+  /** 계약처 별칭 등 수정 */
+  updateContract: (id: string, patch: Partial<Contract>) => void;
+  /** 즐겨찾기(빠른 보기) CRUD — 카메라는 참조만(소속 불변) */
+  addFavorite: (ownerId: string, name: string) => string;
+  updateFavorite: (id: string, patch: Partial<Pick<FavoriteView, 'name' | 'cameraIds'>>) => void;
+  removeFavorite: (id: string) => void;
+  toggleFavoriteCamera: (favoriteId: string, cameraId: string) => void;
   inviteUser: (input: InviteInput) => void;
   updateUser: (id: string, patch: Partial<AppUser>) => void;
   removeUser: (id: string) => void;
@@ -67,6 +80,7 @@ export const useDataStore = create<DataState>((set) => ({
   events: eventsSeed,
   schedules: schedulesSeed,
   algorithms: algorithmsSeed,
+  favorites: favoritesSeed,
   patchCamera: (id, patch) =>
     set((s) => ({
       cameras: s.cameras.map((c) => (c.id === id ? { ...c, ...patch } : c)),
@@ -87,17 +101,50 @@ export const useDataStore = create<DataState>((set) => ({
     set((s) => ({
       sites: s.sites.map((st) => (st.id === id ? { ...st, ...patch } : st)),
     })),
-  addSite: (input) =>
+  addSite: (input) => {
+    const id = `site-${Date.now().toString(36)}`;
     set((s) => ({
-      sites: [
-        ...s.sites,
-        {
-          ...input,
-          id: `site-${Date.now().toString(36)}`,
-          cameraCount: 0,
-          onlineCount: 0,
-        },
-      ],
+      sites: [...s.sites, { ...input, id, cameraCount: 0, onlineCount: 0 }],
+    }));
+    return id;
+  },
+  removeSite: (id) =>
+    set((s) => ({
+      sites: s.sites.filter((st) => st.id !== id),
+      // 사이트 삭제 시 소속 카메라는 미지정으로 되돌림(소유 계약처는 유지).
+      cameras: s.cameras.map((c) => (c.siteId === id ? { ...c, siteId: null } : c)),
+    })),
+  assignCameraToSite: (cameraId, siteId) =>
+    set((s) => ({
+      cameras: s.cameras.map((c) => (c.id === cameraId ? { ...c, siteId } : c)),
+    })),
+  updateContract: (id, patch) =>
+    set((s) => ({
+      contracts: s.contracts.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    })),
+  addFavorite: (ownerId, name) => {
+    const id = `fav-${Date.now().toString(36)}`;
+    set((s) => ({ favorites: [...s.favorites, { id, ownerId, name, cameraIds: [] }] }));
+    return id;
+  },
+  updateFavorite: (id, patch) =>
+    set((s) => ({
+      favorites: s.favorites.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    })),
+  removeFavorite: (id) =>
+    set((s) => ({ favorites: s.favorites.filter((f) => f.id !== id) })),
+  toggleFavoriteCamera: (favoriteId, cameraId) =>
+    set((s) => ({
+      favorites: s.favorites.map((f) =>
+        f.id !== favoriteId
+          ? f
+          : {
+              ...f,
+              cameraIds: f.cameraIds.includes(cameraId)
+                ? f.cameraIds.filter((cid) => cid !== cameraId)
+                : [...f.cameraIds, cameraId],
+            },
+      ),
     })),
   inviteUser: (input) =>
     set((s) => ({
