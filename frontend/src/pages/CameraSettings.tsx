@@ -1,9 +1,9 @@
 // TODO: replace with fetch('/api/v1/cameras/{id}') + PATCH
 // 카메라 관리 — AI 카메라 Process Flow(V0.76) 사양 기반 상세화.
-//   설정 체계: 시스템(310/320) / 네트워크(410/420) / 비디오(510) / 이미지(610·620) / 녹화
+//   설정 체계: 실시간영상(100 LIVE) / 시스템(310/320) / 네트워크(410/420) / 비디오(510) / 이미지(610·620)
+//   실시간영상 탭 = 라이브 영상 + 기본 정보 + OSD 설정.
 //   AI 이벤트(침입·배회·가상펜스·화재·주정차·피플카운팅)·움직임 감지·감지 스케줄,
 //   그리고 프라이버시 마스크(630)는 [안심 AI 설정]으로 이관 — 여기서는 다루지 않는다.
-//   ※ 녹화 탭은 V0.76 PPTX에 미정의 — 기획 확인 필요(현재 표준 가정값 표시).
 import { useEffect, useMemo, useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { Card } from '@/components/ui/Card';
@@ -14,14 +14,14 @@ import { Select } from '@/components/ui/Select';
 import page from './Page.module.css';
 import cs from './CameraSettings.module.css';
 
-type SettingsTab = 'system' | 'network' | 'video' | 'image' | 'record';
+type SettingsTab = 'live' | 'system' | 'network' | 'video' | 'image';
 
 const SETTINGS_TABS: { key: SettingsTab; label: string }[] = [
+  { key: 'live', label: '실시간영상' },
   { key: 'system', label: '시스템' },
   { key: 'network', label: '네트워크' },
   { key: 'video', label: '비디오' },
   { key: 'image', label: '이미지' },
-  { key: 'record', label: '녹화' },
 ];
 
 /* ---------- 공용 폼 헬퍼 ---------- */
@@ -257,9 +257,17 @@ export default function CameraSettings() {
 
   // 초기 선택: 첫 번째 카메라
   const [activeId, setActiveId] = useState(() => cameras[0]?.id ?? '');
-  const [tab, setTab] = useState<SettingsTab>('system');
+  const [tab, setTab] = useState<SettingsTab>('live');
+  const [liveTab, setLiveTab] = useState<'osd' | 'info'>('osd');
 
   const cam = cameras.find((c) => c.id === activeId);
+  const offline = cam?.status === 'offline';
+
+  // 실시간영상 미리보기용 mock 비디오 인덱스 (1..6)
+  const videoIdx = useMemo(() => {
+    const idx = cameras.findIndex((c) => c.id === activeId);
+    return ((idx < 0 ? 0 : idx) % 6) + 1;
+  }, [cameras, activeId]);
 
   // ---- 시스템 / 날짜·시간 ----
   const [timezone, setTimezone] = useState('GMT+09:00');
@@ -465,21 +473,100 @@ export default function CameraSettings() {
               ))}
             </div>
 
+      {/* ===== 실시간영상 ===== */}
+      {tab === 'live' && (
+        <div className={page.csGrid}>
+          {/* 좌측: 라이브 피드 */}
+          <Card
+            title={cam.name}
+            actions={<Badge tone={offline ? 'danger' : 'success'} dot>{cam.status === 'recording' ? '녹화중' : cam.status === 'online' ? '온라인' : '오프라인'}</Badge>}
+          >
+            <div className={page.preview}>
+              {!offline && (
+                <video
+                  className={page.previewVideo}
+                  src={`/mock-cctv/cam_0${videoIdx}.mp4`}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                />
+              )}
+              {offline && <span style={{ position: 'relative', zIndex: 2 }}>OFFLINE</span>}
+            </div>
+          </Card>
+
+          {/* 우측: OSD 설정 / 기본 정보 라인탭 패널 */}
+          <div className={cs.livePanel}>
+            <div className={cs.livePanelTabBar}>
+              <button
+                className={`${cs.livePanelTab} ${liveTab === 'osd' ? cs.livePanelTabActive : ''}`}
+                onClick={() => setLiveTab('osd')}
+              >
+                OSD 설정
+              </button>
+              <button
+                className={`${cs.livePanelTab} ${liveTab === 'info' ? cs.livePanelTabActive : ''}`}
+                onClick={() => setLiveTab('info')}
+              >
+                기본 정보
+              </button>
+            </div>
+
+            <div className={cs.livePanelBody}>
+              {liveTab === 'osd' && (
+                <>
+                  <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
+                  {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
+                  <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
+                  {osdDate && (
+                    <>
+                      <Seg
+                        label="시간 표시"
+                        value={timeFormat}
+                        onChange={setTimeFormat}
+                        options={[{ value: '24', label: '24시간' }, { value: '12', label: '12시간' }]}
+                      />
+                      <SelectField
+                        label="날짜 형식"
+                        value={dateFormat}
+                        onChange={setDateFormat}
+                        options={[
+                          { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+                          { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
+                          { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
+                          { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+                        ]}
+                      />
+                      <ToggleRow title="요일 표시" on={osdWeekday} onToggle={() => setOsdWeekday(!osdWeekday)} />
+                    </>
+                  )}
+                  <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
+                </>
+              )}
+
+              {liveTab === 'info' && (
+                <>
+                  <div className={page.sectionCaption}>카메라 정보</div>
+                  <Kv label="접속 상태" value={cam.status === 'online' ? '온라인' : cam.status === 'recording' ? '녹화중' : '오프라인'} />
+                  <Kv label="제품 코드" value={`SVI-${cam.model}`} />
+                  <Kv label="제조번호 (S/N)" value={serial} />
+                  <Kv label="제품등록번호" value={`R-${serial.slice(-8)}`} />
+                  <Kv label="MAC 주소" value={macAddr} />
+                  <Kv label="F/W 버전" value={cam.firmware} />
+                  <Kv label="F/W 빌드 날짜" value="2026-03-18" />
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ===== 시스템 ===== */}
       {tab === 'system' && (
         <div className={page.csGrid}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card title="기본 정보">
-              <div className={page.sectionCaption}>카메라 정보</div>
-              <Kv label="접속 상태" value={cam.status === 'online' ? '온라인' : cam.status === 'recording' ? '녹화중' : '오프라인'} />
-              <Kv label="제품 코드" value={`SVI-${cam.model}`} />
-              <Kv label="제조번호 (S/N)" value={serial} />
-              <Kv label="제품등록번호" value={`R-${serial.slice(-8)}`} />
-              <Kv label="MAC 주소" value={macAddr} />
-              <Kv label="F/W 버전" value={cam.firmware} />
-              <Kv label="F/W 빌드 날짜" value="2026-03-18" />
-            </Card>
-
             <Card title="날짜 · 시간">
               <SelectField
                 label="표준 시간대"
@@ -835,53 +922,10 @@ export default function CameraSettings() {
               </div>
             </Card>
 
-            <Card title="OSD 설정">
-              <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
-              {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
-              <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
-              {osdDate && (
-                <>
-                  <Seg
-                    label="시간 표시"
-                    value={timeFormat}
-                    onChange={setTimeFormat}
-                    options={[{ value: '24', label: '24시간' }, { value: '12', label: '12시간' }]}
-                  />
-                  <SelectField
-                    label="날짜 형식"
-                    value={dateFormat}
-                    onChange={setDateFormat}
-                    options={[
-                      { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-                      { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
-                      { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
-                      { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-                    ]}
-                  />
-                  <ToggleRow title="요일 표시" on={osdWeekday} onToggle={() => setOsdWeekday(!osdWeekday)} />
-                </>
-              )}
-              <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
-            </Card>
           </div>
         </div>
       )}
 
-            {/* ===== 녹화 ===== */}
-            {tab === 'record' && (
-              <Card title="녹화 정책">
-                <Kv label="녹화 모드" value="연속 녹화" />
-                <Kv label="녹화 스트림" value="메인 스트림" />
-                <Kv label="저장 기간" value="30일" />
-                <Kv label="프리레코드" value="5초" />
-                <Kv label="포스트레코드" value="10초" />
-                <div className={page.sectionCaption}>스케줄</div>
-                <Kv label="녹화 시작" value="00:00" />
-                <Kv label="녹화 종료" value="23:59" />
-                <Kv label="오디오 녹음" value="비활성" />
-                <Kv label="오버라이트" value="활성" />
-              </Card>
-            )}
           </div>
         )}
       </div>

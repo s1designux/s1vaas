@@ -301,6 +301,62 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* ── 실시간영상 탭 우측 패널 ── */
+.livePanel {
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card-md);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color var(--transition-base);
+}
+
+.livePanel:hover {
+  border-color: var(--color-border-default);
+}
+
+.livePanelTabBar {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+  padding: 0 var(--spacing-16);
+}
+
+.livePanelTab {
+  padding: var(--spacing-10) var(--spacing-12);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.livePanelTab:hover {
+  color: var(--color-text-primary);
+}
+
+.livePanelTabActive {
+  color: var(--color-action-primary-default);
+  border-bottom-color: var(--color-action-primary-default);
+  font-weight: var(--font-weight-semibold);
+}
+
+.livePanelBody {
+  padding: var(--spacing-20);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
+  overflow-y: auto;
+  flex: 1;
+}
+
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
