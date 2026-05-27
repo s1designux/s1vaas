@@ -3,8 +3,19 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
+  padding: var(--spacing-16);
   animation: fade-in 0.35s ease-out;
+  box-sizing: border-box;
+}
+
+/* ── 컨테이너 (Figma: border 1px #d9d9d9, radius 10px, overflow clip) ── */
+.container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-surface-default);
 }
 
 /* ── 바디 레이아웃 ── */
@@ -260,6 +271,10 @@
   display: flex;
   border-bottom: var(--border-width-default) solid var(--color-border-subtle);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-surface-default);
 }
 
 .settingsTab {
