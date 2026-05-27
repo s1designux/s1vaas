@@ -11,17 +11,17 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Chip } from '@/components/ui/Chip';
 import page from './Page.module.css';
 import cs from './CameraSettings.module.css';
 
-type SettingsTab = 'live' | 'system' | 'network' | 'video' | 'image';
+type SettingsTab = 'live' | 'system' | 'network' | 'video';
 
 const SETTINGS_TABS: { key: SettingsTab; label: string }[] = [
   { key: 'live', label: '실시간영상' },
   { key: 'system', label: '시스템' },
   { key: 'network', label: '네트워크' },
   { key: 'video', label: '비디오' },
-  { key: 'image', label: '이미지' },
 ];
 
 /* ---------- 공용 폼 헬퍼 ---------- */
@@ -101,14 +101,13 @@ function Seg<T extends string | number>({
       <span className={page.formLabel}>{label}</span>
       <div className={page.chips}>
         {options.map((o) => (
-          <button
+          <Chip
             key={String(o.value)}
-            type="button"
-            className={[page.chip, value === o.value ? page.chipActive : ''].filter(Boolean).join(' ')}
+            selected={value === o.value}
             onClick={() => onChange(o.value)}
           >
             {o.label}
-          </button>
+          </Chip>
         ))}
       </div>
     </div>
@@ -443,6 +442,65 @@ export default function CameraSettings() {
                     </div>
                   );
                 })}
+
+                {/* 미지정 — 사이트 미배정 카메라 (배치는 사이트 관리에서) */}
+                {isContractOpen && (() => {
+                  const contractSiteIds = new Set(siteList.map((s) => s.id));
+                  const unassigned = cameras.filter((c) => !contractSiteIds.has(c.siteId));
+                  if (unassigned.length === 0) return null;
+                  const uid = `${contractId}__unassigned`;
+                  const isOpen = openSiteId === uid;
+                  return (
+                    <div className={cs.accordionCard}>
+                      <button className={cs.accordionHeader} onClick={() => toggleAccordion(uid)}>
+                        <span className={cs.accordionTitle}>
+                          미지정
+                          <span className={cs.accordionCount}>{unassigned.length}</span>
+                        </span>
+                        <svg
+                          className={`${cs.accordionChevron} ${isOpen ? cs.accordionChevronOpen : ''}`}
+                          width="24" height="24" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                        >
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                      </button>
+                      {isOpen && (
+                        <div className={cs.accordionList}>
+                          {unassigned.map((c) => {
+                            const isActive = c.id === activeId;
+                            const chipCls =
+                              c.status === 'recording' ? cs.statusChipRecording
+                              : c.status === 'online'  ? cs.statusChipOnline
+                              : cs.statusChipOffline;
+                            const statusLabel =
+                              c.status === 'recording' ? '녹화중'
+                              : c.status === 'online'  ? '온라인'
+                              : '오프라인';
+                            return (
+                              <button
+                                key={c.id}
+                                className={`${cs.accordionItem} ${isActive ? cs.accordionItemActive : ''}`}
+                                onClick={() => setActiveId(c.id)}
+                                title={c.name}
+                              >
+                                <span className={`${cs.statusChip} ${chipCls}`}>
+                                  {c.status === 'recording' ? '녹화' : c.status === 'online' ? 'ON' : 'OFF'}
+                                </span>
+                                <span className={cs.itemInfo}>
+                                  <span className={`${cs.itemName} ${isActive ? cs.itemNameActive : ''}`}>
+                                    {c.name}
+                                  </span>
+                                  <span className={cs.itemStatusText}>{statusLabel}</span>
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}
@@ -515,8 +573,121 @@ export default function CameraSettings() {
             </div>
 
             <div className={cs.livePanelBody}>
+              {/* ── OSD 설정 탭: 이미지 설정 전체 ── */}
               {liveTab === 'osd' && (
                 <>
+                  <div className={page.sectionCaption}>이미지 조정 (0~100)</div>
+                  <EditSlider label="밝기" value={img.brightness} min={0} max={100} onChange={(v) => patchImg({ brightness: v })} />
+                  <EditSlider label="선명도" value={img.sharpness} min={0} max={100} onChange={(v) => patchImg({ sharpness: v })} />
+                  <EditSlider label="대비" value={img.contrast} min={0} max={100} onChange={(v) => patchImg({ contrast: v })} />
+                  <EditSlider label="채도" value={img.saturation} min={0} max={100} onChange={(v) => patchImg({ saturation: v })} />
+                  <EditSlider label="Gain" value={img.gain} min={0} max={100} onChange={(v) => patchImg({ gain: v })} />
+
+                  <div className={page.sectionCaption}>노출</div>
+                  <SelectField
+                    label="조리개 모드"
+                    value={aperture}
+                    onChange={setAperture}
+                    options={[
+                      { value: 'auto', label: '자동' },
+                      { value: 'manual', label: '수동' },
+                    ]}
+                  />
+                  <SelectField
+                    label="노출 시간"
+                    value={exposureTime}
+                    onChange={setExposureTime}
+                    options={[
+                      { value: 'auto', label: '자동' },
+                      { value: '1/30', label: '1/30초' },
+                      { value: '1/60', label: '1/60초' },
+                      { value: '1/100', label: '1/100초' },
+                      { value: '1/250', label: '1/250초' },
+                      { value: '1/500', label: '1/500초' },
+                    ]}
+                  />
+
+                  <div className={page.sectionCaption}>화이트 밸런스</div>
+                  <SelectField
+                    label="화이트 밸런스"
+                    value={wb}
+                    onChange={setWb}
+                    options={[
+                      { value: 'awb1', label: '자동 화이트 밸런스 1' },
+                      { value: 'awb2', label: '자동 화이트 밸런스 2' },
+                      { value: 'manual', label: '수동' },
+                      { value: 'lock', label: '화이트 밸런스 잠금' },
+                    ]}
+                  />
+
+                  <div className={page.sectionCaption}>주간 / 야간</div>
+                  <SelectField
+                    label="주야간 모드"
+                    value={dayNight}
+                    onChange={setDayNight}
+                    options={[
+                      { value: 'auto', label: '자동' },
+                      { value: 'day', label: '주간' },
+                      { value: 'night', label: '야간' },
+                      { value: 'schedule', label: '스케줄 전환' },
+                    ]}
+                  />
+                  <SelectField
+                    label="IR 보조등"
+                    value={irMode}
+                    onChange={setIrMode}
+                    options={[
+                      { value: 'auto', label: '자동' },
+                      { value: 'manual', label: '수동' },
+                      { value: 'off', label: '끄기' },
+                    ]}
+                  />
+                  {irMode === 'manual' && (
+                    <EditSlider label="IR 조명 밝기 (1~100)" value={irBrightness} min={1} max={100} onChange={setIrBrightness} />
+                  )}
+
+                  <div className={page.sectionCaption}>영상 보정</div>
+                  <SelectField
+                    label="영상 반전 / 회전"
+                    value={flip}
+                    onChange={setFlip}
+                    options={[
+                      { value: 'off', label: '끄기' },
+                      { value: 'h', label: '좌우 반전' },
+                      { value: 'v', label: '상하 반전' },
+                      { value: '180', label: '180도 회전' },
+                    ]}
+                  />
+                  <ToggleRow title="노이즈 제거" on={noiseOn} onToggle={() => setNoiseOn(!noiseOn)} />
+                  {noiseOn && <EditSlider label="노이즈 감소 레벨 (5~100)" value={noiseLevel} min={5} max={100} onChange={setNoiseLevel} />}
+                  <SelectField
+                    label="WDR"
+                    value={wdr}
+                    onChange={setWdr}
+                    options={[{ value: 'off', label: '끄기' }, { value: 'on', label: '켜기' }, { value: 'auto', label: '자동' }]}
+                  />
+                  <SelectField
+                    label="역광 보정 (BLC)"
+                    value={blc}
+                    onChange={setBlc}
+                    options={[{ value: 'off', label: '끄기' }, { value: 'on', label: '켜기' }]}
+                  />
+                </>
+              )}
+
+              {/* ── 기본 정보 탭: 카메라 정보 + OSD 설정 ── */}
+              {liveTab === 'info' && (
+                <>
+                  <div className={page.sectionCaption}>카메라 정보</div>
+                  <Kv label="접속 상태" value={cam.status === 'online' ? '온라인' : cam.status === 'recording' ? '녹화중' : '오프라인'} />
+                  <Kv label="제품 코드" value={`SVI-${cam.model}`} />
+                  <Kv label="제조번호 (S/N)" value={serial} />
+                  <Kv label="제품등록번호" value={`R-${serial.slice(-8)}`} />
+                  <Kv label="MAC 주소" value={macAddr} />
+                  <Kv label="F/W 버전" value={cam.firmware} />
+                  <Kv label="F/W 빌드 날짜" value="2026-03-18" />
+
+                  <div className={page.sectionCaption}>OSD 설정</div>
                   <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
                   {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
                   <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
@@ -543,19 +714,6 @@ export default function CameraSettings() {
                     </>
                   )}
                   <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
-                </>
-              )}
-
-              {liveTab === 'info' && (
-                <>
-                  <div className={page.sectionCaption}>카메라 정보</div>
-                  <Kv label="접속 상태" value={cam.status === 'online' ? '온라인' : cam.status === 'recording' ? '녹화중' : '오프라인'} />
-                  <Kv label="제품 코드" value={`SVI-${cam.model}`} />
-                  <Kv label="제조번호 (S/N)" value={serial} />
-                  <Kv label="제품등록번호" value={`R-${serial.slice(-8)}`} />
-                  <Kv label="MAC 주소" value={macAddr} />
-                  <Kv label="F/W 버전" value={cam.firmware} />
-                  <Kv label="F/W 빌드 날짜" value="2026-03-18" />
                 </>
               )}
             </div>
@@ -803,128 +961,6 @@ export default function CameraSettings() {
         </Card>
       )}
 
-      {/* ===== 이미지 ===== */}
-      {tab === 'image' && (
-        <div className={page.csGrid}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card title="영상 설정">
-              <div className={page.sectionCaption}>이미지 조정 (0~100)</div>
-              <EditSlider label="밝기" value={img.brightness} min={0} max={100} onChange={(v) => patchImg({ brightness: v })} />
-              <EditSlider label="선명도" value={img.sharpness} min={0} max={100} onChange={(v) => patchImg({ sharpness: v })} />
-              <EditSlider label="대비" value={img.contrast} min={0} max={100} onChange={(v) => patchImg({ contrast: v })} />
-              <EditSlider label="채도" value={img.saturation} min={0} max={100} onChange={(v) => patchImg({ saturation: v })} />
-              <EditSlider label="Gain" value={img.gain} min={0} max={100} onChange={(v) => patchImg({ gain: v })} />
-
-              <div className={page.sectionCaption}>노출</div>
-              <SelectField
-                label="조리개 모드"
-                value={aperture}
-                onChange={setAperture}
-                options={[
-                  { value: 'auto', label: '자동' },
-                  { value: 'manual', label: '수동' },
-                ]}
-              />
-              <SelectField
-                label="노출 시간"
-                value={exposureTime}
-                onChange={setExposureTime}
-                options={[
-                  { value: 'auto', label: '자동' },
-                  { value: '1/30', label: '1/30초' },
-                  { value: '1/60', label: '1/60초' },
-                  { value: '1/100', label: '1/100초' },
-                  { value: '1/250', label: '1/250초' },
-                  { value: '1/500', label: '1/500초' },
-                ]}
-              />
-
-              <div className={page.sectionCaption}>화이트 밸런스</div>
-              <SelectField
-                label="화이트 밸런스"
-                value={wb}
-                onChange={setWb}
-                options={[
-                  { value: 'awb1', label: '자동 화이트 밸런스 1' },
-                  { value: 'awb2', label: '자동 화이트 밸런스 2' },
-                  { value: 'manual', label: '수동' },
-                  { value: 'lock', label: '화이트 밸런스 잠금' },
-                ]}
-              />
-
-              <div className={page.sectionCaption}>주간 / 야간</div>
-              <SelectField
-                label="주야간 모드"
-                value={dayNight}
-                onChange={setDayNight}
-                options={[
-                  { value: 'auto', label: '자동' },
-                  { value: 'day', label: '주간' },
-                  { value: 'night', label: '야간' },
-                  { value: 'schedule', label: '스케줄 전환' },
-                ]}
-              />
-              <SelectField
-                label="IR 보조등"
-                value={irMode}
-                onChange={setIrMode}
-                options={[
-                  { value: 'auto', label: '자동' },
-                  { value: 'manual', label: '수동' },
-                  { value: 'off', label: '끄기' },
-                ]}
-              />
-              {irMode === 'manual' && (
-                <EditSlider label="IR 조명 밝기 (1~100)" value={irBrightness} min={1} max={100} onChange={setIrBrightness} />
-              )}
-
-              <div className={page.sectionCaption}>영상 보정</div>
-              <SelectField
-                label="영상 반전 / 회전"
-                value={flip}
-                onChange={setFlip}
-                options={[
-                  { value: 'off', label: '끄기' },
-                  { value: 'h', label: '좌우 반전' },
-                  { value: 'v', label: '상하 반전' },
-                  { value: '180', label: '180도 회전' },
-                ]}
-              />
-              <ToggleRow title="노이즈 제거" on={noiseOn} onToggle={() => setNoiseOn(!noiseOn)} />
-              {noiseOn && <EditSlider label="노이즈 감소 레벨 (5~100)" value={noiseLevel} min={5} max={100} onChange={setNoiseLevel} />}
-              <SelectField
-                label="WDR"
-                value={wdr}
-                onChange={setWdr}
-                options={[{ value: 'off', label: '끄기' }, { value: 'on', label: '켜기' }, { value: 'auto', label: '자동' }]}
-              />
-              <SelectField
-                label="역광 보정 (BLC)"
-                value={blc}
-                onChange={setBlc}
-                options={[{ value: 'off', label: '끄기' }, { value: 'on', label: '켜기' }]}
-              />
-            </Card>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card>
-              <div className={page.securityMsg} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.5 }}>
-                <span aria-hidden style={{ color: 'var(--color-accent)', flexShrink: 0, marginTop: 1 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 8h.01M11 12h1v4h1" />
-                  </svg>
-                </span>
-                <span>
-                  <b>프라이버시 마스크</b>(영역 가리기)는 <b>안심 AI 설정</b>에서 카메라별로 관리합니다.
-                </span>
-              </div>
-            </Card>
-
-          </div>
-        </div>
-      )}
 
           </div>
         )}
