@@ -199,8 +199,9 @@ export default function Site() {
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(setOpenContracts, c.id); select({ kind: 'contract', id: c.id }); } }}
                 >
                   <Chevron open={cOpen} />
-                  <span className={styles.nodeLabel}>{c.name}</span>
+                  <span className={styles.nodeLabel} style={{ flex: '0 1 auto' }}>{c.name}</span>
                   <span className={styles.nodeCode}>{c.code}</span>
+                  <span style={{ flex: 1 }} aria-hidden />
                   <div className={styles.nodeActions}>
                     <button type="button" className={styles.iconBtn} title="사이트 추가" onClick={(e) => { e.stopPropagation(); handleAddSite(c.id); }}>＋</button>
                   </div>
@@ -212,19 +213,18 @@ export default function Site() {
                     {cSites.map((st) => {
                       const sOpen = openSites.has(st.id);
                       const sCams = camsOf(st.id);
-                      const isEditing = editing?.kind === 'site' && editing.id === st.id;
                       return (
                         <div key={st.id}>
                           <div
                             role="button"
                             tabIndex={0}
-                            draggable={!isEditing}
+                            draggable
                             className={[styles.node, styles.lvl1,
                               sel?.kind === 'site' && sel.id === st.id ? styles.nodeActive : '',
                               dragOverSite === st.id ? styles.dragOver : '',
                               dragSite === st.id ? styles.dragging : ''].filter(Boolean).join(' ')}
-                            onClick={() => { if (isEditing) return; toggle(setOpenSites, st.id); select({ kind: 'site', id: st.id }); }}
-                            onKeyDown={(e) => { if (isEditing) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(setOpenSites, st.id); select({ kind: 'site', id: st.id }); } }}
+                            onClick={() => { toggle(setOpenSites, st.id); select({ kind: 'site', id: st.id }); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(setOpenSites, st.id); select({ kind: 'site', id: st.id }); } }}
                             onDragStart={() => setDragSite(st.id)}
                             onDragOver={(e) => { e.preventDefault(); setDragOverSite(st.id); }}
                             onDragLeave={() => setDragOverSite((p) => (p === st.id ? null : p))}
@@ -232,19 +232,7 @@ export default function Site() {
                             onDragEnd={() => { setDragSite(null); setDragOverSite(null); }}
                           >
                             <Chevron open={sOpen} />
-                            {isEditing ? (
-                              <input className={styles.inlineInput} autoFocus value={editVal}
-                                onChange={(e) => setEditVal(e.target.value)}
-                                onClick={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEdit(); } else if (e.key === 'Escape') { e.preventDefault(); setEditing(null); } }}
-                                onBlur={commitEdit} />
-                            ) : (
-                              <span className={styles.nodeLabel}>{st.name}</span>
-                            )}
-                            <div className={styles.nodeActions}>
-                              <button type="button" className={styles.iconBtn} title="이름 변경" onClick={(e) => { e.stopPropagation(); beginEdit('site', st.id, st.name); }}>✎</button>
-                              <button type="button" className={[styles.iconBtn, styles.iconBtnDanger].join(' ')} title="삭제" onClick={(e) => { e.stopPropagation(); removeSite(st.id); if (sel?.kind === 'site' && sel.id === st.id) select({ kind: 'contract', id: c.id }); toast.info('사이트 삭제', '소속 카메라는 미지정으로'); }}>🗑</button>
-                            </div>
+                            <span className={styles.nodeLabel}>{st.name}</span>
                             <span className={styles.nodeCount}>{sCams.length}</span>
                           </div>
                           {sOpen &&
@@ -344,8 +332,11 @@ export default function Site() {
               <>
                 <div className={styles.detailHead}>
                   <div>
-                    <div className={styles.detailKicker}>계약처 · {c.code}</div>
-                    <h2 className={styles.detailTitle}>{c.name}</h2>
+                    <div className={styles.detailKicker}>계약처</div>
+                    <h2 className={styles.detailTitle}>
+                      {c.name}{' '}
+                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-mono)' }}>{c.code}</span>
+                    </h2>
                   </div>
                   <Badge tone={c.status === 'active' ? 'success' : 'warn'} dot>
                     {c.status === 'active' ? '활성' : c.status === 'suspended' ? '일시중지' : '만료'}
