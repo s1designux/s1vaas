@@ -941,21 +941,6 @@ export default function CameraSettings() {
           </div>
         ) : (
           <div className={cs.content}>
-            {/* AI 이벤트 이관 안내 */}
-            <Card>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.5 }}>
-                <span aria-hidden style={{ color: 'var(--color-accent)', flexShrink: 0, marginTop: 1 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="9" /><path d="M12 8h.01M11 12h1v4h1" />
-                  </svg>
-                </span>
-                <span>
-                  침입·배회·가상펜스·화재·주정차·피플카운팅 등 <b>AI 이벤트 감지</b>와 움직임 감지·감지 스케줄은{' '}
-                  <b>안심 AI 설정</b>에서 관리합니다.
-                </span>
-              </div>
-            </Card>
-
             {/* 설정 탭 */}
             <div className={cs.settingsTabs}>
               {SETTINGS_TABS.map((t) => (
