@@ -841,15 +841,6 @@ export default function CameraSettings() {
 
   return (
     <div className={cs.wrap}>
-      {/* ── 상단 헤더 ── */}
-      <div className={cs.pageHeader}>
-        <span className={cs.pageTitle}>카메라 관리</span>
-        <div className={cs.pageActions}>
-          <Button variant="secondary" size="sm">초기화</Button>
-          <Button variant="primary" size="sm" disabled={!cam}>저장</Button>
-        </div>
-      </div>
-
       <div className={cs.body}>
         {/* ── 좌측 아코디언 사이드바 ── */}
         <aside className={cs.sidebar}>

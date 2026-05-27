@@ -7,30 +7,6 @@
   animation: fade-in 0.35s ease-out;
 }
 
-/* ── 상단 헤더 ── */
-.pageHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-12) var(--spacing-20);
-  border-bottom: var(--border-width-default) solid var(--color-border-subtle);
-  flex-shrink: 0;
-  gap: var(--spacing-12);
-  background: var(--color-surface-default);
-}
-
-.pageTitle {
-  font-size: var(--font-size-16);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-}
-
-.pageActions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-8);
-}
-
 /* ── 바디 레이아웃 ── */
 .body {
   display: flex;
@@ -40,8 +16,8 @@
 
 /* ── 좌측 사이드바 ── */
 .sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: 280px;
+  min-width: 280px;
   border-right: var(--border-width-default) solid var(--color-border-subtle);
   overflow-y: auto;
   background: var(--color-surface-default);
