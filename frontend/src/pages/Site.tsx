@@ -52,7 +52,6 @@ export default function Site() {
   const addSite = useDataStore((s) => s.addSite);
   const removeSite = useDataStore((s) => s.removeSite);
   const assignCameraToSite = useDataStore((s) => s.assignCameraToSite);
-  const updateContract = useDataStore((s) => s.updateContract);
   const addFavorite = useDataStore((s) => s.addFavorite);
   const updateFavorite = useDataStore((s) => s.updateFavorite);
   const removeFavorite = useDataStore((s) => s.removeFavorite);
@@ -82,10 +81,8 @@ export default function Site() {
     return m;
   }, [cameras]);
 
-  const contractLabel = (id: string) => {
-    const c = contracts.find((x) => x.id === id);
-    return c?.displayName || c?.name || id;
-  };
+  // 계약번호는 번호(N******) 그 자체로 표기 — 지점/사이트 별칭이 아님.
+  const contractLabel = (id: string) => contracts.find((x) => x.id === id)?.code ?? id;
   const sitesOf = (contractId: string) => sites.filter((s) => s.contractId === contractId);
   const camsOf = (siteId: string) => cameras.filter((c) => c.siteId === siteId);
   const unassignedOf = (contractId: string) =>
@@ -150,9 +147,10 @@ export default function Site() {
             }))}
             onChange={switchCustomer}
           />
-          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--color-text-tertiary)', textAlign: 'right' }}>
-            {currentCompany?.name ?? '—'} · 계약처 {myContracts.length} · 카메라{' '}
-            {cameras.filter((c) => myContractIds.has(c.contractId)).length}대
+          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--color-text-tertiary)', textAlign: 'right', lineHeight: 1.5 }}>
+            <b style={{ color: 'var(--color-text-secondary)' }}>{currentCompany?.name ?? '—'}</b> · 계약번호 {myContracts.map((c) => c.code).join(' · ') || '—'}
+            <br />
+            카메라 {cameras.filter((c) => myContractIds.has(c.contractId)).length}대
           </div>
         </div>
       </div>
@@ -185,8 +183,8 @@ export default function Site() {
                   }}
                 >
                   <Chevron open={cOpen} />
-                  <span className={styles.nodeLabel}>{contractLabel(c.id)}</span>
-                  <span className={styles.nodeCode}>{c.code}</span>
+                  <span className={styles.nodeCode} style={{ marginRight: 2 }}>계약</span>
+                  <span className={styles.nodeLabel}>{c.code}</span>
                   <span className={styles.nodeCount}>{cCamCount}</span>
                 </button>
 
@@ -280,23 +278,32 @@ export default function Site() {
               <>
                 <div className={styles.detailHead}>
                   <div>
-                    <div className={styles.detailKicker}>계약처 (가입 시 자동발급)</div>
-                    <h2 className={styles.detailTitle}>{contractLabel(c.id)}</h2>
+                    <div className={styles.detailKicker}>계약처 · 계약번호 (가입 시 자동발급)</div>
+                    <h2 className={styles.detailTitle}>{c.code}</h2>
                   </div>
                   <Badge tone={c.status === 'active' ? 'success' : 'warn'} dot>
                     {c.status === 'active' ? '활성' : c.status === 'suspended' ? '일시중지' : '만료'}
                   </Badge>
                 </div>
                 <Card title="계약처 정보">
-                  <Input
-                    label="별칭 (트리 표시명)"
-                    value={c.displayName ?? ''}
-                    placeholder={c.name}
-                    onChange={(e) => updateContract(c.id, { displayName: e.target.value })}
-                  />
-                  <div className={page.kvRow}><span className={page.kvLabel}>계약 코드</span><span className={page.kvVal} style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span></div>
+                  <div className={page.kvRow}><span className={page.kvLabel}>계약번호</span><span className={page.kvVal} style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span></div>
                   <div className={page.kvRow}><span className={page.kvLabel}>사이트</span><span className={page.kvVal}>{cSites.length}개</span></div>
                   <div className={page.kvRow}><span className={page.kvLabel}>카메라</span><span className={page.kvVal}>{cCams.length}대</span></div>
+                  <div className={styles.empty2} style={{ marginTop: 8 }}>
+                    계약번호는 가입 시 자동 부여되는 고객 계정 번호예요. 지점·장소는 아래 사이트로 직접 구성합니다.
+                  </div>
+                </Card>
+                <Card title={`전체 카메라 (${cCams.length})`}>
+                  <div className={styles.camList}>
+                    {cCams.length === 0 && <div className={styles.empty2}>등록된 카메라가 없습니다.</div>}
+                    {cCams.map((cam) => (
+                      <div key={cam.id} className={styles.camItem}>
+                        <StatusDot online={cam.status !== 'offline'} />
+                        <span className={styles.camName}>{cam.name}</span>
+                        <span className={styles.camHome}>{cam.siteId ? sites.find((s) => s.id === cam.siteId)?.name ?? '' : '미지정'}</span>
+                      </div>
+                    ))}
+                  </div>
                 </Card>
                 <Card title={`사이트 (${cSites.length})`} actions={<Button variant="primary" size="sm" onClick={() => handleAddSite(c.id)}>+ 사이트 추가</Button>}>
                   <div className={styles.camList}>
