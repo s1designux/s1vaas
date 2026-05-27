@@ -45,6 +45,9 @@ export default function Site() {
   const sites = useDataStore((s) => s.sites);
   const cameras = useDataStore((s) => s.cameras);
   const favorites = useDataStore((s) => s.favorites);
+  const companies = useDataStore((s) => s.companies);
+  const currentCompanyId = useDataStore((s) => s.currentCompanyId);
+  const setCurrentCompany = useDataStore((s) => s.setCurrentCompany);
   const updateSite = useDataStore((s) => s.updateSite);
   const addSite = useDataStore((s) => s.addSite);
   const removeSite = useDataStore((s) => s.removeSite);
@@ -56,13 +59,18 @@ export default function Site() {
   const toggleFavoriteCamera = useDataStore((s) => s.toggleFavoriteCamera);
   const toast = useToast();
 
-  const [openContracts, setOpenContracts] = useState<Set<string>>(() => new Set(contracts.slice(0, 1).map((c) => c.id)));
+  // 현재 고객(계정) 기준 스코프 — 한 고객이 여러 계약처를 보유.
+  const myContracts = useMemo(() => contracts.filter((c) => c.companyId === currentCompanyId), [contracts, currentCompanyId]);
+  const myContractIds = useMemo(() => new Set(myContracts.map((c) => c.id)), [myContracts]);
+  const myFavorites = useMemo(() => favorites.filter((f) => f.ownerId === currentCompanyId), [favorites, currentCompanyId]);
+  const currentCompany = companies.find((c) => c.id === currentCompanyId);
+  const ownerId = currentCompanyId;
+
+  const [openContracts, setOpenContracts] = useState<Set<string>>(() => new Set(myContracts.slice(0, 1).map((c) => c.id)));
   const [openSites, setOpenSites] = useState<Set<string>>(new Set());
   const [sel, setSel] = useState<Sel>(null);
   const [showPool, setShowPool] = useState(false);
   const [poolContract, setPoolContract] = useState<string>(''); // 즐겨찾기 풀 계약처 필터
-
-  const ownerId = contracts[0]?.companyId ?? 'owner';
 
   const camsByContract = useMemo(() => {
     const m = new Map<string, Camera[]>();
@@ -96,6 +104,17 @@ export default function Site() {
     setPoolContract('');
   };
 
+  // 고객(계정) 전환 — 데모용. 실제 앱은 로그인 companyId 로 고정.
+  const switchCustomer = (id: string) => {
+    setCurrentCompany(id);
+    setSel(null);
+    setShowPool(false);
+    setPoolContract('');
+    const first = contracts.find((c) => c.companyId === id);
+    setOpenContracts(new Set(first ? [first.id] : []));
+    setOpenSites(new Set());
+  };
+
   /* ── 액션 ── */
   const handleAddFavorite = () => {
     const id = addFavorite(ownerId, '새 즐겨찾기');
@@ -111,14 +130,30 @@ export default function Site() {
 
   return (
     <div className={page.page}>
-      <div className={page.header}>
+      <div className={page.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
         <div>
           <div className={page.headerKicker}>사이트 관리</div>
           <h1 className={page.headerTitle}>사이트 관리</h1>
           <p className={page.headerSubtitle}>
-            계약처별로 카메라를 사이트(장소)로 묶고, 여러 지점을 가로지르는 즐겨찾기 보기를 만들 수 있어요.
-            여기서 만든 구성이 카메라 관리 메뉴에 그대로 반영됩니다.
+            한 고객(계정)이 여러 계약처를 가질 수 있어요. 계약처별로 카메라를 사이트(장소)로 묶고,
+            여러 계약처를 가로지르는 즐겨찾기 보기를 만들 수 있어요. 여기서 만든 구성이 카메라 관리 메뉴에 반영됩니다.
           </p>
+        </div>
+        <div style={{ minWidth: 220, flexShrink: 0 }}>
+          <Select
+            label="고객 (계정)"
+            size="sm"
+            value={currentCompanyId}
+            options={companies.map((co) => ({
+              value: co.id,
+              label: `${co.name} · 계약처 ${contracts.filter((c) => c.companyId === co.id).length}`,
+            }))}
+            onChange={switchCustomer}
+          />
+          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--color-text-tertiary)', textAlign: 'right' }}>
+            {currentCompany?.name ?? '—'} · 계약처 {myContracts.length} · 카메라{' '}
+            {cameras.filter((c) => myContractIds.has(c.contractId)).length}대
+          </div>
         </div>
       </div>
 
@@ -132,7 +167,7 @@ export default function Site() {
           </div>
 
           <div className={styles.sectionLabel}>내 장소 (계약처 ▸ 사이트)</div>
-          {contracts.map((c) => {
+          {myContracts.map((c) => {
             const cOpen = openContracts.has(c.id);
             const cCamCount = camsByContract.get(c.id)?.length ?? 0;
             const cSites = sitesOf(c.id);
@@ -211,12 +246,12 @@ export default function Site() {
           })}
 
           <div className={styles.sectionLabel}>⭐ 즐겨찾기 (보기)</div>
-          {favorites.length === 0 && (
+          {myFavorites.length === 0 && (
             <div className={styles.node} style={{ color: 'var(--color-text-tertiary)', cursor: 'default' }}>
               아직 없음
             </div>
           )}
-          {favorites.map((f) => (
+          {myFavorites.map((f) => (
             <button
               type="button"
               key={f.id}
@@ -380,7 +415,9 @@ export default function Site() {
             const f = favorites.find((x) => x.id === sel.id);
             if (!f) return null;
             const members = f.cameraIds.map((id) => cameras.find((c) => c.id === id)).filter(Boolean) as Camera[];
-            const pool = cameras.filter((c) => !poolContract || c.contractId === poolContract);
+            const pool = cameras.filter(
+              (c) => myContractIds.has(c.contractId) && (!poolContract || c.contractId === poolContract),
+            );
             const homeLabel = (c: Camera) => (c.siteId ? sites.find((s) => s.id === c.siteId)?.name ?? '' : '미지정');
             return (
               <>
@@ -402,7 +439,7 @@ export default function Site() {
                     <div style={{ marginBottom: 12 }}>
                       <div className={styles.poolFilter}>
                         <button type="button" className={[styles.chip, poolContract === '' ? styles.chipActive : ''].filter(Boolean).join(' ')} onClick={() => setPoolContract('')}>전체</button>
-                        {contracts.map((c) => (
+                        {myContracts.map((c) => (
                           <button key={c.id} type="button" className={[styles.chip, poolContract === c.id ? styles.chipActive : ''].filter(Boolean).join(' ')} onClick={() => setPoolContract(c.id)}>{contractLabel(c.id)}</button>
                         ))}
                       </div>

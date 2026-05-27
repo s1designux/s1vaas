@@ -20,6 +20,7 @@ import { eventsSeed } from '@/mock/events';
 import { schedulesSeed } from '@/mock/schedules';
 import { algorithmsSeed } from '@/mock/algorithms';
 import { favoritesSeed } from '@/mock/favorites';
+import { companiesSeed, type Company } from '@/mock/companies';
 
 interface InviteInput {
   email: string;
@@ -37,6 +38,11 @@ interface DataState {
   schedules: Schedule[];
   algorithms: CameraAlgorithm[];
   favorites: FavoriteView[];
+  /** 고객(계정) 목록 — 한 고객이 여러 계약처를 보유 */
+  companies: Company[];
+  /** 현재 로그인 고객(계정). 실제 앱에서는 auth 의 companyId 에서 파생. */
+  currentCompanyId: string;
+  setCurrentCompany: (id: string) => void;
   patchCamera: (id: string, patch: Partial<Camera>) => void;
   ackEvent: (id: string) => void;
   patchEvent: (id: string, patch: Partial<AppEvent>) => void;
@@ -81,6 +87,9 @@ export const useDataStore = create<DataState>((set) => ({
   schedules: schedulesSeed,
   algorithms: algorithmsSeed,
   favorites: favoritesSeed,
+  companies: companiesSeed,
+  currentCompanyId: companiesSeed[0]?.id ?? '',
+  setCurrentCompany: (id) => set({ currentCompanyId: id }),
   patchCamera: (id, patch) =>
     set((s) => ({
       cameras: s.cameras.map((c) => (c.id === id ? { ...c, ...patch } : c)),
