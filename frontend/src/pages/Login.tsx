@@ -46,7 +46,7 @@ export default function Login() {
       <main className={styles.main}>
         <form className={styles.formCard} onSubmit={onSubmit} noValidate>
           <div className={styles.formTitle}>
-            <img src={s1Wordmark} alt="에스원" className={styles.wordmark} />
+            <img src={s1Wordmark} alt="에스원" className={styles.wordmark} style={{ width: 78, height: 30, objectFit: 'contain' }} />
           </div>
 
           <div className={styles.fieldGroup}>
