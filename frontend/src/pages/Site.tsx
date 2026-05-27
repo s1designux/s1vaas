@@ -136,17 +136,6 @@ export default function Site() {
 
   return (
     <div className={page.page}>
-      <div className={page.header}>
-        <div>
-          <div className={page.headerKicker}>사이트 관리</div>
-          <h1 className={page.headerTitle}>사이트 관리</h1>
-          <p className={page.headerSubtitle}>
-            한 고객(계정)이 여러 계약처를 가질 수 있어요. 계약처별로 카메라를 사이트(장소)로 묶고,
-            여러 계약처를 가로지르는 즐겨찾기 보기를 만들 수 있어요. 여기서 만든 구성이 카메라 관리 메뉴에 반영됩니다.
-          </p>
-        </div>
-      </div>
-
       <div className={styles.layout}>
         {/* ───────── 좌측 트리 ───────── */}
         <div className={styles.tree}>
@@ -297,19 +286,19 @@ export default function Site() {
             const cCams = camsByContract.get(c.id) ?? [];
             return (
               <>
-                <div className={styles.detailHead}>
-                  <div>
-                    <div className={styles.detailKicker}>계약처</div>
-                    <h2 className={styles.detailTitle}>
-                      {c.name}{' '}
-                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>{c.code}</span>
-                    </h2>
+                <Card>
+                  <div className={styles.detailHead} style={{ marginBottom: 14 }}>
+                    <div>
+                      <div className={styles.detailKicker}>계약처</div>
+                      <h2 className={styles.detailTitle}>
+                        {c.name}{' '}
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>{c.code}</span>
+                      </h2>
+                    </div>
+                    <Badge tone={c.status === 'active' ? 'success' : 'warn'} dot>
+                      {c.status === 'active' ? '활성' : c.status === 'suspended' ? '일시중지' : '만료'}
+                    </Badge>
                   </div>
-                  <Badge tone={c.status === 'active' ? 'success' : 'warn'} dot>
-                    {c.status === 'active' ? '활성' : c.status === 'suspended' ? '일시중지' : '만료'}
-                  </Badge>
-                </div>
-                <Card title="계약처 정보">
                   <div className={page.kvRow}><span className={page.kvLabel}>계약번호</span><span className={page.kvVal} style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span></div>
                   <div className={page.kvRow}><span className={page.kvLabel}>사이트</span><span className={page.kvVal}>{cSites.length}개</span></div>
                   <div className={page.kvRow}><span className={page.kvLabel}>카메라</span><span className={page.kvVal}>{cCams.length}대</span></div>
