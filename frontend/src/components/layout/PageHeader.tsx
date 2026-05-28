@@ -10,7 +10,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/cases': '사건철',
   '/dispatch': '출동 관제',
   '/camera-settings': '카메라 관리',
-  '/site': '매장 관리',
+  '/site': '사이트 관리',
   '/health': '장비 상태',
   '/user': '사용자 관리',
   '/settings': '환경 설정',

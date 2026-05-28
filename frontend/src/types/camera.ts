@@ -18,7 +18,10 @@ export type CameraSensitivity = 'low' | 'mid' | 'high';
 
 export interface Camera {
   id: string;
-  siteId: string;
+  /** 계정/소유 경계 — 가입 시 자동발급 계약처(N번호). 카메라가 등록된 계약처. */
+  contractId: string;
+  /** 단일 홈 사이트(장소 그룹). 아직 배치 안 됐으면 null(미지정). */
+  siteId: string | null;
   name: string;
   ip: string;
   model: string;

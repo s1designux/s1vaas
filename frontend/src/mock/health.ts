@@ -118,6 +118,7 @@ export function siteHealthSummaries(
     });
   }
   for (const cam of cameras) {
+    if (!cam.siteId) continue;
     const sum = byId.get(cam.siteId);
     if (!sum) continue;
     sum.total += 1;

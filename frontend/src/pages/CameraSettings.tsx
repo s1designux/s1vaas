@@ -445,8 +445,7 @@ export default function CameraSettings() {
 
                 {/* 미지정 — 사이트 미배정 카메라 (배치는 사이트 관리에서) */}
                 {isContractOpen && (() => {
-                  const contractSiteIds = new Set(siteList.map((s) => s.id));
-                  const unassigned = cameras.filter((c) => !contractSiteIds.has(c.siteId));
+                  const unassigned = cameras.filter((c) => c.contractId === contractId && c.siteId === null);
                   if (unassigned.length === 0) return null;
                   const uid = `${contractId}__unassigned`;
                   const isOpen = openSiteId === uid;
