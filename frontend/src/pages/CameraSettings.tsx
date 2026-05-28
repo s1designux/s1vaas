@@ -257,7 +257,7 @@ export default function CameraSettings() {
   // 초기 선택: 첫 번째 카메라
   const [activeId, setActiveId] = useState(() => cameras[0]?.id ?? '');
   const [tab, setTab] = useState<SettingsTab>('live');
-  const [liveTab, setLiveTab] = useState<'osd' | 'info'>('osd');
+  const [liveTab, setLiveTab] = useState<'osd' | 'info'>('info');
 
   const cam = cameras.find((c) => c.id === activeId);
   const offline = cam?.status === 'offline';
@@ -517,7 +517,7 @@ export default function CameraSettings() {
             </div>
           </div>
         ) : (
-          <div className={cs.content}>
+          <div className={`${cs.content}${tab === 'live' ? ` ${cs.contentLive}` : ''}`}>
             {/* 설정 탭 */}
             <div className={cs.settingsTabs}>
               {SETTINGS_TABS.map((t) => (

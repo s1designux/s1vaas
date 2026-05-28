@@ -293,8 +293,50 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* ── 실시간영상 전체 레이아웃 (live탭 전용) ── */
+.contentLive {
+  overflow: hidden !important;  /* 외부 스크롤 차단 */
+}
+
+.liveLayout {
+  flex: 1;
+  display: flex;
+  gap: var(--spacing-12);
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* 좌측 카메라 컬럼 (카드 없음) */
+.liveCamera {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.liveCameraHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 0 var(--spacing-2);
+}
+
+.liveCameraTitle {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── 실시간영상 탭 우측 패널 ── */
 .livePanel {
+  flex: 1;
+  min-width: 0;
   background: var(--color-surface-default);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-card-md);
