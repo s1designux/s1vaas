@@ -532,42 +532,41 @@ export default function CameraSettings() {
 
       {/* ===== 실시간영상 ===== */}
       {tab === 'live' && (
-        <div className={page.csGrid}>
-          {/* 좌측: 라이브 피드 */}
-          <Card
-            title={cam.name}
-            actions={<Badge tone={offline ? 'danger' : 'success'} dot>{cam.status === 'recording' ? '녹화중' : cam.status === 'online' ? '온라인' : '오프라인'}</Badge>}
-          >
-            <div className={page.preview}>
+        <div className={cs.liveLayout}>
+          {/* 좌측: 카메라 (카드 없음, 고정) */}
+          <div className={cs.liveCamera}>
+            <div className={cs.liveCameraHead}>
+              <span className={cs.liveCameraTitle}>{cam.name}</span>
+              <Badge tone={offline ? 'danger' : 'success'} dot>
+                {cam.status === 'recording' ? '녹화중' : cam.status === 'online' ? '온라인' : '오프라인'}
+              </Badge>
+            </div>
+            <div className={page.preview} style={{ flex: 1, aspectRatio: 'unset' }}>
               {!offline && (
                 <video
                   className={page.previewVideo}
                   src={`/mock-cctv/cam_0${videoIdx}.mp4`}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="auto"
+                  autoPlay loop muted playsInline preload="auto"
                 />
               )}
               {offline && <span style={{ position: 'relative', zIndex: 2 }}>OFFLINE</span>}
             </div>
-          </Card>
+          </div>
 
-          {/* 우측: OSD 설정 / 기본 정보 라인탭 패널 */}
+          {/* 우측: 기본 정보 / OSD 설정 라인탭 패널 (탭바 고정, 내용만 스크롤) */}
           <div className={cs.livePanel}>
             <div className={cs.livePanelTabBar}>
-              <button
-                className={`${cs.livePanelTab} ${liveTab === 'osd' ? cs.livePanelTabActive : ''}`}
-                onClick={() => setLiveTab('osd')}
-              >
-                OSD 설정
-              </button>
               <button
                 className={`${cs.livePanelTab} ${liveTab === 'info' ? cs.livePanelTabActive : ''}`}
                 onClick={() => setLiveTab('info')}
               >
                 기본 정보
+              </button>
+              <button
+                className={`${cs.livePanelTab} ${liveTab === 'osd' ? cs.livePanelTabActive : ''}`}
+                onClick={() => setLiveTab('osd')}
+              >
+                OSD 설정
               </button>
             </div>
 
