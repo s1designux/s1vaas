@@ -105,15 +105,17 @@ function SelectField<T extends string | number>({
   onChange: (v: T) => void;
 }) {
   return (
-    <Select
-      label={label}
-      value={String(value)}
-      options={options.map((o) => ({ value: String(o.value), label: o.label }))}
-      onChange={(raw) => {
-        const match = options.find((o) => String(o.value) === raw);
-        if (match) onChange(match.value);
-      }}
-    />
+    <div className={cs.segRow}>
+      <span className={page.formLabel}>{label}</span>
+      <Select
+        value={String(value)}
+        options={options.map((o) => ({ value: String(o.value), label: o.label }))}
+        onChange={(raw) => {
+          const match = options.find((o) => String(o.value) === raw);
+          if (match) onChange(match.value);
+        }}
+      />
+    </div>
   );
 }
 
@@ -132,13 +134,15 @@ function InputField({
   maxLength?: number;
 }) {
   return (
-    <Input
-      label={label}
-      value={value}
-      placeholder={placeholder}
-      maxLength={maxLength}
-      onChange={(e) => onChange(e.target.value)}
-    />
+    <div className={cs.segRow}>
+      <span className={page.formLabel}>{label}</span>
+      <Input
+        value={value}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
   );
 }
 
@@ -525,7 +529,7 @@ export default function CameraSettings() {
               {!offline && (
                 <video
                   className={page.previewVideo}
-                  src={`/mock-cctv/cam_0${videoIdx}.mp4`}
+                  src={`${import.meta.env.BASE_URL}mock-cctv/cam_0${videoIdx}.mp4`}
                   autoPlay loop muted playsInline preload="auto"
                   style={videoStyle}
                 />
@@ -593,32 +597,42 @@ export default function CameraSettings() {
               {/* ── OSD 설정 탭 ── */}
               {liveTab === 'osd' && (
                 <>
-                  <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
-                  {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
-                  <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
-                  {osdDate && (
-                    <>
-                      <Seg
-                        label="시간 표시"
-                        value={timeFormat}
-                        onChange={setTimeFormat}
-                        options={[{ value: '24', label: '24시간' }, { value: '12', label: '12시간' }]}
-                      />
-                      <SelectField
-                        label="날짜 형식"
-                        value={dateFormat}
-                        onChange={setDateFormat}
-                        options={[
-                          { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-                          { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
-                          { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
-                          { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-                        ]}
-                      />
-                      <ToggleRow title="요일 표시" on={osdWeekday} onToggle={() => setOsdWeekday(!osdWeekday)} />
-                    </>
-                  )}
-                  <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
+                  <Card>
+                    <div className={page.formStack}>
+                      <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
+                      {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
+                    </div>
+                  </Card>
+                  <Card>
+                    <div className={page.formStack}>
+                      <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
+                      {osdDate && (
+                        <>
+                          <Seg
+                            label="시간 표시"
+                            value={timeFormat}
+                            onChange={setTimeFormat}
+                            options={[{ value: '24', label: '24시간' }, { value: '12', label: '12시간' }]}
+                          />
+                          <SelectField
+                            label="날짜 형식"
+                            value={dateFormat}
+                            onChange={setDateFormat}
+                            options={[
+                              { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+                              { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
+                              { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
+                              { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+                            ]}
+                          />
+                          <ToggleRow title="요일 표시" on={osdWeekday} onToggle={() => setOsdWeekday(!osdWeekday)} />
+                        </>
+                      )}
+                    </div>
+                  </Card>
+                  <Card>
+                    <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
+                  </Card>
                 </>
               )}
 

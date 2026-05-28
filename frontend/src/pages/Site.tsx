@@ -231,15 +231,15 @@ function CameraAddModal({
             {selected.size > 0 ? `${selected.size}개 선택됨` : '카메라를 선택하세요'}
           </span>
           <div className={styles.modalFooterBtns}>
-            <button type="button" className={styles.rowBtn} onClick={onClose}>취소</button>
-            <button
-              type="button"
-              className={styles.rowBtnPrimary}
+            <Button variant="secondary" size="sm" onClick={onClose}>취소</Button>
+            <Button
+              variant="primary"
+              size="sm"
               disabled={selected.size === 0}
               onClick={() => onConfirm([...selected])}
             >
               이 사이트로 추가
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -358,15 +358,15 @@ function FavoriteAddModal({
             {selected.size > 0 ? `${selected.size}개 선택됨` : '카메라를 선택하세요'}
           </span>
           <div className={styles.modalFooterBtns}>
-            <button type="button" className={styles.rowBtn} onClick={onClose}>취소</button>
-            <button
-              type="button"
-              className={styles.rowBtnPrimary}
+            <Button variant="secondary" size="sm" onClick={onClose}>취소</Button>
+            <Button
+              variant="primary"
+              size="sm"
               disabled={selected.size === 0}
               onClick={() => onConfirm([...selected])}
             >
               보기에 추가
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -671,13 +671,13 @@ export default function Site() {
                   title="사이트 정보"
                   actions={
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        type="button"
-                        className={[styles.rowBtn, styles.rowBtnDanger].join(' ')}
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => { removeSite(st.id); select({ kind: 'contract', id: st.contractId }); toast.info('사이트 삭제', '소속 카메라는 미지정으로 이동했어요.'); }}
                       >
                         삭제
-                      </button>
+                      </Button>
                       <Button variant="primary" size="sm" onClick={() => toast.success('저장됨', `${st.name} 정보가 저장되었습니다.`)}>저장</Button>
                     </div>
                   }
@@ -700,13 +700,14 @@ export default function Site() {
                           key={c.id}
                           cam={c}
                           footer={
-                            <button
-                              type="button"
-                              className={[styles.rowBtn, styles.rowBtnDanger, styles.rowBtnFull].join(' ')}
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              block
                               onClick={() => { assignCameraToSite(c.id, null); toast.info('미지정으로', c.name); }}
                             >
                               사이트에서 빼기
-                            </button>
+                            </Button>
                           }
                         />
                       ))}
@@ -770,7 +771,7 @@ export default function Site() {
                 <Card
                   title="보기 정보"
                   actions={
-                    <button type="button" className={[styles.rowBtn, styles.rowBtnDanger].join(' ')} onClick={() => { removeFavorite(f.id); select(null); toast.info('즐겨찾기 삭제', f.name); }}>삭제</button>
+                    <Button variant="secondary" size="sm" onClick={() => { removeFavorite(f.id); select(null); toast.info('즐겨찾기 삭제', f.name); }}>삭제</Button>
                   }
                 >
                   <Input label="보기 이름" value={f.name} onChange={(e) => updateFavorite(f.id, { name: e.target.value })} />
@@ -788,13 +789,14 @@ export default function Site() {
                             key={c.id}
                             cam={c}
                             footer={
-                              <button
-                                type="button"
-                                className={[styles.rowBtn, styles.rowBtnDanger, styles.rowBtnFull].join(' ')}
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                block
                                 onClick={() => toggleFavoriteCamera(f.id, c.id)}
                               >
                                 제거
-                              </button>
+                              </Button>
                             }
                           />
                         ))}
