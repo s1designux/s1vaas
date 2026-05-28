@@ -273,7 +273,9 @@ export default function Site() {
 
   const [openContracts, setOpenContracts] = useState<Set<string>>(() => new Set(myContracts.slice(0, 1).map((c) => c.id)));
   const [openSites, setOpenSites] = useState<Set<string>>(new Set());
-  const [sel, setSel] = useState<Sel>(null);
+  const [sel, setSel] = useState<Sel>(() =>
+    myContracts[0] ? { kind: 'contract', id: myContracts[0].id } : null,
+  );
   const [showPool, setShowPool] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [poolContract, setPoolContract] = useState<string>(''); // 즐겨찾기 풀 계약처 필터
@@ -361,8 +363,23 @@ export default function Site() {
                   className={[styles.node, sel?.kind === 'contract' && sel.id === c.id ? styles.nodeActive : '']
                     .filter(Boolean)
                     .join(' ')}
-                  onClick={() => { toggle(setOpenContracts, c.id); select({ kind: 'contract', id: c.id }); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(setOpenContracts, c.id); select({ kind: 'contract', id: c.id }); } }}
+                  onClick={() => {
+                    const isSelected = sel?.kind === 'contract' && sel.id === c.id;
+                    if (isSelected) {
+                      toggle(setOpenContracts, c.id);          // 이미 선택된 상태 → 접기/펼치기
+                    } else {
+                      setOpenContracts((p) => new Set(p).add(c.id)); // 미선택 → 펼치고
+                      select({ kind: 'contract', id: c.id });        // 선택
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      const isSelected = sel?.kind === 'contract' && sel.id === c.id;
+                      if (isSelected) toggle(setOpenContracts, c.id);
+                      else { setOpenContracts((p) => new Set(p).add(c.id)); select({ kind: 'contract', id: c.id }); }
+                    }
+                  }}
                 >
                   <Chevron open={cOpen} />
                   <span className={styles.nodeLabel} style={{ flex: '0 1 auto', fontWeight: 700 }}>{c.name}</span>
@@ -388,8 +405,23 @@ export default function Site() {
                               sel?.kind === 'site' && sel.id === st.id ? styles.nodeActive : '',
                               dragOverSite === st.id ? styles.dragOver : '',
                               dragSite === st.id ? styles.dragging : ''].filter(Boolean).join(' ')}
-                            onClick={() => { toggle(setOpenSites, st.id); select({ kind: 'site', id: st.id }); }}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(setOpenSites, st.id); select({ kind: 'site', id: st.id }); } }}
+                            onClick={() => {
+                              const isSelected = sel?.kind === 'site' && sel.id === st.id;
+                              if (isSelected) {
+                                toggle(setOpenSites, st.id);
+                              } else {
+                                setOpenSites((p) => new Set(p).add(st.id));
+                                select({ kind: 'site', id: st.id });
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                const isSelected = sel?.kind === 'site' && sel.id === st.id;
+                                if (isSelected) toggle(setOpenSites, st.id);
+                                else { setOpenSites((p) => new Set(p).add(st.id)); select({ kind: 'site', id: st.id }); }
+                              }
+                            }}
                             onDragStart={() => setDragSite(st.id)}
                             onDragOver={(e) => { e.preventDefault(); setDragOverSite(st.id); }}
                             onDragLeave={() => setDragOverSite((p) => (p === st.id ? null : p))}
@@ -519,10 +551,21 @@ export default function Site() {
                   {cCams.length === 0 ? (
                     <div className={styles.empty2}>등록된 카메라가 없습니다.</div>
                   ) : (
-                    <div className={styles.camGrid}>
-                      {cCams.map((cam) => (
-                        <CamCard key={cam.id} cam={cam} />
-                      ))}
+                    <div className={styles.camSiteGroups}>
+                      {cSites.map((site) => {
+                        const sCams = camsOf(site.id);
+                        if (sCams.length === 0) return null;
+                        return (
+                          <div key={site.id} className={styles.camSiteGroup}>
+                            <div className={styles.camSiteLabel}>{site.name}</div>
+                            <div className={styles.camGrid}>
+                              {sCams.map((cam) => (
+                                <CamCard key={cam.id} cam={cam} />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </Card>
