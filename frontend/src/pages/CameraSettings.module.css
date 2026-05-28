@@ -385,6 +385,44 @@
   padding-top: var(--spacing-4);
 }
 
+/* ── 카메라 정보 2단 그리드 ── */
+.camInfoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 12px;
+}
+
+.camInfoRow {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: var(--spacing-6);
+  align-items: center;
+  padding: 4px 0;
+  font-size: var(--font-size-13);
+}
+
+.camInfoLabel {
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.camInfoVal {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  background: var(--color-bg-subtle);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-default);
+  font-size: var(--font-size-12);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .liveCameraHead {
   display: flex;
   align-items: center;
@@ -530,6 +568,41 @@
 /* hr 구분선 제거 — 섹션 padding-top으로 대체 */
 .settingsDivider {
   display: none;
+}
+
+/* ── OSD 오버레이 ── */
+.osdOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.osdTop {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.osdBottom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.osdText {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.04em;
+  line-height: 1.4;
 }
 
 @keyframes fade-in {

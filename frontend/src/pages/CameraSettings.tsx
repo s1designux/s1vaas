@@ -4,7 +4,7 @@
 //   실시간영상 탭 = 라이브 영상 + 기본 정보 + OSD 설정.
 //   AI 이벤트(침입·배회·가상펜스·화재·주정차·피플카운팅)·움직임 감지·감지 스케줄,
 //   그리고 프라이버시 마스크(630)는 [안심 AI 설정]으로 이관 — 여기서는 다루지 않는다.
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -306,6 +306,52 @@ export default function CameraSettings() {
     if (cam) setCamLabel(cam.name.split(' ')[0]);
   }, [activeId, cam]);
 
+  // OSD 시계 — 1초마다 갱신
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const osdTimeStr = useMemo(() => {
+    const h = now.getHours();
+    const m = now.getMinutes().toString().padStart(2, '0');
+    const s = now.getSeconds().toString().padStart(2, '0');
+    if (timeFormat === '12') {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = ((h % 12) || 12).toString().padStart(2, '0');
+      return `${h12}:${m}:${s} ${ampm}`;
+    }
+    return `${h.toString().padStart(2, '0')}:${m}:${s}`;
+  }, [now, timeFormat]);
+
+  const osdDateStr = useMemo(() => {
+    const y = now.getFullYear();
+    const mo = (now.getMonth() + 1).toString().padStart(2, '0');
+    const d = now.getDate().toString().padStart(2, '0');
+    const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const wd = osdWeekday ? ` ${WEEKDAYS[now.getDay()]}` : '';
+    switch (dateFormat) {
+      case 'MM-DD-YYYY': return `${mo}-${d}-${y}${wd}`;
+      case 'YYYY/MM/DD': return `${y}/${mo}/${d}${wd}`;
+      case 'MM/DD/YYYY': return `${mo}/${d}/${y}${wd}`;
+      default: return `${y}-${mo}-${d}${wd}`;
+    }
+  }, [now, dateFormat, osdWeekday]);
+
+  // 이미지 설정 → 비디오 CSS 필터 + 반전 트랜스폼
+  const videoStyle = useMemo(() => {
+    const b = img.brightness / 50;
+    const c = img.contrast / 50;
+    const sat = img.saturation / 50;
+    const sharpBoost = img.sharpness > 50 ? ` contrast(${1 + (img.sharpness - 50) * 0.008})` : '';
+    const flipMap: Record<string, string> = { h: 'scaleX(-1)', v: 'scaleY(-1)', '180': 'rotate(180deg)' };
+    return {
+      filter: `brightness(${b.toFixed(2)}) contrast(${c.toFixed(2)}) saturate(${sat.toFixed(2)})${sharpBoost}`,
+      transform: flipMap[flip] ?? 'none',
+    } as React.CSSProperties;
+  }, [img, flip]);
+
   const serial  = cam ? `S1CAM2026${cam.id.slice(-4).padStart(6, '0')}` : '';
   const macAddr = cam ? `A4:5E:60:${cam.id.slice(-2).toUpperCase().padStart(2, '0')}:1B:7C` : '';
 
@@ -481,19 +527,45 @@ export default function CameraSettings() {
                   className={page.previewVideo}
                   src={`/mock-cctv/cam_0${videoIdx}.mp4`}
                   autoPlay loop muted playsInline preload="auto"
+                  style={videoStyle}
                 />
               )}
               {offline && <span style={{ position: 'relative', zIndex: 2 }}>OFFLINE</span>}
+              {!offline && (osdName || osdDate) && (
+                <div className={cs.osdOverlay}>
+                  <div className={cs.osdTop}>
+                    {osdName && <span className={cs.osdText}>{camLabel || ' '}</span>}
+                  </div>
+                  <div className={cs.osdBottom}>
+                    {osdDate && (
+                      <>
+                        <span className={cs.osdText}>{osdDateStr}</span>
+                        <span className={cs.osdText}>{osdTimeStr}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div className={cs.liveCameraInfo}>
-              <div className={page.sectionCaption}>카메라 정보</div>
-              <Kv label="접속 상태" value={cam.status === 'offline' ? '오프라인' : '온라인'} />
-              <Kv label="제품 코드" value={`SVI-${cam.model}`} />
-              <Kv label="제조번호 (S/N)" value={serial} />
-              <Kv label="제품등록번호" value={`R-${serial.slice(-8)}`} />
-              <Kv label="MAC 주소" value={macAddr} />
-              <Kv label="F/W 버전" value={cam.firmware} />
-              <Kv label="F/W 빌드 날짜" value="2026-03-18" />
+              <div className={cs.camInfoGrid}>
+                {(
+                  [
+                    ['접속 상태', cam.status === 'offline' ? '오프라인' : '온라인'],
+                    ['제품 코드', `SVI-${cam.model}`],
+                    ['제조번호 (S/N)', serial],
+                    ['제품등록번호', `R-${serial.slice(-8)}`],
+                    ['MAC 주소', macAddr],
+                    ['F/W 버전', cam.firmware],
+                    ['F/W 빌드 날짜', '2026-03-18'],
+                  ] as [string, string][]
+                ).map(([label, value]) => (
+                  <div key={label} className={cs.camInfoRow}>
+                    <span className={cs.camInfoLabel}>{label}</span>
+                    <span className={cs.camInfoVal}>{value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

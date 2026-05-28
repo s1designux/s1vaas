@@ -670,16 +670,19 @@ export default function Site() {
                 <Card
                   title="사이트 정보"
                   actions={
-                    <button
-                      type="button"
-                      className={[styles.rowBtn, styles.rowBtnDanger].join(' ')}
-                      onClick={() => { removeSite(st.id); select({ kind: 'contract', id: st.contractId }); toast.info('사이트 삭제', '소속 카메라는 미지정으로 이동했어요.'); }}
-                    >
-                      삭제
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className={[styles.rowBtn, styles.rowBtnDanger].join(' ')}
+                        onClick={() => { removeSite(st.id); select({ kind: 'contract', id: st.contractId }); toast.info('사이트 삭제', '소속 카메라는 미지정으로 이동했어요.'); }}
+                      >
+                        삭제
+                      </button>
+                      <Button variant="primary" size="sm" onClick={() => toast.success('저장됨', `${st.name} 정보가 저장되었습니다.`)}>저장</Button>
+                    </div>
                   }
                 >
-                  <div className={page.formStack}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <Input label="사이트 이름" value={st.name} placeholder="예: 1층, 카운터" onChange={(e) => updateSite(st.id, { name: e.target.value })} />
                     <Input label="주소 (선택)" value={st.address} placeholder="서울특별시 …" onChange={(e) => updateSite(st.id, { address: e.target.value })} />
                   </div>
