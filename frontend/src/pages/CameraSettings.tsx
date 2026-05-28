@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Chip } from '@/components/ui/Chip';
+import { Toggle } from '@/components/ui/Toggle';
 import page from './Page.module.css';
 import cs from './CameraSettings.module.css';
 
@@ -35,29 +36,6 @@ function Kv({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function Switch({ on, onToggle, disabled = false }: { on: boolean; onToggle: () => void; disabled?: boolean }) {
-  return (
-    <div
-      className={[page.switch, on ? page.switchOn : ''].filter(Boolean).join(' ')}
-      role="switch"
-      aria-checked={on}
-      aria-disabled={disabled}
-      tabIndex={disabled ? -1 : 0}
-      onClick={() => !disabled && onToggle()}
-      onKeyDown={(e) => {
-        if (disabled) return;
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
-          onToggle();
-        }
-      }}
-      style={disabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
-    >
-      <span className={page.switchThumb} />
-    </div>
-  );
-}
-
 function ToggleRow({
   title,
   desc,
@@ -75,7 +53,7 @@ function ToggleRow({
         <div className={page.settingsRowTitle}>{title}</div>
         {desc && <div className={page.settingsRowDesc}>{desc}</div>}
       </div>
-      <Switch on={on} onToggle={onToggle} />
+      <Toggle on={on} onToggle={onToggle} />
     </div>
   );
 }
@@ -97,7 +75,7 @@ function Seg<T extends string | number>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className={page.formRow}>
+    <div className={cs.segRow}>
       <span className={page.formLabel}>{label}</span>
       <div className={page.chips}>
         {options.map((o) => (
@@ -181,7 +159,7 @@ function EditSlider({
     <div className={page.progressRow}>
       <div className={page.progressTop}>
         <span className={page.kvLabel}>{label}</span>
-        <span style={{ color: 'var(--color-accent)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+        <span style={{ color: 'var(--color-accent)', fontWeight: 'var(--font-weight-semibold)', fontFamily: 'var(--font-mono)' }}>
           {value}
         </span>
       </div>
@@ -195,14 +173,6 @@ function EditSlider({
       />
     </div>
   );
-}
-
-/* ---------- 트리 헬퍼 ---------- */
-
-/** contractId (c-0001) → 고객번호 표기 (n000001) */
-function fmtContract(id: string) {
-  const num = id.replace(/\D/g, '').padStart(6, '0');
-  return `n${num}`;
 }
 
 /* ---------- 메인 ---------- */
@@ -224,32 +194,26 @@ const RES_OPTIONS: Opt<string>[] = [
 const QUALITY_OPTIONS: Opt<string>[] = ['매우 좋음', '좋음', '보통', '낮음', '매우 낮음'].map((v) => ({ value: v, label: v }));
 
 export default function CameraSettings() {
-  const cameras  = useDataStore((s) => s.cameras);
-  const sites    = useDataStore((s) => s.sites);
+  const cameras   = useDataStore((s) => s.cameras);
+  const sites     = useDataStore((s) => s.sites);
+  const contracts = useDataStore((s) => s.contracts);
 
-  // 계약처 그룹 (contractId 기준)
-  const contractGroups = useMemo(() => {
-    const map = new Map<string, typeof sites>();
-    for (const site of sites) {
-      if (!map.has(site.contractId)) map.set(site.contractId, []);
-      map.get(site.contractId)!.push(site);
-    }
-    return Array.from(map.entries()).map(([contractId, siteList]) => ({ contractId, siteList }));
-  }, [sites]);
+  // 계약처 필터
+  const [selectedContractId, setSelectedContractId] = useState<string>(() => contracts[0]?.id ?? '');
 
-  // 계약처 열림 상태 (복수 허용)
-  const [openContractIds, setOpenContractIds] = useState<Set<string>>(
-    () => new Set(sites[0]?.contractId ? [sites[0].contractId] : []),
+  const filteredSites = useMemo(
+    () => sites.filter((s) => s.contractId === selectedContractId),
+    [sites, selectedContractId],
   );
-  const toggleContract = (id: string) =>
-    setOpenContractIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
 
   // 아코디언 그룹: 사이트 단위 (하나만 펼침)
-  const [openSiteId, setOpenSiteId] = useState<string>(() => sites[0]?.id ?? '');
+  const [openSiteId, setOpenSiteId] = useState<string>(() => filteredSites[0]?.id ?? '');
+
+  // 계약처 변경 시 첫 사이트 자동 열기
+  useEffect(() => {
+    setOpenSiteId(filteredSites[0]?.id ?? '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedContractId]);
 
   const toggleAccordion = (siteId: string) =>
     setOpenSiteId((prev) => (prev === siteId ? '' : siteId));
@@ -257,7 +221,7 @@ export default function CameraSettings() {
   // 초기 선택: 첫 번째 카메라
   const [activeId, setActiveId] = useState(() => cameras[0]?.id ?? '');
   const [tab, setTab] = useState<SettingsTab>('live');
-  const [liveTab, setLiveTab] = useState<'osd' | 'info'>('info');
+  const [liveTab, setLiveTab] = useState<'osd' | 'image'>('osd');
 
   const cam = cameras.find((c) => c.id === activeId);
   const offline = cam?.status === 'offline';
@@ -345,16 +309,6 @@ export default function CameraSettings() {
   const serial  = cam ? `S1CAM2026${cam.id.slice(-4).padStart(6, '0')}` : '';
   const macAddr = cam ? `A4:5E:60:${cam.id.slice(-2).toUpperCase().padStart(2, '0')}:1B:7C` : '';
 
-  const quickCard = cam ? (
-    <Card title="빠른 정보">
-      <Kv label="모델" value={cam.model} />
-      <Kv label="펌웨어" value={cam.firmware} />
-      <Kv label="IP" value={cam.ip} />
-      <Kv label="코덱" value={cam.codec} />
-      <Kv label="해상도" value={cam.resolution} />
-      <Kv label="저장소" value={`${cam.storageGb} GB`} />
-    </Card>
-  ) : null;
 
   return (
     <div className={cs.wrap}>
@@ -362,147 +316,125 @@ export default function CameraSettings() {
       <div className={cs.body}>
         {/* ── 좌측 아코디언 사이드바 ── */}
         <aside className={cs.sidebar}>
-          {contractGroups.map(({ contractId, siteList }) => {
-            const isContractOpen = openContractIds.has(contractId);
+          {/* 계약처 셀렉트 (DS Select) */}
+          <div style={{ marginBottom: 8 }}>
+            <Select
+              size="sm"
+              value={selectedContractId}
+              options={contracts.map((c) => ({ value: c.id, label: `${c.code} ${c.name}` }))}
+              onChange={(v) => setSelectedContractId(v)}
+            />
+          </div>
+
+          {/* 사이트 아코디언 */}
+          {filteredSites.map((site) => {
+            const isOpen   = openSiteId === site.id;
+            const siteCams = cameras.filter((c) => c.siteId === site.id);
             return (
-              <div key={contractId} className={cs.contractSection}>
-                {/* ① 계약처 헤더 */}
+              <div key={site.id} className={cs.accordionCard}>
                 <button
-                  className={cs.contractHeader}
-                  onClick={() => toggleContract(contractId)}
+                  className={cs.accordionHeader}
+                  onClick={() => toggleAccordion(site.id)}
                 >
+                  <span className={cs.accordionTitle}>
+                    {site.name}
+                    <span className={cs.accordionCount}>{siteCams.length}</span>
+                  </span>
                   <svg
-                    className={`${cs.contractChevron} ${isContractOpen ? cs.contractChevronOpen : ''}`}
-                    width="12" height="12" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    className={`${cs.accordionChevron} ${isOpen ? cs.accordionChevronOpen : ''}`}
+                    width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                   >
                     <path d="M9 18l6-6-6-6" />
                   </svg>
-                  <span className={cs.contractLabel}>{fmtContract(contractId)}</span>
                 </button>
 
-                {/* ② 사이트 아코디언 (계약처 하위) */}
-                {isContractOpen && siteList.map((site) => {
-                  const isOpen   = openSiteId === site.id;
-                  const siteCams = cameras.filter((c) => c.siteId === site.id);
-                  return (
-                    <div key={site.id} className={cs.accordionCard}>
-                      {/* 사이트 헤더 */}
-                      <button
-                        className={cs.accordionHeader}
-                        onClick={() => toggleAccordion(site.id)}
-                      >
-                        <span className={cs.accordionTitle}>
-                          {site.name}
-                          <span className={cs.accordionCount}>{siteCams.length}</span>
-                        </span>
-                        <svg
-                          className={`${cs.accordionChevron} ${isOpen ? cs.accordionChevronOpen : ''}`}
-                          width="24" height="24" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                {isOpen && (
+                  <div className={cs.accordionList}>
+                    {siteCams.map((c) => {
+                      const isActive = c.id === activeId;
+                      const chipCls =
+                        c.status === 'offline' ? cs.statusChipOffline : cs.statusChipOnline;
+                      const statusLabel =
+                        c.status === 'offline' ? '오프라인' : '온라인';
+                      return (
+                        <button
+                          key={c.id}
+                          className={`${cs.accordionItem} ${isActive ? cs.accordionItemActive : ''}`}
+                          onClick={() => setActiveId(c.id)}
+                          title={c.name}
                         >
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
-                      </button>
-
-                      {/* ③ 카메라 리스트 */}
-                      {isOpen && (
-                        <div className={cs.accordionList}>
-                          {siteCams.map((c) => {
-                            const isActive = c.id === activeId;
-                            const chipCls =
-                              c.status === 'recording' ? cs.statusChipRecording
-                              : c.status === 'online'  ? cs.statusChipOnline
-                              : cs.statusChipOffline;
-                            const statusLabel =
-                              c.status === 'recording' ? '녹화중'
-                              : c.status === 'online'  ? '온라인'
-                              : '오프라인';
-                            return (
-                              <button
-                                key={c.id}
-                                className={`${cs.accordionItem} ${isActive ? cs.accordionItemActive : ''}`}
-                                onClick={() => setActiveId(c.id)}
-                                title={c.name}
-                              >
-                                <span className={`${cs.statusChip} ${chipCls}`}>
-                                  {c.status === 'recording' ? '녹화' : c.status === 'online' ? 'ON' : 'OFF'}
-                                </span>
-                                <span className={cs.itemInfo}>
-                                  <span className={`${cs.itemName} ${isActive ? cs.itemNameActive : ''}`}>
-                                    {c.name}
-                                  </span>
-                                  <span className={cs.itemStatusText}>{statusLabel}</span>
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* 미지정 — 사이트 미배정 카메라 (배치는 사이트 관리에서) */}
-                {isContractOpen && (() => {
-                  const unassigned = cameras.filter((c) => c.contractId === contractId && c.siteId === null);
-                  if (unassigned.length === 0) return null;
-                  const uid = `${contractId}__unassigned`;
-                  const isOpen = openSiteId === uid;
-                  return (
-                    <div className={cs.accordionCard}>
-                      <button className={cs.accordionHeader} onClick={() => toggleAccordion(uid)}>
-                        <span className={cs.accordionTitle}>
-                          미지정
-                          <span className={cs.accordionCount}>{unassigned.length}</span>
-                        </span>
-                        <svg
-                          className={`${cs.accordionChevron} ${isOpen ? cs.accordionChevronOpen : ''}`}
-                          width="24" height="24" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                        >
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
-                      </button>
-                      {isOpen && (
-                        <div className={cs.accordionList}>
-                          {unassigned.map((c) => {
-                            const isActive = c.id === activeId;
-                            const chipCls =
-                              c.status === 'recording' ? cs.statusChipRecording
-                              : c.status === 'online'  ? cs.statusChipOnline
-                              : cs.statusChipOffline;
-                            const statusLabel =
-                              c.status === 'recording' ? '녹화중'
-                              : c.status === 'online'  ? '온라인'
-                              : '오프라인';
-                            return (
-                              <button
-                                key={c.id}
-                                className={`${cs.accordionItem} ${isActive ? cs.accordionItemActive : ''}`}
-                                onClick={() => setActiveId(c.id)}
-                                title={c.name}
-                              >
-                                <span className={`${cs.statusChip} ${chipCls}`}>
-                                  {c.status === 'recording' ? '녹화' : c.status === 'online' ? 'ON' : 'OFF'}
-                                </span>
-                                <span className={cs.itemInfo}>
-                                  <span className={`${cs.itemName} ${isActive ? cs.itemNameActive : ''}`}>
-                                    {c.name}
-                                  </span>
-                                  <span className={cs.itemStatusText}>{statusLabel}</span>
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                          <span className={`${cs.statusChip} ${chipCls}`}>
+                            {c.status === 'offline' ? 'OFF' : 'ON'}
+                          </span>
+                          <span className={cs.itemInfo}>
+                            <span className={`${cs.itemName} ${isActive ? cs.itemNameActive : ''}`}>
+                              {c.name}
+                            </span>
+                            <span className={cs.itemStatusText}>{statusLabel}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
+
+          {/* 미지정 카메라 */}
+          {(() => {
+            const unassigned = cameras.filter((c) => c.siteId === null && c.contractId === selectedContractId);
+            if (unassigned.length === 0) return null;
+            const uid = '__unassigned';
+            const isOpen = openSiteId === uid;
+            return (
+              <div className={cs.accordionCard}>
+                <button className={cs.accordionHeader} onClick={() => toggleAccordion(uid)}>
+                  <span className={cs.accordionTitle}>
+                    미지정
+                    <span className={cs.accordionCount}>{unassigned.length}</span>
+                  </span>
+                  <svg
+                    className={`${cs.accordionChevron} ${isOpen ? cs.accordionChevronOpen : ''}`}
+                    width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+                {isOpen && (
+                  <div className={cs.accordionList}>
+                    {unassigned.map((c) => {
+                      const isActive = c.id === activeId;
+                      const chipCls =
+                        c.status === 'offline' ? cs.statusChipOffline : cs.statusChipOnline;
+                      const statusLabel =
+                        c.status === 'offline' ? '오프라인' : '온라인';
+                      return (
+                        <button
+                          key={c.id}
+                          className={`${cs.accordionItem} ${isActive ? cs.accordionItemActive : ''}`}
+                          onClick={() => setActiveId(c.id)}
+                          title={c.name}
+                        >
+                          <span className={`${cs.statusChip} ${chipCls}`}>
+                            {c.status === 'offline' ? 'OFF' : 'ON'}
+                          </span>
+                          <span className={cs.itemInfo}>
+                            <span className={`${cs.itemName} ${isActive ? cs.itemNameActive : ''}`}>
+                              {c.name}
+                            </span>
+                            <span className={cs.itemStatusText}>{statusLabel}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </aside>
 
         {/* ── 우측 콘텐츠 ── */}
@@ -517,6 +449,14 @@ export default function CameraSettings() {
           </div>
         ) : (
           <div className={`${cs.content}${tab === 'live' ? ` ${cs.contentLive}` : ''}`}>
+            {/* 카메라 타이틀 */}
+            <div className={cs.contentHeader}>
+              <span className={cs.contentTitle}>{cam.name}</span>
+              <Badge tone={cam.status === 'offline' ? 'danger' : 'success'} dot>
+                {cam.status === 'offline' ? '오프라인' : '온라인'}
+              </Badge>
+            </div>
+
             {/* 설정 탭 */}
             <div className={cs.settingsTabs}>
               {SETTINGS_TABS.map((t) => (
@@ -533,14 +473,8 @@ export default function CameraSettings() {
       {/* ===== 실시간영상 ===== */}
       {tab === 'live' && (
         <div className={cs.liveLayout}>
-          {/* 좌측: 카메라 (카드 없음, 고정) */}
+          {/* 좌측: 카메라 + 기본 정보 */}
           <div className={cs.liveCamera}>
-            <div className={cs.liveCameraHead}>
-              <span className={cs.liveCameraTitle}>{cam.name}</span>
-              <Badge tone={offline ? 'danger' : 'success'} dot>
-                {cam.status === 'recording' ? '녹화중' : cam.status === 'online' ? '온라인' : '오프라인'}
-              </Badge>
-            </div>
             <div className={page.preview}>
               {!offline && (
                 <video
@@ -551,28 +485,73 @@ export default function CameraSettings() {
               )}
               {offline && <span style={{ position: 'relative', zIndex: 2 }}>OFFLINE</span>}
             </div>
+            <div className={cs.liveCameraInfo}>
+              <div className={page.sectionCaption}>카메라 정보</div>
+              <Kv label="접속 상태" value={cam.status === 'offline' ? '오프라인' : '온라인'} />
+              <Kv label="제품 코드" value={`SVI-${cam.model}`} />
+              <Kv label="제조번호 (S/N)" value={serial} />
+              <Kv label="제품등록번호" value={`R-${serial.slice(-8)}`} />
+              <Kv label="MAC 주소" value={macAddr} />
+              <Kv label="F/W 버전" value={cam.firmware} />
+              <Kv label="F/W 빌드 날짜" value="2026-03-18" />
+            </div>
           </div>
+
+          {/* 채널 / 정보 구분선 */}
+          <div className={cs.liveDivider} aria-hidden />
 
           {/* 우측: 기본 정보 / OSD 설정 라인탭 패널 (탭바 고정, 내용만 스크롤) */}
           <div className={cs.livePanel}>
             <div className={cs.livePanelTabBar}>
-              <button
-                className={`${cs.livePanelTab} ${liveTab === 'info' ? cs.livePanelTabActive : ''}`}
-                onClick={() => setLiveTab('info')}
-              >
-                기본 정보
-              </button>
               <button
                 className={`${cs.livePanelTab} ${liveTab === 'osd' ? cs.livePanelTabActive : ''}`}
                 onClick={() => setLiveTab('osd')}
               >
                 OSD 설정
               </button>
+              <button
+                className={`${cs.livePanelTab} ${liveTab === 'image' ? cs.livePanelTabActive : ''}`}
+                onClick={() => setLiveTab('image')}
+              >
+                이미지 설정
+              </button>
             </div>
 
             <div className={cs.livePanelBody}>
-              {/* ── OSD 설정 탭: 이미지 설정 전체 ── */}
+              {/* ── OSD 설정 탭 ── */}
               {liveTab === 'osd' && (
+                <>
+                  <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
+                  {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
+                  <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
+                  {osdDate && (
+                    <>
+                      <Seg
+                        label="시간 표시"
+                        value={timeFormat}
+                        onChange={setTimeFormat}
+                        options={[{ value: '24', label: '24시간' }, { value: '12', label: '12시간' }]}
+                      />
+                      <SelectField
+                        label="날짜 형식"
+                        value={dateFormat}
+                        onChange={setDateFormat}
+                        options={[
+                          { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+                          { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
+                          { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
+                          { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+                        ]}
+                      />
+                      <ToggleRow title="요일 표시" on={osdWeekday} onToggle={() => setOsdWeekday(!osdWeekday)} />
+                    </>
+                  )}
+                  <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
+                </>
+              )}
+
+              {/* ── 이미지 설정 탭 ── */}
+              {liveTab === 'image' && (
                 <>
                   <div className={page.sectionCaption}>이미지 조정 (0~100)</div>
                   <EditSlider label="밝기" value={img.brightness} min={0} max={100} onChange={(v) => patchImg({ brightness: v })} />
@@ -672,48 +651,6 @@ export default function CameraSettings() {
                   />
                 </>
               )}
-
-              {/* ── 기본 정보 탭: 카메라 정보 + OSD 설정 ── */}
-              {liveTab === 'info' && (
-                <>
-                  <div className={page.sectionCaption}>카메라 정보</div>
-                  <Kv label="접속 상태" value={cam.status === 'online' ? '온라인' : cam.status === 'recording' ? '녹화중' : '오프라인'} />
-                  <Kv label="제품 코드" value={`SVI-${cam.model}`} />
-                  <Kv label="제조번호 (S/N)" value={serial} />
-                  <Kv label="제품등록번호" value={`R-${serial.slice(-8)}`} />
-                  <Kv label="MAC 주소" value={macAddr} />
-                  <Kv label="F/W 버전" value={cam.firmware} />
-                  <Kv label="F/W 빌드 날짜" value="2026-03-18" />
-
-                  <div className={page.sectionCaption}>OSD 설정</div>
-                  <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
-                  {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
-                  <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
-                  {osdDate && (
-                    <>
-                      <Seg
-                        label="시간 표시"
-                        value={timeFormat}
-                        onChange={setTimeFormat}
-                        options={[{ value: '24', label: '24시간' }, { value: '12', label: '12시간' }]}
-                      />
-                      <SelectField
-                        label="날짜 형식"
-                        value={dateFormat}
-                        onChange={setDateFormat}
-                        options={[
-                          { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-                          { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
-                          { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
-                          { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-                        ]}
-                      />
-                      <ToggleRow title="요일 표시" on={osdWeekday} onToggle={() => setOsdWeekday(!osdWeekday)} />
-                    </>
-                  )}
-                  <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -721,9 +658,19 @@ export default function CameraSettings() {
 
       {/* ===== 시스템 ===== */}
       {tab === 'system' && (
-        <div className={page.csGrid}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card title="날짜 · 시간">
+        <div className={cs.tabContentGrid}>
+
+          <Card title="빠른 정보">
+            <Kv label="모델" value={cam.model} />
+            <Kv label="펌웨어" value={cam.firmware} />
+            <Kv label="IP" value={cam.ip} />
+            <Kv label="코덱" value={cam.codec} />
+            <Kv label="해상도" value={cam.resolution} />
+            <Kv label="저장소" value={`${cam.storageGb} GB`} />
+          </Card>
+
+          <Card title="날짜 · 시간">
+            <div className={page.formStack}>
               <SelectField
                 label="표준 시간대"
                 value={timezone}
@@ -762,9 +709,33 @@ export default function CameraSettings() {
                 </>
               )}
               {timeMode === 'manual' && <Kv label="PC 시간 연동" value="현재 PC 시간으로 동기화" />}
-            </Card>
+            </div>
+          </Card>
 
-            <Card title="보안">
+          {/* Row 2: 유지 보수(3행, medium-tall) | 보안(2 select, medium) */}
+          <Card title="유지 보수">
+            <div className={page.settingsRow}>
+              <div><div className={page.settingsRowTitle}>재부팅</div></div>
+              <Button variant="secondary" size="sm">실행</Button>
+            </div>
+            <div className={page.settingsRow}>
+              <div>
+                <div className={page.settingsRowTitle}>공장 초기화</div>
+                <div className={page.settingsRowDesc}>네트워크 정보 제외 옵션 지원.</div>
+              </div>
+              <Button variant="secondary" size="sm">실행</Button>
+            </div>
+            <div className={page.settingsRow}>
+              <div>
+                <div className={page.settingsRowTitle}>설정 내보내기 / 불러오기</div>
+                <div className={page.settingsRowDesc}>파일 암호 설정 가능.</div>
+              </div>
+              <Button variant="secondary" size="sm">관리</Button>
+            </div>
+          </Card>
+
+          <Card title="보안">
+            <div className={page.formStack}>
               <SelectField
                 label="자동 로그아웃 (분)"
                 value={autoLogout}
@@ -777,58 +748,41 @@ export default function CameraSettings() {
                 onChange={setPwdValidity}
                 options={[30, 60, 90, 120, 180].map((v) => ({ value: String(v), label: `${v}일` }))}
               />
-            </Card>
-          </div>
+            </div>
+          </Card>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {quickCard}
-            <Card title="도구">
-              <div className={page.sectionCaption}>펌웨어</div>
-              <div className={page.settingsRow}>
-                <div>
-                  <div className={page.settingsRowTitle}>F/W 업그레이드</div>
-                  <div className={page.settingsRowDesc}>PC에서 펌웨어 파일을 선택해 업그레이드합니다.</div>
-                </div>
-                <Button variant="secondary" size="sm">파일 선택</Button>
+          {/* Row 3: 펌웨어(1행, short) | 시스템 로그(short) */}
+          <Card title="펌웨어">
+            <div className={page.settingsRow}>
+              <div>
+                <div className={page.settingsRowTitle}>F/W 업그레이드</div>
+                <div className={page.settingsRowDesc}>PC에서 펌웨어 파일을 선택해 업그레이드합니다.</div>
               </div>
-              <div className={page.sectionCaption}>유지 보수</div>
-              <div className={page.settingsRow}>
-                <div><div className={page.settingsRowTitle}>재부팅</div></div>
-                <Button variant="secondary" size="sm">실행</Button>
+              <Button variant="secondary" size="sm">파일 선택</Button>
+            </div>
+          </Card>
+
+          <Card title="시스템 로그">
+            <Kv label="로그 유형" value="시스템 · 이벤트" />
+            <div className={page.settingsRow}>
+              <div>
+                <div className={page.settingsRowTitle}>목록 내보내기</div>
+                <div className={page.settingsRowDesc}>*.csv 파일로 저장.</div>
               </div>
-              <div className={page.settingsRow}>
-                <div>
-                  <div className={page.settingsRowTitle}>공장 초기화</div>
-                  <div className={page.settingsRowDesc}>네트워크 정보 제외 옵션 지원.</div>
-                </div>
-                <Button variant="secondary" size="sm">실행</Button>
-              </div>
-              <div className={page.settingsRow}>
-                <div>
-                  <div className={page.settingsRowTitle}>설정 내보내기 / 불러오기</div>
-                  <div className={page.settingsRowDesc}>파일 암호 설정 가능.</div>
-                </div>
-                <Button variant="secondary" size="sm">관리</Button>
-              </div>
-              <div className={page.sectionCaption}>시스템 로그</div>
-              <Kv label="로그 유형" value="시스템 · 이벤트" />
-              <div className={page.settingsRow}>
-                <div>
-                  <div className={page.settingsRowTitle}>목록 내보내기</div>
-                  <div className={page.settingsRowDesc}>*.csv 파일로 저장.</div>
-                </div>
-                <Button variant="secondary" size="sm">내보내기</Button>
-              </div>
-            </Card>
-          </div>
+              <Button variant="secondary" size="sm">내보내기</Button>
+            </div>
+          </Card>
+
         </div>
       )}
 
       {/* ===== 네트워크 ===== */}
       {tab === 'network' && (
-        <div className={page.csGrid}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card title="TCP / IP">
+        <div className={cs.tabContentGrid}>
+
+          {/* Row 1: TCP/IP(tall) | 고급설정(tall) */}
+          <Card title="TCP / IP">
+            <div className={page.formStack}>
               <SelectField
                 label="NIC 속도"
                 value={nicSpeed}
@@ -850,44 +804,11 @@ export default function CameraSettings() {
                 <InputField label="DNS" value={dns1} onChange={setDns1} />
                 <InputField label="DNS2" value={dns2} onChange={setDns2} />
               </div>
-            </Card>
+            </div>
+          </Card>
 
-            <Card title="DDNS">
-              <ToggleRow title="DDNS 사용" on={ddnsOn} onToggle={() => setDdnsOn(!ddnsOn)} />
-              <Kv label="DDNS 형식" value="S-1 DDNS" />
-              <Kv label="서버 주소" value="apddnsdev.s1.co.kr" />
-              <Kv label="포트" value="11001 ~ 11003" />
-              <div className={page.formRow}>
-                <span className={page.formLabel}>DDNS 상태</span>
-                <Badge tone={ddnsOn ? 'success' : 'neutral'} dot>{ddnsOn ? '연결 성공' : '비활성'}</Badge>
-              </div>
-              <div className={page.settingsActions}>
-                <div />
-                <div className={page.settingsActionsRight}>
-                  <Button variant="secondary" size="sm">연결 테스트</Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card title="포트">
-              <div className={page.rowCols2}>
-                <InputField label="HTTP 포트" value={httpPort} onChange={setHttpPort} />
-                <InputField label="RTSP 포트" value={rtspPort} onChange={setRtspPort} />
-              </div>
-              <ToggleRow title="HTTPS 사용" on={httpsUse} onToggle={() => setHttpsUse(!httpsUse)} />
-              {httpsUse && <InputField label="HTTPS 포트" value={httpsPort} onChange={setHttpsPort} />}
-              <Seg
-                label="포트 매핑 모드"
-                value={portMapMode}
-                onChange={setPortMapMode}
-                options={[{ value: 'auto', label: '자동' }, { value: 'manual', label: '수동' }]}
-              />
-              <ToggleRow title="UPnP" on={upnp} onToggle={() => setUpnp(!upnp)} />
-            </Card>
-
-            <Card title="고급 설정">
+          <Card title="고급 설정">
+            <div className={page.formStack}>
               <div className={page.sectionCaption}>TLS</div>
               <ToggleRow title="영상전송 구간 암호화 (TLS)" on={tlsEncrypt} onToggle={() => setTlsEncrypt(!tlsEncrypt)} />
               <SelectField
@@ -923,40 +844,83 @@ export default function CameraSettings() {
                 options={[{ value: 'sha256', label: 'SHA256' }, { value: 'digest', label: '다이제스트' }]}
               />
               <ToggleRow title="스트림 암호화" on={streamEncrypt} onToggle={() => setStreamEncrypt(!streamEncrypt)} />
-            </Card>
-          </div>
+            </div>
+          </Card>
+
+          {/* Row 2: DDNS(medium) | 포트(medium) */}
+          <Card title="DDNS">
+            <div className={page.formStack}>
+              <ToggleRow title="DDNS 사용" on={ddnsOn} onToggle={() => setDdnsOn(!ddnsOn)} />
+              <Kv label="DDNS 형식" value="S-1 DDNS" />
+              <Kv label="서버 주소" value="apddnsdev.s1.co.kr" />
+              <Kv label="포트" value="11001 ~ 11003" />
+              <div className={page.formRow}>
+                <span className={page.formLabel}>DDNS 상태</span>
+                <Badge tone={ddnsOn ? 'success' : 'neutral'} dot>{ddnsOn ? '연결 성공' : '비활성'}</Badge>
+              </div>
+              <div className={page.settingsActions}>
+                <div />
+                <div className={page.settingsActionsRight}>
+                  <Button variant="secondary" size="sm">연결 테스트</Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card title="포트">
+            <div className={page.formStack}>
+              <div className={page.rowCols2}>
+                <InputField label="HTTP 포트" value={httpPort} onChange={setHttpPort} />
+                <InputField label="RTSP 포트" value={rtspPort} onChange={setRtspPort} />
+              </div>
+              <ToggleRow title="HTTPS 사용" on={httpsUse} onToggle={() => setHttpsUse(!httpsUse)} />
+              {httpsUse && <InputField label="HTTPS 포트" value={httpsPort} onChange={setHttpsPort} />}
+              <Seg
+                label="포트 매핑 모드"
+                value={portMapMode}
+                onChange={setPortMapMode}
+                options={[{ value: 'auto', label: '자동' }, { value: 'manual', label: '수동' }]}
+              />
+              <ToggleRow title="UPnP" on={upnp} onToggle={() => setUpnp(!upnp)} />
+            </div>
+          </Card>
+
         </div>
       )}
 
       {/* ===== 비디오 ===== */}
       {tab === 'video' && (
+        <div className={cs.tabContentGrid}>
         <Card title="영상 스트림">
-          <Seg
-            label="스트림 유형"
-            value={streamSel}
-            onChange={setStreamSel}
-            options={[
-              { value: 'main', label: '메인 스트림' },
-              { value: 'sub1', label: '서브 스트림 1' },
-              { value: 'sub2', label: '서브 스트림 2' },
-            ]}
-          />
-          <SelectField label="해상도" value={cur.resolution} onChange={(v) => patchStream({ resolution: v })} options={RES_OPTIONS} />
-          <Seg
-            label="비트레이트 유형"
-            value={cur.bitrateType}
-            onChange={(v) => patchStream({ bitrateType: v })}
-            options={[{ value: 'VBR', label: 'VBR' }, { value: 'CBR', label: 'CBR' }]}
-          />
-          <SelectField label="화질" value={cur.quality} onChange={(v) => patchStream({ quality: v })} options={QUALITY_OPTIONS} />
-          <SelectField label="FPS (단위 5)" value={cur.fps} onChange={(v) => patchStream({ fps: v })} options={FPS_OPTIONS} />
-          <Seg
-            label="인코딩"
-            value={cur.codec}
-            onChange={(v) => patchStream({ codec: v })}
-            options={[{ value: 'H.265', label: 'H.265' }, { value: 'H.264', label: 'H.264' }]}
-          />
+          <div className={page.formStack}>
+            <Seg
+              label="스트림 유형"
+              value={streamSel}
+              onChange={setStreamSel}
+              options={[
+                { value: 'main', label: '메인 스트림' },
+                { value: 'sub1', label: '서브 스트림 1' },
+                { value: 'sub2', label: '서브 스트림 2' },
+              ]}
+            />
+            <SelectField label="해상도" value={cur.resolution} onChange={(v) => patchStream({ resolution: v })} options={RES_OPTIONS} />
+            <Seg
+              label="비트레이트 유형"
+              value={cur.bitrateType}
+              onChange={(v) => patchStream({ bitrateType: v })}
+              options={[{ value: 'VBR', label: 'VBR' }, { value: 'CBR', label: 'CBR' }]}
+            />
+            <SelectField label="화질" value={cur.quality} onChange={(v) => patchStream({ quality: v })} options={QUALITY_OPTIONS} />
+            <SelectField label="FPS (단위 5)" value={cur.fps} onChange={(v) => patchStream({ fps: v })} options={FPS_OPTIONS} />
+            <Seg
+              label="인코딩"
+              value={cur.codec}
+              onChange={(v) => patchStream({ codec: v })}
+              options={[{ value: 'H.265', label: 'H.265' }, { value: 'H.264', label: 'H.264' }]}
+            />
+          </div>
         </Card>
+        </div>
       )}
 
 

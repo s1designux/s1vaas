@@ -507,7 +507,7 @@ export default function Dispatch() {
                   <td className="tabular" style={{ fontFamily: 'var(--font-mono)' }}>
                     {t.id}
                   </td>
-                  <td style={{ fontWeight: 600 }}>{t.siteName}</td>
+                  <td style={{ fontWeight: 'var(--font-weight-semibold)' }}>{t.siteName}</td>
                   <td>
                     <Badge tone={REASON_TONE[t.reason]} dot={false}>
                       {REASON_LABEL[t.reason]}

@@ -84,9 +84,9 @@ function Kpi({
         {suffix && (
           <span
             style={{
-              fontSize: 16,
+              fontSize: 'var(--font-size-16)',
               color: 'var(--color-text-muted)',
-              marginLeft: 4,
+              marginLeft: 'var(--spacing-4)',
             }}
           >
             {suffix}
@@ -160,7 +160,7 @@ function StorageDonut() {
               y="48"
               textAnchor="middle"
               className={s.donutCenter}
-              style={{ fontSize: 16 }}
+              style={{ fontSize: 'var(--font-size-16)' }}
             >
               {usedPct}%
             </text>
@@ -169,7 +169,7 @@ function StorageDonut() {
               y="62"
               textAnchor="middle"
               className={s.donutSub}
-              style={{ fontSize: 7, letterSpacing: '0.08em' }}
+              style={{ fontSize: 'var(--font-size-10)', letterSpacing: '0.08em' }}
             >
               총 {(totalGb / 1000).toFixed(1)}TB
             </text>
@@ -476,7 +476,7 @@ export default function Health() {
                             {severityLabel(meta.severity)}
                           </Badge>
                         </td>
-                        <td style={{ fontWeight: 600 }}>
+                        <td style={{ fontWeight: 'var(--font-weight-semibold)' }}>
                           {!meta.fwUpToDate && (
                             <span
                               className={s.fwWarnIcon}
@@ -573,7 +573,7 @@ export default function Health() {
                 <span className={s.kvVal}>
                   {drawerRow.meta.firmwareVersion}
                   {!drawerRow.meta.fwUpToDate && (
-                    <span style={{ marginLeft: 8 }}>
+                    <span style={{ marginLeft: 'var(--spacing-8)' }}>
                       <Badge tone="warn" dot>
                         업데이트 필요
                       </Badge>

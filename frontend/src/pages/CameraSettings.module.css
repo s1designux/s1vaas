@@ -27,8 +27,8 @@
 
 /* ── 좌측 사이드바 ── */
 .sidebar {
-  width: 280px;
-  min-width: 280px;
+  width: 340px;
+  min-width: 340px;
   border-right: var(--border-width-default) solid var(--color-border-subtle);
   overflow-y: auto;
   background: var(--color-surface-default);
@@ -36,6 +36,38 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-8);
+}
+
+/* ══ 계약처 셀렉트 ══ */
+.contractSelect {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-shrink: 0;
+}
+
+.contractSelectInput {
+  width: auto;
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: var(--spacing-4) 0;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.contractSelectInput:focus {
+  outline: none;
+}
+
+.contractSelectChevron {
+  flex-shrink: 0;
+  color: var(--color-icon-subtle);
+  pointer-events: none;
 }
 
 /* ══ 계약처 섹션 (최상위) ══ */
@@ -59,7 +91,7 @@
 }
 
 .contractLabel {
-  font-size: var(--font-size-11);
+  font-size: var(--font-size-12);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -217,7 +249,7 @@
 }
 
 .itemName {
-  font-size: var(--font-size-13);
+  font-size: var(--font-size-14);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -243,8 +275,26 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-12);
-  padding: var(--spacing-12);
+  gap: 0;
+  padding: 0;
+}
+
+.contentHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-12) var(--spacing-16);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.contentTitle {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .empty {
@@ -267,11 +317,12 @@
   top: 0;
   z-index: 10;
   background: var(--color-surface-default);
+  padding: 0 8px;
 }
 
 .settingsTab {
   padding: var(--spacing-8) var(--spacing-16);
-  font-size: var(--font-size-13);
+  font-size: var(--font-size-14);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   background: none;
@@ -301,20 +352,37 @@
 .liveLayout {
   flex: 1;
   display: flex;
-  gap: var(--spacing-12);
+  gap: 0;
   overflow: hidden;
   min-height: 0;
+}
+
+/* 채널 영역과 설정 패널 사이 수직 구분선 */
+.liveDivider {
+  width: 1px;
+  flex-shrink: 0;
+  align-self: stretch;
+  background: var(--color-border-subtle);
+  margin: 0 var(--spacing-12);
 }
 
 /* 좌측 카메라 컬럼 (카드 없음) */
 .liveCamera {
   flex: none;
   width: 44%;          /* 현재(2/3) × 2/3 ≈ 44% */
-  align-self: flex-start;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-8);
   min-width: 0;
+  padding: 20px 0 20px 20px;   /* 우측은 divider margin이 처리 */
+  overflow-y: auto;
+}
+
+.liveCameraInfo {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--spacing-4);
 }
 
 .liveCameraHead {
@@ -322,7 +390,6 @@
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  padding: 0 var(--spacing-2);
 }
 
 .liveCameraTitle {
@@ -338,58 +405,131 @@
 .livePanel {
   flex: 1;
   min-width: 0;
-  background: var(--color-surface-default);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-card-md);
-  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: border-color var(--transition-base);
-}
-
-.livePanel:hover {
-  border-color: var(--color-border-default);
 }
 
 .livePanelTabBar {
   display: flex;
-  border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
-  padding: 0 var(--spacing-16);
+  padding: 16px 20px;
+  gap: var(--spacing-6);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .livePanelTab {
-  padding: var(--spacing-10) var(--spacing-12);
-  font-size: var(--font-size-13);
+  padding: 5px 14px;
+  font-size: var(--font-size-14);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 999px;
   cursor: pointer;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
   white-space: nowrap;
+  line-height: 1.5;
 }
 
 .livePanelTab:hover {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border-strong, var(--color-border-default));
   color: var(--color-text-primary);
 }
 
 .livePanelTabActive {
-  color: var(--color-action-primary-default);
-  border-bottom-color: var(--color-action-primary-default);
+  background: var(--color-action-primary-default);
+  border-color: var(--color-action-primary-default);
+  color: #fff;
   font-weight: var(--font-weight-semibold);
 }
 
 .livePanelBody {
-  padding: var(--spacing-20);
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-12);
   overflow-y: auto;
   flex: 1;
+}
+
+/* ── 플랫 설정 리스트 (시스템·네트워크·비디오 탭 공용) ── */
+.settingsFlat {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.settingsCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Seg 전용 행 — formRow 테두리 없이 카드 내부 gap으로만 간격 확보 ── */
+.segRow {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--spacing-16);
+  align-items: center;
+  padding: var(--spacing-8) 0;
+  font-size: var(--font-size-14);
+}
+
+/* ── 탭 콘텐츠 단일 컬럼 래퍼 (네트워크·비디오 탭) ── */
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* ── 탭 콘텐츠 2단 그리드 래퍼 (시스템 탭) — 1440px 이상 2열, 미만 1열 ── */
+.tabContentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1439px) {
+  .tabContentGrid {
+    grid-template-columns: 1fr;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+}
+
+.settingsSection {
+  padding-top: var(--spacing-28);
+}
+
+/* settingsFlat 첫 번째 col의 첫 번째 섹션만 상단 여백 제거 */
+.settingsFlat > .settingsCol:first-child > .settingsSection:first-child {
+  padding-top: 0;
+}
+
+.settingsSectionTitle {
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-16);
+}
+
+/* hr 구분선 제거 — 섹션 padding-top으로 대체 */
+.settingsDivider {
+  display: none;
 }
 
 @keyframes fade-in {

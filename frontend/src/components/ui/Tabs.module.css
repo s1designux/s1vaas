@@ -50,6 +50,54 @@
   background: var(--color-action-primary-default);
 }
 
+/* ── line variant: DS S1 v2.4 Line Tab (tab.json, .s1-tab) ── */
+.tabs.line {
+  display: flex;
+  align-items: flex-end;
+  background: var(--tab-bg);
+  border-bottom: var(--border-width-default) solid var(--tab-indicator-default);
+  gap: 0;
+}
+
+.tabs.line .tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--spacing-padding-inline-lg);
+  height: 40px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--tab-label-default);
+  background: transparent;
+  border: none;
+  border-bottom: var(--border-width-default) solid transparent;
+  margin-bottom: calc(var(--border-width-default) * -1);
+  white-space: nowrap;
+  letter-spacing: -0.32px;
+  line-height: var(--line-height-130);
+  transition: color 0.12s ease;
+  cursor: pointer;
+}
+
+.tabs.line .tab:hover {
+  background: transparent;
+  color: var(--tab-label-selected);
+  font-weight: var(--font-weight-bold);
+}
+
+.tabs.line .tab.active {
+  background: transparent;
+  color: var(--tab-label-selected);
+  font-weight: var(--font-weight-bold);
+  border-bottom: var(--border-width-strong) solid var(--tab-indicator-selected);
+}
+
+/* base의 ::after underline (default variant) 는 line variant에서 불필요 — 숨김 */
+.tabs.line .tab.active::after {
+  content: none;
+}
+
 @media (max-width: 768px) {
   .tab {
     padding: var(--spacing-8) var(--spacing-12);

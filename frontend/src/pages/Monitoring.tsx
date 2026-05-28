@@ -6,28 +6,13 @@ import { BtnGroup } from '@/components/ui/BtnGroup';
 import { Tabs } from '@/components/ui/Tabs';
 import { Chip } from '@/components/ui/Chip';
 import { useToast } from '@/hooks/useToast';
-import type { AppEvent, Camera, EventType, Site } from '@/types';
+import type { AppEvent, Camera, Contract, EventType, FavoriteView, Site } from '@/types';
 import styles from './Monitoring.module.css';
 
 // ── Constants ────────────────────────────────────────────────────
 type Layout = 2 | 3 | 4;
 const LAYOUTS: Layout[] = [2, 3, 4];
 
-const INITIAL_ZONES = ['전체', '출입구', '매장', '주차장', '사무실'];
-
-const MOCK_CUSTOMERS = [
-  { id: 'c1', num: 'N1****6', label: '강남물산(주)', siteIds: ['s-01', 's-02'] },
-  { id: 'c2', num: 'N2****7', label: '서울유통(주)', siteIds: ['s-03', 's-04'] },
-  { id: 'c3', num: 'N3****8', label: '부산상사(주)', siteIds: ['s-05', 's-06'] },
-];
-
-function cameraZone(name: string): string {
-  if (name.includes('출입') || name.includes('정문') || name.includes('옥외') || name.includes('적재')) return '출입구';
-  if (name.includes('주차')) return '주차장';
-  if (name.includes('매장') || name.includes('로비') || name.includes('카페')) return '매장';
-  if (name.includes('서버') || name.includes('R&D') || name.includes('사무')) return '사무실';
-  return '전체';
-}
 
 const EVENT_FILTER_DEFS: { type: EventType; label: string }[] = [
   { type: 'motion', label: '움직임 감지' },
@@ -222,17 +207,18 @@ interface CameraPickerProps {
   open: boolean;
   onClose: () => void;
   onSelect: (cameraId: string) => void;
+  contracts: Contract[];
   sites: Site[];
   cameras: Camera[];
 }
 
-function CameraPickerModal({ open, onClose, onSelect, sites, cameras }: CameraPickerProps) {
+function CameraPickerModal({ open, onClose, onSelect, contracts, sites, cameras }: CameraPickerProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [customerId, setCustomerId] = useState('');
+  const [contractId, setContractId] = useState('');
   const [siteId, setSiteId] = useState('');
 
   useEffect(() => {
-    if (!open) { setStep(1); setCustomerId(''); setSiteId(''); }
+    if (!open) { setStep(1); setContractId(''); setSiteId(''); }
   }, [open]);
 
   useEffect(() => {
@@ -244,8 +230,7 @@ function CameraPickerModal({ open, onClose, onSelect, sites, cameras }: CameraPi
 
   if (!open) return null;
 
-  const customer = MOCK_CUSTOMERS.find((c) => c.id === customerId);
-  const availableSites = customer ? sites.filter((s) => customer.siteIds.includes(s.id)) : [];
+  const availableSites = contractId ? sites.filter((s) => s.contractId === contractId) : [];
   const availableCams = siteId ? cameras.filter((c) => c.siteId === siteId && c.status !== 'offline') : [];
 
   const stepLabel = (n: 1 | 2 | 3, label: string) => (
@@ -270,9 +255,9 @@ function CameraPickerModal({ open, onClose, onSelect, sites, cameras }: CameraPi
 
         {/* Step indicators */}
         <div className={styles.pickerSteps}>
-          {stepLabel(1, '고객 선택')}
+          {stepLabel(1, '계약처 선택')}
           <span className={styles.pickerStepArrow}>›</span>
-          {stepLabel(2, '지점 선택')}
+          {stepLabel(2, '사이트 선택')}
           <span className={styles.pickerStepArrow}>›</span>
           {stepLabel(3, '카메라 선택')}
         </div>
@@ -281,11 +266,11 @@ function CameraPickerModal({ open, onClose, onSelect, sites, cameras }: CameraPi
         <div className={styles.pickerBody}>
           {step === 1 && (
             <ul className={styles.pickerList}>
-              {MOCK_CUSTOMERS.map((c) => (
+              {contracts.map((c) => (
                 <li key={c.id}>
-                  <button type="button" className={styles.pickerItem} onClick={() => { setCustomerId(c.id); setStep(2); }}>
-                    <span className={styles.pickerItemNum}>{c.num}</span>
-                    <span className={styles.pickerItemName}>{c.label}</span>
+                  <button type="button" className={styles.pickerItem} onClick={() => { setContractId(c.id); setStep(2); }}>
+                    <span className={styles.pickerItemNum}>{c.code}</span>
+                    <span className={styles.pickerItemName}>{c.name}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
                   </button>
                 </li>
@@ -303,6 +288,9 @@ function CameraPickerModal({ open, onClose, onSelect, sites, cameras }: CameraPi
                   </button>
                 </li>
               ))}
+              {availableSites.length === 0 && (
+                <li className={styles.pickerEmpty}>해당 계약처에 사이트가 없습니다.</li>
+              )}
             </ul>
           )}
 
@@ -537,22 +525,73 @@ function EventItem({ ev, isActive, onClick }: { ev: AppEvent; isActive: boolean;
 
 // ── Main Component ───────────────────────────────────────────────
 export default function Monitoring() {
-  const sites = useDataStore((s) => s.sites);
-  const cameras = useDataStore((s) => s.cameras);
-  const events = useDataStore((s) => s.events);
+  const sites      = useDataStore((s) => s.sites);
+  const cameras    = useDataStore((s) => s.cameras);
+  const events     = useDataStore((s) => s.events);
+  const contracts  = useDataStore((s) => s.contracts);
+  const favorites  = useDataStore((s) => s.favorites);
+  const currentCompanyId = useDataStore((s) => s.currentCompanyId);
   const patchCamera = useDataStore((s) => s.patchCamera);
   const toast = useToast();
 
-  const [selectedSiteId, setSelectedSiteId] = useState<string>(() => sites[0]?.id ?? '');
+  // 현재 고객 기준 계약처·즐겨찾기
+  const myContracts = useMemo(
+    () => contracts.filter((c) => c.companyId === currentCompanyId),
+    [contracts, currentCompanyId],
+  );
+  const myFavorites = useMemo(
+    () => (favorites as FavoriteView[]).filter((f) => f.ownerId === currentCompanyId),
+    [favorites, currentCompanyId],
+  );
+
+  // 계약처 선택
+  const [selectedContractId, setSelectedContractId] = useState<string>(
+    () => contracts.filter((c) => c.companyId === currentCompanyId)[0]?.id ?? '',
+  );
+
+  // 선택된 계약처의 사이트 목록
+  const contractSites = useMemo(
+    () => sites.filter((s) => s.contractId === selectedContractId),
+    [sites, selectedContractId],
+  );
+
+  // 사이트/즐겨찾기 선택 ('' = 전체)
+  const [selectedSiteId, setSelectedSiteId] = useState<string>('');
+  const [selectedFavId, setSelectedFavId] = useState<string>('');
+  const isFavMode = !!selectedFavId;
+
+  // 계약처 + 즐겨찾기 통합 탭 아이템
+  const contractTabItems = useMemo(() => [
+    ...myContracts.map((c) => ({
+      key: c.id,
+      label: <>{c.name} <span className={styles.tabMeta}>{c.code}</span></>,
+    })),
+    ...myFavorites.map((f) => ({
+      key: `fav:${f.id}`,
+      label: <>⭐ {f.name} <span className={styles.tabMeta}>{f.cameraIds.length}</span></>,
+    })),
+  ], [myContracts, myFavorites]);
+
+  const activeContractTabKey = isFavMode ? `fav:${selectedFavId}` : selectedContractId;
+
+  function handleContractTabChange(key: string) {
+    if (key.startsWith('fav:')) {
+      setSelectedFavId(key.slice(4));
+    } else {
+      setSelectedContractId(key);
+    }
+  }
+
+  // 계약처 변경 시 전체로 리셋
+  useEffect(() => {
+    setSelectedSiteId('');
+    setSelectedFavId('');
+  }, [selectedContractId]); // eslint-disable-line
 
   // shared view state
   const [viewMode, setViewMode] = useState<'multi' | 'single'>('multi');
   const [selectedCamId, setSelectedCamId] = useState(cameras[0]?.id ?? '');
   const [layout, setLayout] = useState<Layout>(3);
-  const [zone, setZone] = useState('전체');
-  const [zones, setZones] = useState<string[]>(INITIAL_ZONES);
-  const [addingZone, setAddingZone] = useState(false);
-  const [newZoneName, setNewZoneName] = useState('');
   const [displayMode, setDisplayMode] = useState<'snap' | 'live'>('snap');
   const [pickerSlot, setPickerSlot] = useState<number | null>(null);
 
@@ -563,20 +602,41 @@ export default function Monitoring() {
     return () => clearInterval(id);
   }, []);
 
-  // drag/drop slots
-  const siteCams = useMemo(
-    () => cameras.filter((c) => c.siteId === selectedSiteId && (zone === '전체' || cameraZone(c.name) === zone)),
-    [cameras, selectedSiteId, zone],
-  );
+  // 페이지 네비게이션
+  const [camPage, setCamPage] = useState(0);
   const slotCount = layout * layout;
+
+  // drag/drop slots
+  const siteCams = useMemo(() => {
+    let base: Camera[];
+    if (isFavMode) {
+      const fav = myFavorites.find((f) => f.id === selectedFavId);
+      base = fav
+        ? fav.cameraIds.map((id) => cameras.find((c) => c.id === id)).filter(Boolean) as Camera[]
+        : [];
+    } else {
+      const siteIds = new Set(contractSites.map((s) => s.id));
+      base = selectedSiteId
+        ? cameras.filter((c) => c.siteId === selectedSiteId)
+        : cameras.filter((c) => siteIds.has(c.siteId ?? ''));
+    }
+    return base;
+  }, [cameras, selectedSiteId, isFavMode, selectedFavId, myFavorites, contractSites]);
+
+  // 계약처·구역·즐겨찾기·레이아웃 변경 시 첫 페이지로 리셋
+  useEffect(() => {
+    setCamPage(0);
+  }, [selectedContractId, selectedSiteId, selectedFavId, slotCount]);
+  const totalPages = Math.max(1, Math.ceil(siteCams.length / slotCount));
   const [slotMap, setSlotMap] = useState<(string | null)[]>([]);
   const [dragOver, setDragOver] = useState<number | null>(null);
 
   useEffect(() => {
-    const arr: (string | null)[] = siteCams.slice(0, slotCount).map((c) => c.id);
+    const start = camPage * slotCount;
+    const arr: (string | null)[] = siteCams.slice(start, start + slotCount).map((c) => c.id);
     while (arr.length < slotCount) arr.push(null);
     setSlotMap(arr);
-  }, [selectedSiteId, slotCount, zone, siteCams.length]); // eslint-disable-line
+  }, [camPage, slotCount, siteCams]); // siteCams는 useMemo — 계약처/구역/즐겨찾기 변경 시 새 참조
 
   const slots = useMemo(
     () => slotMap.map((id) => (id ? cameras.find((c) => c.id === id) ?? null : null)),
@@ -817,19 +877,9 @@ export default function Monitoring() {
   // ── Multi view ────────────────────────────────────────────────
   return (
     <div className={styles.page}>
-      {/* 사이트 선택 */}
-      <div className={styles.siteRow}>
-        {sites.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            className={[styles.siteChip, selectedSiteId === s.id ? styles.siteChipActive : ''].join(' ')}
-            onClick={() => setSelectedSiteId(s.id)}
-          >
-            {s.id === 's-06' ? '즐겨찾기' : s.name}
-            <span className={styles.siteChipCount}>{s.cameraCount}</span>
-          </button>
-        ))}
+      {/* 계약처 + 즐겨찾기 탭 */}
+      <div className={styles.contractTabsWrap}>
+        <Tabs tabs={contractTabItems} active={activeContractTabKey} onChange={handleContractTabChange} variant="line" />
       </div>
 
       {/* Toolbar: view toggle + zone chips + layout selector */}
@@ -859,50 +909,31 @@ export default function Monitoring() {
             </BtnGroup>
           </div>
 
-          {/* 구역 chips */}
+          {/* 구역 chips (사이트) */}
           <div className={styles.toolbarFieldStretch}>
             <span className={styles.toolbarLabel}>구역</span>
-              <div className={styles.chipGroup}>
-                {zones.map((z) => (
-                  <button
-                    key={z}
-                    type="button"
-                    className={[styles.zoneChip, zone === z ? styles.zoneChipActive : ''].join(' ')}
-                    onClick={() => setZone(z)}
-                  >{z}</button>
-                ))}
-                {addingZone ? (
-                  <input
-                    autoFocus
-                    className={styles.zoneAddInput}
-                    value={newZoneName}
-                    onChange={(e) => setNewZoneName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const name = newZoneName.trim();
-                        if (name && !zones.includes(name)) setZones((prev) => [...prev, name]);
-                        setNewZoneName('');
-                        setAddingZone(false);
-                      }
-                      if (e.key === 'Escape') { setNewZoneName(''); setAddingZone(false); }
-                    }}
-                    onBlur={() => {
-                      const name = newZoneName.trim();
-                      if (name && !zones.includes(name)) setZones((prev) => [...prev, name]);
-                      setNewZoneName('');
-                      setAddingZone(false);
-                    }}
-                    placeholder="구역명 입력"
-                    maxLength={10}
-                  />
-                ) : (
-                  <button type="button" className={styles.addCamBtn} onClick={() => setAddingZone(true)}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
-                    구역 추가
-                  </button>
-                )}
-              </div>
+            <div className={styles.chipGroup}>
+              <button
+                type="button"
+                className={[styles.siteChip, !isFavMode && selectedSiteId === '' ? styles.siteChipActive : ''].join(' ')}
+                onClick={() => { setSelectedSiteId(''); setSelectedFavId(''); }}
+              >
+                전체
+                <span className={styles.siteChipCount}>{contractSites.reduce((n, s) => n + cameras.filter((c) => c.siteId === s.id).length, 0)}</span>
+              </button>
+              {contractSites.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={[styles.siteChip, !isFavMode && selectedSiteId === s.id ? styles.siteChipActive : ''].join(' ')}
+                  onClick={() => { setSelectedSiteId(s.id); setSelectedFavId(''); }}
+                >
+                  {s.name}
+                  <span className={styles.siteChipCount}>{cameras.filter((c) => c.siteId === s.id).length}</span>
+                </button>
+              ))}
             </div>
+          </div>
 
           {/* 레이아웃 선택 */}
           <BtnGroup>
@@ -915,25 +946,54 @@ export default function Monitoring() {
         </div>
       </div>
 
-      {/* Video grid */}
-      <div className={[styles.grid, layout === 2 ? styles.grid2 : layout === 4 ? styles.grid4 : styles.grid3].join(' ')}>
-        {slots.map((cam, i) => (
-          <VideoCell
-            key={cam ? `${cam.id}-${i}` : `empty-${i}`}
-            cam={cam} slotIdx={i}
-            displayMode={displayMode}
-            isSelected={cam?.id === selectedCamId}
-            isDragOver={dragOver === i}
-            onSelect={() => cam && setSelectedCamId(cam.id)}
-            onDoubleClick={() => cam && enterSingleView(cam.id)}
-            onDragStart={(e) => cam && handleDragStart(e, cam.id, i)}
-            onDragOver={(e) => handleDragOver(e, i)}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={(e) => handleDrop(e, i)}
-            onRemove={() => setSlotMap((prev) => { const next = [...prev]; next[i] = null; return next; })}
-            onAddCamera={() => setPickerSlot(i)}
-          />
-        ))}
+      {/* Video grid + pager */}
+      <div className={styles.gridWrap}>
+        <div className={[styles.grid, layout === 2 ? styles.grid2 : layout === 4 ? styles.grid4 : styles.grid3].join(' ')}>
+          {slots.map((cam, i) => (
+            <VideoCell
+              key={cam ? `${cam.id}-${i}` : `empty-${i}`}
+              cam={cam} slotIdx={i}
+              displayMode={displayMode}
+              isSelected={cam?.id === selectedCamId}
+              isDragOver={dragOver === i}
+              onSelect={() => cam && setSelectedCamId(cam.id)}
+              onDoubleClick={() => cam && enterSingleView(cam.id)}
+              onDragStart={(e) => cam && handleDragStart(e, cam.id, i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDragLeave={() => setDragOver(null)}
+              onDrop={(e) => handleDrop(e, i)}
+              onRemove={() => setSlotMap((prev) => { const next = [...prev]; next[i] = null; return next; })}
+              onAddCamera={() => setPickerSlot(i)}
+            />
+          ))}
+        </div>
+        {totalPages > 1 && (
+          <div className={styles.gridPager}>
+            <button
+              type="button"
+              className={styles.pagerBtn}
+              disabled={camPage === 0}
+              onClick={() => setCamPage((p) => p - 1)}
+              aria-label="이전 페이지"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <span className={styles.pagerInfo}>{camPage + 1} / {totalPages}</span>
+            <button
+              type="button"
+              className={styles.pagerBtn}
+              disabled={camPage >= totalPages - 1}
+              onClick={() => setCamPage((p) => p + 1)}
+              aria-label="다음 페이지"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       <CameraPickerModal
@@ -943,6 +1003,7 @@ export default function Monitoring() {
           if (pickerSlot === null) return;
           setSlotMap((prev) => { const next = [...prev]; next[pickerSlot] = cameraId; return next; });
         }}
+        contracts={myContracts}
         sites={sites}
         cameras={cameras}
       />

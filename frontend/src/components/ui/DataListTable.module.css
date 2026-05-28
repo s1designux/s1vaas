@@ -135,8 +135,8 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  border-top: 2px solid var(--color-border-emphasis);
-  border-bottom: 1px solid var(--color-border-emphasis);
+  border-top: 2px solid var(--table-border-strong);
+  border-bottom: 1px solid var(--table-border-strong);
   overflow-y: auto;
 }
 
@@ -155,7 +155,7 @@
 }
 
 .tableWrap thead th {
-  height: 34px;
+  height: var(--sizing-table-row-height-xs);
   padding: 0 12px;
   font-size: var(--font-size-12);
   font-weight: var(--font-weight-medium);
@@ -168,7 +168,7 @@
 
 /* tbody rows */
 .tableWrap tbody tr {
-  border-bottom: var(--border-width-default) solid var(--table-cell-border);
+  border-bottom: var(--border-width-default) solid var(--table-border-light);
 }
 
 .tableWrap tbody tr:last-child {
@@ -181,7 +181,7 @@
 
 /* tbody cells */
 .tableWrap tbody td {
-  height: 34px;
+  height: var(--sizing-table-row-height-xs);
   padding: 6px 12px;
   font-size: var(--font-size-12);
   font-weight: var(--font-weight-regular);

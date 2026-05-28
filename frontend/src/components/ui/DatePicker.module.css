@@ -145,7 +145,7 @@
   width: 30px;
   height: 30px;
   border-radius: var(--radius-full, 50%);
-  font-size: 13px;
+  font-size: var(--font-size-14);
   color: var(--color-text-secondary);
   transition: background 0.12s;
 }

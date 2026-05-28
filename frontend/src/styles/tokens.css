@@ -374,6 +374,13 @@
   --color-action-primary-text: var(--color-base-white);
   --color-action-primary-subtle: var(--color-blue-50);
 
+  /* Navigation — Line Tab (DS S1 v2.4 / tab.json) */
+  --color-navigation-bg: var(--color-surface-default);
+  --color-navigation-label-default: var(--color-text-secondary);
+  --color-navigation-label-selected: var(--color-action-primary-default);
+  --color-navigation-indicator-default: var(--color-border-subtle);
+  --color-navigation-indicator-selected: var(--color-action-primary-default);
+
   /* Status */
   --color-status-success: var(--color-blue-400);
   --color-status-error: var(--color-red-400);
@@ -524,6 +531,12 @@
   --color-action-primary-pressed: var(--color-blue-dark-200);
   --color-action-primary-text: var(--color-base-white);
   --color-action-primary-subtle: var(--color-blue-dark-100);
+  /* Navigation — Line Tab (dark) */
+  --color-navigation-bg: var(--color-surface-default);
+  --color-navigation-label-default: var(--color-text-secondary);
+  --color-navigation-label-selected: var(--color-action-primary-default);
+  --color-navigation-indicator-default: var(--color-border-subtle);
+  --color-navigation-indicator-selected: var(--color-action-primary-default);
   --color-status-success: var(--color-status-dark-green);
   --color-status-error: var(--color-status-dark-red);
   --color-status-warning: var(--color-status-dark-yellow);
@@ -604,23 +617,80 @@
   --button-blue-line-disabled-text: var(--color-text-disabled);
   --button-blue-line-focus-ring: var(--color-border-focus);
 
-  /* Chip */
+  /* Chip — DS chip.json line variant 사양 (2026-05 update: line/solid 분리) */
   --chip-default-bg: var(--color-surface-default);
   --chip-hover-bg: var(--color-bg-subtle);
   --chip-selected-bg: var(--color-surface-default);
   --chip-selected-hover-bg: var(--color-blue-50);
   --chip-disabled-bg: var(--color-bg-subtle);
-  --chip-default-border: var(--color-border-subtle);
-  --chip-hover-border: var(--color-border-default);
-  --chip-selected-border: var(--color-blue-300);
+  --chip-default-border: var(--color-border-strong);
+  --chip-hover-border: var(--color-border-strong);
+  --chip-selected-border: var(--color-action-primary-default);
   --chip-disabled-border: var(--color-border-subtle);
-  --chip-default-text: var(--color-text-secondary);
+  --chip-default-text: var(--color-text-caption);
   --chip-selected-text: var(--color-action-primary-default);
   --chip-disabled-text: var(--color-text-disabled);
   --chip-default-icon: var(--color-icon-default);
   --chip-selected-icon: var(--color-action-primary-default);
   --chip-disabled-icon: var(--color-icon-muted);
   --chip-focus-ring: var(--color-border-focus);
+
+  /* Chip — Line (DS chip.json canonical, 2026-05) */
+  --chip-line-default-bg: var(--color-surface-default);
+  --chip-line-hover-bg: var(--color-bg-subtle);
+  --chip-line-selected-bg: var(--color-surface-default);
+  --chip-line-disabled-bg: var(--color-bg-subtle);
+  --chip-line-default-border: var(--color-border-strong);
+  --chip-line-hover-border: var(--color-border-strong);
+  --chip-line-selected-border: var(--color-action-primary-default);
+  --chip-line-disabled-border: var(--color-border-subtle); /* proto: border-disabled 토큰 없음, subtle 폴백 */
+  --chip-line-default-text: var(--color-text-caption);
+  --chip-line-selected-text: var(--color-action-primary-default);
+  --chip-line-disabled-text: var(--color-text-disabled);
+  --chip-line-default-icon: var(--color-icon-default);
+  --chip-line-selected-icon: var(--color-action-primary-default);
+  --chip-line-disabled-icon: var(--color-icon-muted);
+  --chip-line-default-close-icon: var(--color-icon-default);
+  --chip-line-hover-close-icon: var(--color-icon-emphasis);
+  --chip-line-selected-close-icon: var(--color-action-primary-default);
+
+  /* Chip — Solid (DS chip.json canonical, 2026-05) */
+  --chip-solid-default-bg: var(--color-bg-subtle);
+  --chip-solid-hover-bg: var(--color-bg-muted);
+  --chip-solid-selected-bg: var(--color-action-primary-default);
+  --chip-solid-disabled-bg: var(--color-bg-subtle);
+  --chip-solid-selected-border: var(--color-action-primary-default);
+  --chip-solid-default-text: var(--color-text-caption);
+  --chip-solid-selected-text: var(--color-action-primary-text);
+  --chip-solid-disabled-text: var(--color-text-disabled);
+  --chip-solid-default-icon: var(--color-icon-default);
+  --chip-solid-selected-icon: var(--color-action-primary-text);
+  --chip-solid-disabled-icon: var(--color-icon-muted);
+  --chip-solid-default-close-icon: var(--color-icon-default);
+  --chip-solid-hover-close-icon: var(--color-icon-emphasis);
+  --chip-solid-selected-close-icon: var(--color-action-primary-text);
+
+  /* DS sync 2026-05 — 누락 토큰 추가 (dropdown/button-ghost/table) */
+  --dropdown-trigger-placeholder-text: var(--color-text-placeholder);
+  --dropdown-trigger-selected-text: var(--color-text-primary);
+  --dropdown-list-border: var(--color-border-default);
+  --dropdown-option-selected-text: var(--color-action-primary-default);
+  --button-ghost-hover-bg: var(--color-bg-subtle);
+  --button-ghost-pressed-bg: var(--color-bg-muted);
+  --button-ghost-default-text: var(--color-text-secondary);
+  --button-ghost-disabled-text: var(--color-text-disabled);
+  --button-ghost-default-icon: var(--color-icon-default);
+  --button-ghost-disabled-icon: var(--color-icon-muted);
+  --button-primary-disabled-border: var(--color-border-subtle);
+  --table-border-light: var(--color-border-subtle);
+  --table-border-strong: var(--color-border-emphasis);
+
+  /* Tab — DS Line Tab (tab.json, 2026-05) */
+  --tab-bg: var(--color-navigation-bg);
+  --tab-label-default: var(--color-navigation-label-default);
+  --tab-label-selected: var(--color-navigation-label-selected);
+  --tab-indicator-default: var(--color-navigation-indicator-default);
+  --tab-indicator-selected: var(--color-navigation-indicator-selected);
 
   /* Dropdown */
   --dropdown-trigger-default-bg: var(--color-surface-default);
@@ -796,11 +866,18 @@
   --nav-item-active-text: var(--color-text-primary);  /* Figma: text/primary → #ecedf0 */
   --nav-item-active-icon: var(--color-text-primary);
 
-  /* Chip — dark overrides (must come after :root component tokens to win cascade) */
+  /* Table — dark override (DS: 상하 강선 적정 명암) */
+  --table-border-strong: var(--color-border-strong);
+
+  /* Chip — Line dark override (DS chip.json line dark: border만 emphasis로 상향) */
+  --chip-line-default-border: var(--color-border-emphasis);
+  --chip-line-hover-border: var(--color-border-emphasis);
+
+  /* Chip — flat dark overrides (proto custom: 영상관제 다크에서 칩 bg transparent) */
   --chip-default-bg: transparent;
   --chip-selected-bg: transparent;
   --chip-hover-bg: var(--color-bg-subtle);
-  --chip-default-border: var(--color-border-strong);
+  --chip-default-border: var(--color-border-emphasis);
   --chip-hover-border: var(--color-border-emphasis);
   --chip-selected-border: var(--color-action-primary-default);
   --chip-selected-hover-bg: var(--color-action-primary-subtle);

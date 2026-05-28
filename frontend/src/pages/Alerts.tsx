@@ -151,10 +151,10 @@ function Kpi({ label, value, suffix, meta }: KpiProps) {
         {suffix && (
           <span
             style={{
-              fontSize: 16,
+              fontSize: 'var(--font-size-16)',
               color: 'var(--color-text-muted)',
-              marginLeft: 4,
-              fontWeight: 500,
+              marginLeft: 'var(--spacing-4)',
+              fontWeight: 'var(--font-weight-medium)',
             }}
           >
             {suffix}
@@ -507,7 +507,7 @@ export default function Alerts() {
                 <span className={styles.detailMetaVal}>
                   {selected.assignedTo ?? '미배정'}
                   {typeof selected.responseMin === 'number' && (
-                    <span style={{ color: 'var(--color-text-muted)', marginLeft: 8 }}>
+                    <span style={{ color: 'var(--color-text-muted)', marginLeft: 'var(--spacing-8)' }}>
                       · 응답 {selected.responseMin}분
                     </span>
                   )}
