@@ -589,8 +589,18 @@ export default function CameraSettings() {
           {/* 우측: 기본 정보 / OSD 설정 라인탭 패널 (탭바 고정, 내용만 스크롤) */}
           <div className={cs.livePanel}>
             <div className={cs.livePanelTabBar}>
-              <Chip selected={liveTab === 'osd'} onClick={() => setLiveTab('osd')}>OSD 설정</Chip>
-              <Chip selected={liveTab === 'image'} onClick={() => setLiveTab('image')}>이미지 설정</Chip>
+              <button
+                className={`${cs.livePanelTab} ${liveTab === 'osd' ? cs.livePanelTabActive : ''}`}
+                onClick={() => setLiveTab('osd')}
+              >
+                OSD 설정
+              </button>
+              <button
+                className={`${cs.livePanelTab} ${liveTab === 'image' ? cs.livePanelTabActive : ''}`}
+                onClick={() => setLiveTab('image')}
+              >
+                이미지 설정
+              </button>
             </div>
 
             <div className={cs.livePanelBody}>

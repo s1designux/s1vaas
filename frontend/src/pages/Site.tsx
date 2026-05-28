@@ -398,8 +398,7 @@ export default function Site() {
   const myFavorites = useMemo(() => favorites.filter((f) => f.ownerId === currentCompanyId), [favorites, currentCompanyId]);
   const ownerId = currentCompanyId;
 
-  const [openContracts, setOpenContracts] = useState<Set<string>>(() => new Set(myContracts.slice(0, 1).map((c) => c.id)));
-  const [openSites, setOpenSites] = useState<Set<string>>(new Set());
+  const [openContractId, setOpenContractId] = useState<string | null>(() => myContracts[0]?.id ?? null);
   const [sel, setSel] = useState<Sel>(() =>
     myContracts[0] ? { kind: 'contract', id: myContracts[0].id } : null,
   );
@@ -410,6 +409,8 @@ export default function Site() {
   const [dragOverSite, setDragOverSite] = useState<string | null>(null);
   const [dragFav, setDragFav] = useState<string | null>(null);
   const [dragOverFav, setDragOverFav] = useState<string | null>(null);
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
+  const [editingSiteName, setEditingSiteName] = useState('');
 
   const camsByContract = useMemo(() => {
     const m = new Map<string, Camera[]>();
@@ -449,9 +450,20 @@ export default function Site() {
   };
   const handleAddSite = (contractId: string) => {
     const id = addSite({ name: '새 사이트', address: '', contractId });
-    setOpenContracts((p) => new Set(p).add(contractId));
+    setOpenContractId(contractId);
     select({ kind: 'site', id });
-    toast.success('사이트 생성', '이름과 카메라를 설정해 주세요.');
+    setEditingSiteName('새 사이트');
+    setEditingSiteId(id);
+  };
+
+  const handleEditSiteConfirm = (siteId: string) => {
+    const name = editingSiteName.trim() || '새 사이트';
+    updateSite(siteId, { name });
+    setEditingSiteId(null);
+  };
+
+  const handleEditSiteCancel = () => {
+    setEditingSiteId(null);
   };
 
   return (
@@ -460,151 +472,136 @@ export default function Site() {
         {/* ───────── 좌측 트리 ───────── */}
         <div className={styles.tree}>
           <div className={styles.sectionLabel}>내 장소 (계약처 ▸ 사이트)</div>
+
           {myContracts.map((c) => {
-            const cOpen = openContracts.has(c.id);
+            const cOpen = openContractId === c.id;
             const cSites = sitesOf(c.id);
             const unassigned = unassignedOf(c.id);
+            const isContractActive = sel?.kind === 'contract' && sel.id === c.id;
+
             return (
-              <div key={c.id}>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className={[styles.node, sel?.kind === 'contract' && sel.id === c.id ? styles.nodeActive : '']
-                    .filter(Boolean)
-                    .join(' ')}
+              <div key={c.id} className={styles.treeCard}>
+                {/* 계약처 헤더 */}
+                <button
+                  className={[styles.treeCardHeader, isContractActive ? styles.treeCardHeaderActive : ''].filter(Boolean).join(' ')}
                   onClick={() => {
-                    const isSelected = sel?.kind === 'contract' && sel.id === c.id;
-                    if (isSelected) {
-                      toggle(setOpenContracts, c.id);          // 이미 선택된 상태 → 접기/펼치기
-                    } else {
-                      setOpenContracts((p) => new Set(p).add(c.id)); // 미선택 → 펼치고
-                      select({ kind: 'contract', id: c.id });        // 선택
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      const isSelected = sel?.kind === 'contract' && sel.id === c.id;
-                      if (isSelected) toggle(setOpenContracts, c.id);
-                      else { setOpenContracts((p) => new Set(p).add(c.id)); select({ kind: 'contract', id: c.id }); }
-                    }
+                    setOpenContractId((p) => (p === c.id ? null : c.id));
+                    select({ kind: 'contract', id: c.id });
                   }}
                 >
-                  <Chevron open={cOpen} />
-                  <span className={styles.nodeLabel} style={{ flex: '0 1 auto', fontWeight: 'var(--font-weight-bold)' }}>{c.name}</span>
-                  <span className={styles.nodeCode} style={{ fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-secondary)' }}>{c.code}</span>
-                  <span style={{ flex: 1 }} aria-hidden />
-                  <div className={styles.nodeActions}>
-                    <button type="button" className={styles.iconBtn} title="사이트 추가" onClick={(e) => { e.stopPropagation(); handleAddSite(c.id); }}>＋</button>
-                  </div>
-                </div>
+                  <span className={styles.treeCardTitle}>{c.name}</span>
+                  <span className={styles.treeCardCode}>{c.code}</span>
+                  <svg
+                    className={[styles.treeChevron, cOpen ? styles.treeChevronOpen : ''].filter(Boolean).join(' ')}
+                    width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
 
+                {/* 사이트 목록 */}
                 {cOpen && (
-                  <>
+                  <div className={styles.treeCardBody}>
                     {cSites.map((st) => {
-                      const sOpen = openSites.has(st.id);
                       const sCams = camsOf(st.id);
+                      const isSiteActive = sel?.kind === 'site' && sel.id === st.id;
+                      const isEditing = editingSiteId === st.id;
+
                       return (
-                        <div key={st.id}>
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            draggable
-                            className={[styles.node, styles.lvl1,
-                              sel?.kind === 'site' && sel.id === st.id ? styles.nodeActive : '',
-                              dragOverSite === st.id ? styles.dragOver : '',
-                              dragSite === st.id ? styles.dragging : ''].filter(Boolean).join(' ')}
-                            onClick={() => {
-                              const isSelected = sel?.kind === 'site' && sel.id === st.id;
-                              if (isSelected) {
-                                toggle(setOpenSites, st.id);
-                              } else {
-                                setOpenSites((p) => new Set(p).add(st.id));
-                                select({ kind: 'site', id: st.id });
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                const isSelected = sel?.kind === 'site' && sel.id === st.id;
-                                if (isSelected) toggle(setOpenSites, st.id);
-                                else { setOpenSites((p) => new Set(p).add(st.id)); select({ kind: 'site', id: st.id }); }
-                              }
-                            }}
-                            onDragStart={() => setDragSite(st.id)}
-                            onDragOver={(e) => { e.preventDefault(); setDragOverSite(st.id); }}
-                            onDragLeave={() => setDragOverSite((p) => (p === st.id ? null : p))}
-                            onDrop={(e) => { e.preventDefault(); if (dragSite && dragSite !== st.id) moveSite(dragSite, st.id); setDragSite(null); setDragOverSite(null); }}
-                            onDragEnd={() => { setDragSite(null); setDragOverSite(null); }}
-                          >
-                            <Chevron open={sOpen} />
-                            <span className={styles.nodeLabel}>{st.name}</span>
-                            <span className={styles.nodeCount}>{sCams.length}</span>
-                          </div>
-                          {sOpen &&
-                            sCams.map((cam) => (
-                              <div key={cam.id} className={[styles.node, styles.lvl2].join(' ')}>
-                                <StatusDot online={cam.status !== 'offline'} />
-                                <span className={styles.nodeLabel}>{cam.name}</span>
-                              </div>
-                            ))}
-                          {sOpen && sCams.length === 0 && (
-                            <div className={[styles.node, styles.lvl2].join(' ')} style={{ color: 'var(--color-text-tertiary)' }}>
-                              카메라 없음
+                        <div
+                          key={st.id}
+                          draggable={!isEditing}
+                          className={[dragOverSite === st.id ? styles.dragOver : '', dragSite === st.id ? styles.dragging : ''].filter(Boolean).join(' ') || undefined}
+                          onDragStart={() => setDragSite(st.id)}
+                          onDragOver={(e) => { e.preventDefault(); setDragOverSite(st.id); }}
+                          onDragLeave={() => setDragOverSite((p) => (p === st.id ? null : p))}
+                          onDrop={(e) => { e.preventDefault(); if (dragSite && dragSite !== st.id) moveSite(dragSite, st.id); setDragSite(null); setDragOverSite(null); }}
+                          onDragEnd={() => { setDragSite(null); setDragOverSite(null); }}
+                        >
+                          {isEditing ? (
+                            <div className={styles.siteRowEdit}>
+                              <input
+                                className={styles.siteEditInput}
+                                autoFocus
+                                value={editingSiteName}
+                                onChange={(e) => setEditingSiteName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleEditSiteConfirm(st.id);
+                                  if (e.key === 'Escape') handleEditSiteCancel();
+                                }}
+                                onBlur={() => handleEditSiteConfirm(st.id)}
+                              />
                             </div>
+                          ) : (
+                          <button
+                            className={[styles.siteRow, isSiteActive ? styles.siteRowActive : ''].filter(Boolean).join(' ')}
+                            onClick={() => select({ kind: 'site', id: st.id })}
+                          >
+                            <span className={[styles.siteLabel, isSiteActive ? styles.siteLabelActive : ''].filter(Boolean).join(' ')}>{st.name}</span>
+                            <span className={styles.siteCount}>{sCams.length}</span>
+                          </button>
                           )}
                         </div>
                       );
                     })}
 
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      className={[styles.node, styles.lvlUnassigned, sel?.kind === 'unassigned' && sel.id === c.id ? styles.nodeActive : '']
-                        .filter(Boolean)
-                        .join(' ')}
+                    {/* 미지정 */}
+                    <button
+                      className={[styles.siteRow, styles.siteRowUnassigned, sel?.kind === 'unassigned' && sel.id === c.id ? styles.siteRowActive : ''].filter(Boolean).join(' ')}
                       onClick={() => select({ kind: 'unassigned', id: c.id })}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select({ kind: 'unassigned', id: c.id }); } }}
                     >
-                      <span className={styles.nodeLabel}>📁 미지정</span>
-                      <span className={styles.nodeCount}>{unassigned.length}</span>
-                    </div>
-                  </>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: 'var(--color-text-tertiary)' }}>
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                      </svg>
+                      <span className={[styles.siteLabel, styles.siteLabelMuted, sel?.kind === 'unassigned' && sel.id === c.id ? styles.siteLabelActive : ''].filter(Boolean).join(' ')}>미지정</span>
+                      <span className={styles.siteCount}>{unassigned.length}</span>
+                    </button>
+
+                    {/* 사이트 추가 */}
+                    <button
+                      type="button"
+                      className={styles.addSiteRow}
+                      onClick={() => handleAddSite(c.id)}
+                    >
+                      <span className={styles.addSiteRowIcon}>＋</span>
+                      <span>사이트 추가</span>
+                    </button>
+                  </div>
                 )}
               </div>
             );
           })}
 
-          <div className={styles.sectionLabel} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>⭐ 즐겨찾기 (보기)</span>
-            <button type="button" className={styles.iconBtn} title="즐겨찾기 추가" onClick={handleAddFavorite}>＋</button>
+          {/* 즐겨찾기 섹션 */}
+          <div className={styles.sectionLabel} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+            <span>즐겨찾기</span>
+            <button type="button" className={styles.treeIconBtn} title="즐겨찾기 추가" onClick={handleAddFavorite}>＋</button>
           </div>
+
           {myFavorites.length === 0 && (
-            <div className={styles.node} style={{ color: 'var(--color-text-tertiary)', cursor: 'default' }}>
-              아직 없음
-            </div>
+            <div className={styles.treeEmpty}>즐겨찾기가 없습니다</div>
           )}
+
           {myFavorites.map((f) => (
             <div
               key={f.id}
-              role="button"
-              tabIndex={0}
               draggable
-              className={[styles.node,
-                sel?.kind === 'favorite' && sel.id === f.id ? styles.nodeActive : '',
-                dragOverFav === f.id ? styles.dragOver : '',
-                dragFav === f.id ? styles.dragging : ''].filter(Boolean).join(' ')}
-              onClick={() => select({ kind: 'favorite', id: f.id })}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select({ kind: 'favorite', id: f.id }); } }}
+              className={[styles.treeCard, dragOverFav === f.id ? styles.dragOver : '', dragFav === f.id ? styles.dragging : ''].filter(Boolean).join(' ')}
               onDragStart={() => setDragFav(f.id)}
               onDragOver={(e) => { e.preventDefault(); setDragOverFav(f.id); }}
               onDragLeave={() => setDragOverFav((p) => (p === f.id ? null : p))}
               onDrop={(e) => { e.preventDefault(); if (dragFav && dragFav !== f.id) moveFavorite(dragFav, f.id); setDragFav(null); setDragOverFav(null); }}
               onDragEnd={() => { setDragFav(null); setDragOverFav(null); }}
             >
-              <span className={styles.fav} aria-hidden>★</span>
-              <span className={styles.nodeLabel} style={{ fontWeight: 'var(--font-weight-bold)' }}>{f.name}</span>
-              <span className={styles.nodeCount}>{f.cameraIds.length}</span>
+              <button
+                className={[styles.treeCardHeader, sel?.kind === 'favorite' && sel.id === f.id ? styles.treeCardHeaderActive : ''].filter(Boolean).join(' ')}
+                onClick={() => select({ kind: 'favorite', id: f.id })}
+              >
+                <span className={styles.fav} aria-hidden>★</span>
+                <span className={styles.treeCardTitle}>{f.name}</span>
+                <span className={styles.treeCardCount}>{f.cameraIds.length}</span>
+              </button>
             </div>
           ))}
         </div>
