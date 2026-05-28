@@ -541,7 +541,7 @@ export default function CameraSettings() {
                 {cam.status === 'recording' ? '녹화중' : cam.status === 'online' ? '온라인' : '오프라인'}
               </Badge>
             </div>
-            <div className={page.preview} style={{ flex: 1, aspectRatio: 'unset' }}>
+            <div className={page.preview}>
               {!offline && (
                 <video
                   className={page.previewVideo}

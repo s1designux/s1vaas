@@ -308,11 +308,12 @@
 
 /* 좌측 카메라 컬럼 (카드 없음) */
 .liveCamera {
-  flex: 2;
+  flex: none;
+  width: 44%;          /* 현재(2/3) × 2/3 ≈ 44% */
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-8);
-  overflow: hidden;
   min-width: 0;
 }
 
