@@ -569,18 +569,6 @@ export default function Site() {
                     </div>
                   )}
                 </Card>
-                <Card title={`사이트 (${cSites.length})`} actions={<Button variant="primary" size="sm" onClick={() => handleAddSite(c.id)}>+ 사이트 추가</Button>}>
-                  <div className={styles.camList}>
-                    {cSites.length === 0 && <div className={styles.empty2}>사이트가 없습니다. 추가해 카메라를 묶어보세요.</div>}
-                    {cSites.map((st) => (
-                      <div key={st.id} className={styles.camItem}>
-                        <span className={styles.camName}>{st.name}</span>
-                        <span className={styles.camHome}>{camsOf(st.id).length}대</span>
-                        <button type="button" className={styles.rowBtn} onClick={() => select({ kind: 'site', id: st.id })}>열기</button>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
               </>
             );
           })()}
