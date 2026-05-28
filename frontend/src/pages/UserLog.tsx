@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { DataListTable } from '@/components/ui/DataListTable';
 import { TopSearch } from '@/components/ui/TopSearch';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
 import styles from './UserLog.module.css';
 
 type LogAction =
@@ -121,27 +124,15 @@ export default function UserLog() {
           <TopSearch.Row>
             <TopSearch.Field label="기간" wide>
               <TopSearch.DateRange>
-                <input
-                  type="date"
-                  className={styles.filterDate}
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  aria-label="시작일"
-                />
+                <DatePicker size="sm" className={styles.filterDate} value={from} onChange={setFrom} max={to || undefined} aria-label="시작일" />
                 <TopSearch.Between />
-                <input
-                  type="date"
-                  className={styles.filterDate}
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  aria-label="종료일"
-                />
+                <DatePicker size="sm" className={styles.filterDate} value={to} onChange={setTo} min={from || undefined} aria-label="종료일" />
               </TopSearch.DateRange>
             </TopSearch.Field>
             <TopSearch.Field label="사용자">
-              <input
+              <Input
+                size="sm"
                 type="text"
-                className={styles.filterInput}
                 placeholder="이름 검색"
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
@@ -149,24 +140,20 @@ export default function UserLog() {
             </TopSearch.Field>
             <TopSearch.Divider />
             <TopSearch.Field label="액션">
-              <select
-                className={styles.filterSelect}
+              <Select
+                size="sm"
                 value={actionFilter}
-                onChange={(e) => setActionFilter(e.target.value)}
-              >
-                <option value="">전체</option>
-                {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-              </select>
+                options={[{ value: '', label: '전체' }, ...ACTIONS.map((a) => ({ value: a, label: a }))]}
+                onChange={setActionFilter}
+              />
             </TopSearch.Field>
             <TopSearch.Field label="사이트">
-              <select
-                className={styles.filterSelect}
+              <Select
+                size="sm"
                 value={siteFilter}
-                onChange={(e) => setSiteFilter(e.target.value)}
-              >
-                <option value="">전체</option>
-                {SITES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+                options={[{ value: '', label: '전체' }, ...SITES.map((s) => ({ value: s, label: s }))]}
+                onChange={setSiteFilter}
+              />
             </TopSearch.Field>
           </TopSearch.Row>
         </TopSearch>

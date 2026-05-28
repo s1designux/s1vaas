@@ -43,7 +43,7 @@
   font-size: 14px;
   font-family: inherit;
   font-weight: 400;
-  color: var(--color-text-primary);
+  color: var(--dropdown-trigger-selected-text);
   letter-spacing: -0.028em;
   cursor: pointer;
 }

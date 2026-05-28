@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Tabs } from '@/components/ui/Tabs';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Toggle } from '@/components/ui/Toggle';
 import { useThemeStore } from '@/store/themeStore';
 import { useAuthStore } from '@/store/authStore';
 import { useMenuStore } from '@/store/menuStore';
@@ -68,18 +69,9 @@ function StorageHalf({ percent }: { percent: number }) {
   );
 }
 
+// 로컬 Switch는 DS Toggle 위임 (기존 호출부 유지)
 function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <div
-      className={[page.switch, on ? page.switchOn : ''].filter(Boolean).join(' ')}
-      onClick={onToggle}
-      role="switch"
-      aria-checked={on}
-      tabIndex={0}
-    >
-      <span className={page.switchThumb} />
-    </div>
-  );
+  return <Toggle on={on} onToggle={onToggle} />;
 }
 
 export default function Settings() {
@@ -184,6 +176,7 @@ export default function Settings() {
         >
           {section === 'system' && (
             <>
+              <div className={page.formStack}>
               <Input
                 label="시스템 명칭"
                 value={sysName}
@@ -211,6 +204,7 @@ export default function Settings() {
                   ]}
                   onChange={(v) => setResolution(v as Resolution)}
                 />
+              </div>
               </div>
               <div className={page.settingsRow}>
                 <div>
@@ -577,7 +571,7 @@ export default function Settings() {
 
         {/* Phase G — Dashboard dark variant 무드보드 (panel 2026-04-28 GPT 에셋) */}
         <Card title="Design Preview">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-8)' }}>
             <img
               src={dashboardDarkMood}
               alt="Dashboard dark variant 무드보드"

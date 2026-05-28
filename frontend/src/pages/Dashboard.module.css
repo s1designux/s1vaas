@@ -496,7 +496,7 @@
   border-radius: var(--radius-10);
   background: var(--color-action-primary-default);
   color: var(--color-action-primary-text);
-  font-size: 13px;
+  font-size: var(--font-size-14);
   line-height: 1.55;
   white-space: pre-line;
   border-bottom-right-radius: var(--radius-2);
@@ -509,7 +509,7 @@
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-14);
   line-height: 1.55;
   white-space: pre-line;
   border-bottom-left-radius: var(--radius-2);
@@ -583,7 +583,7 @@
   border: 1px solid var(--input-default-border);
   background: var(--input-default-bg);
   color: var(--color-text-primary);
-  font-size: 13px;
+  font-size: var(--font-size-14);
   font-family: inherit;
   outline: none;
   transition: border-color var(--transition-fast);

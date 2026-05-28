@@ -4,6 +4,38 @@
   gap: var(--space-2);
 }
 
+/* ── 내 매장 AI설정 — 사이드바 + 메인 레이아웃 ── */
+.aiBodyRow {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.aiSidebar {
+  width: 280px;
+  min-width: 280px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  overflow-y: auto;
+  background: var(--color-surface-default);
+  padding: var(--spacing-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 120px);
+}
+
+.aiMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  min-width: 0;
+}
+
 /* ===== 서브 탭 칩 네비게이션 ===== */
 .subNavRow {
   display: flex;

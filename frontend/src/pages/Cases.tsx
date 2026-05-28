@@ -4,6 +4,8 @@ import type { KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Drawer } from '@/components/ui/Drawer';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useToast } from '@/hooks/useToast';
 import { formatDateTime, relativeTime } from '@/lib/time';
@@ -664,17 +666,14 @@ export default function Cases() {
                 </div>
                 <div className={css.statusGroup}>
                   <span className={css.statusLabel}>상태</span>
-                  <select
-                    className={css.statusSelect}
-                    value={selected.status}
-                    onChange={(e) => changeStatus(e.target.value as CaseStatus)}
-                  >
-                    {STATUS_FLOW.map((s) => (
-                      <option key={s} value={s}>
-                        {STATUS_LABEL[s]}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ minWidth: 130 }}>
+                    <Select
+                      size="sm"
+                      value={selected.status}
+                      options={STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
+                      onChange={(v) => changeStatus(v as CaseStatus)}
+                    />
+                  </div>
                 </div>
               </div>
             </>
@@ -703,8 +702,7 @@ export default function Cases() {
         <div className={form.field}>
           <label className={form.label}>제목</label>
           <div className={form.inputWrap}>
-            <input
-              className={form.input}
+            <Input
               value={nTitle}
               onChange={(e) => setNTitle(e.target.value)}
               placeholder="예: 강남본점 후문 침입 의심 (4/30)"
@@ -715,17 +713,11 @@ export default function Cases() {
         <div className={form.field}>
           <label className={form.label}>우선순위</label>
           <div className={form.inputWrap}>
-            <select
-              className={form.select}
+            <Select
               value={nPriority}
-              onChange={(e) => setNPriority(e.target.value as CasePriority)}
-            >
-              {(['high', 'mid', 'low'] as CasePriority[]).map((p) => (
-                <option key={p} value={p}>
-                  {PRIORITY_LABEL[p]}
-                </option>
-              ))}
-            </select>
+              options={(['high', 'mid', 'low'] as CasePriority[]).map((p) => ({ value: p, label: PRIORITY_LABEL[p] }))}
+              onChange={(v) => setNPriority(v as CasePriority)}
+            />
           </div>
         </div>
 

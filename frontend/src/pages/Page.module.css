@@ -372,6 +372,10 @@
   font-size: var(--font-size-base);
 }
 
+.formRow:first-child {
+  border-top: none;
+}
+
 .formRow:last-child {
   border-bottom: 0;
 }
@@ -574,12 +578,9 @@
   grid-template-columns: 140px 1fr;
   gap: var(--space-3);
   align-items: center;
-  padding: var(--space-2) 0 var(--space-3);
-  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 8px 0;
   font-size: var(--font-size-sm);
 }
-
-.kvRow:last-child { border-bottom: none; }
 
 .kvLabel {
   color: var(--color-text-muted);
@@ -613,8 +614,8 @@
 .progressRow {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 0;
+  gap: var(--spacing-6);
+  padding: var(--spacing-10) 0;
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
@@ -976,7 +977,7 @@
 }
 
 .kpiValueLg {
-  font-size: 36px;
+  font-size: var(--font-size-32);
   font-weight: var(--font-weight-bold);
   color: var(--color-text);
   margin-top: 8px;
@@ -988,7 +989,7 @@
   font-size: 18px;
   color: var(--color-text-muted);
   font-weight: var(--font-weight-medium);
-  margin-left: 4px;
+  margin-left: var(--spacing-4);
 }
 
 .permShortcut {
@@ -1238,9 +1239,12 @@
   gap: var(--space-4);
 }
 
+.settingsRow:first-child {
+  border-top: none;
+}
+
 .settingsRow:last-of-type {
-  border-bottom: 1px solid var(--color-border-subtle);
-  margin-bottom: var(--space-4);
+  border-bottom: none;
 }
 
 .settingsRowTitle {
@@ -1544,4 +1548,53 @@
   border-radius: var(--radius-4);
   padding: 1px 6px;
   margin-left: var(--spacing-8);
+}
+
+/* 사이드바 계약처 트리거 — 박스 없이 아이콘 + 텍스트 + 화살표 */
+.sidebarSelect {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  cursor: pointer;
+  padding: var(--spacing-4) 0;
+  width: 100%;
+}
+
+.sidebarSelectIcon {
+  flex-shrink: 0;
+  color: var(--color-icon-subtle);
+}
+
+.sidebarSelectNative {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: none;
+}
+
+.sidebarSelectNative:focus {
+  outline: none;
+}
+
+.sidebarSelectChevron {
+  flex-shrink: 0;
+  color: var(--color-icon-subtle);
+  pointer-events: none;
+}
+
+/* 폼 필드 세로 스택 — Input/Select 여러 개를 Card 안에 쌓을 때 사용 */
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
 }

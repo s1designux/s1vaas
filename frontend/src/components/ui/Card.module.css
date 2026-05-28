@@ -11,6 +11,14 @@
   border-color: var(--color-border-default);
 }
 
+[data-theme='dark'] .card {
+  border-color: var(--color-border-default);
+}
+
+[data-theme='dark'] .card:hover {
+  border-color: var(--color-border-strong);
+}
+
 /* lift variant — SiteCard 한정 */
 .cardLift:hover {
   transform: translateY(-1px);

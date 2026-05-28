@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { BtnGroup } from '@/components/ui/BtnGroup';
 import { TopSearch } from '@/components/ui/TopSearch';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { useToast } from '@/hooks/useToast';
 import { relativeTime } from '@/lib/time';
 import {
@@ -32,6 +35,26 @@ const MODE_PLACEHOLDER: Record<SearchMode, string> = {
 };
 
 const MODES: SearchMode[] = ['natural', 'person', 'vehicle', 'lpr'];
+
+const COLOR_OPTIONS = [
+  { value: '', label: '전체' },
+  { value: '빨간색', label: '빨간색' },
+  { value: '주황색', label: '주황색' },
+  { value: '노란색', label: '노란색' },
+  { value: '초록색', label: '초록색' },
+  { value: '파란색', label: '파란색' },
+  { value: '검정색', label: '검정색' },
+  { value: '흰색', label: '흰색' },
+  { value: '회색', label: '회색' },
+];
+
+const TIME_SLOT_OPTIONS = [
+  { value: '', label: '전체' },
+  { value: '00-06', label: '00-06시' },
+  { value: '06-12', label: '06-12시' },
+  { value: '12-18', label: '12-18시' },
+  { value: '18-24', label: '18-24시' },
+];
 
 const SEED_PALETTES: Record<string, [string, string, string]> = {
   red: ['var(--color-danger)', 'var(--color-warn)', 'var(--color-video-bg)'],
@@ -153,6 +176,8 @@ export default function Search() {
   const [cameraIds, setCameraIds] = useState<string[]>([]);
   const [from, setFrom] = useState<string>('');
   const [to, setTo] = useState<string>('');
+  const [colorFilter, setColorFilter] = useState<string>('');
+  const [timeSlot, setTimeSlot] = useState<string>('');
   const [sensitivity, setSensitivity] = useState<SearchSensitivity>('mid');
   const [sortKey, setSortKey] = useState<SortKey>('score');
 
@@ -206,6 +231,8 @@ export default function Search() {
     setTo('');
     setSiteIds([]);
     setCameraIds([]);
+    setColorFilter('');
+    setTimeSlot('');
     setSensitivity('mid');
     setPhase('idle');
     setResults([]);
@@ -241,9 +268,9 @@ export default function Search() {
               ))}
             </BtnGroup>
             <TopSearch.Field stretch>
-              <input
+              <Input
+                size="sm"
                 type="text"
-                className={styles.filterInput}
                 placeholder={MODE_PLACEHOLDER[mode]}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -253,34 +280,36 @@ export default function Search() {
             <TopSearch.Divider />
             <TopSearch.Field label="기간" wide>
               <TopSearch.DateRange>
-                <input
-                  type="date"
-                  className={styles.filterDate}
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  aria-label="시작일"
-                />
+                <DatePicker size="sm" value={from} onChange={setFrom} max={to || undefined} aria-label="시작일" />
                 <TopSearch.Between />
-                <input
-                  type="date"
-                  className={styles.filterDate}
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  aria-label="종료일"
-                />
+                <DatePicker size="sm" value={to} onChange={setTo} min={from || undefined} aria-label="종료일" />
               </TopSearch.DateRange>
             </TopSearch.Field>
-            <TopSearch.Field label="위치">
-              <select
-                className={styles.filterSelect}
+          </TopSearch.Row>
+          <TopSearch.Row>
+            <TopSearch.Field label="색상">
+              <Select
+                size="sm"
+                value={colorFilter}
+                options={COLOR_OPTIONS}
+                onChange={(v) => setColorFilter(v ?? '')}
+              />
+            </TopSearch.Field>
+            <TopSearch.Field label="시간대">
+              <Select
+                size="sm"
+                value={timeSlot}
+                options={TIME_SLOT_OPTIONS}
+                onChange={(v) => setTimeSlot(v ?? '')}
+              />
+            </TopSearch.Field>
+            <TopSearch.Field label="사이트">
+              <Select
+                size="sm"
                 value={siteIds[0] ?? ''}
-                onChange={(e) => setSiteIds(e.target.value ? [e.target.value] : [])}
-              >
-                <option value="">전체</option>
-                {SITE_OPTIONS.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+                options={[{ value: '', label: '전체' }, ...SITE_OPTIONS.map((s) => ({ value: s.id, label: s.name }))]}
+                onChange={(v) => setSiteIds(v ? [v] : [])}
+              />
             </TopSearch.Field>
           </TopSearch.Row>
         </TopSearch>
@@ -355,15 +384,14 @@ export default function Search() {
                   <span className={styles.resultsCountStrong}>{sortedResults.length}건</span> · 처리시간{' '}
                   {(elapsedMs / 1000).toFixed(2)}s
                 </div>
-                <select
-                  className={styles.sortSelect}
-                  value={sortKey}
-                  onChange={(e) => setSortKey(e.target.value as SortKey)}
-                  aria-label="정렬"
-                >
-                  <option value="score">점수순</option>
-                  <option value="time">시각순</option>
-                </select>
+                <div style={{ width: 132 }}>
+                  <Select
+                    size="sm"
+                    value={sortKey}
+                    options={[{ value: 'score', label: '점수순' }, { value: 'time', label: '시각순' }]}
+                    onChange={(v) => setSortKey(v as SortKey)}
+                  />
+                </div>
               </div>
               {sortedResults.length === 0 ? (
                 <div className={styles.empty}>

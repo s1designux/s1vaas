@@ -165,6 +165,19 @@
   margin-top: 0;
 }
 
+.siteGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-4);
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-8);
+}
+
 .jsonBlock {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);

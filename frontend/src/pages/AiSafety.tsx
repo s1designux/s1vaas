@@ -8,11 +8,13 @@ import { useDataStore } from '@/store/dataStore';
 import { useToast } from '@/hooks/useToast';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Tabs } from '@/components/ui/Tabs';
+import { Select } from '@/components/ui/Select';
+import { Toggle } from '@/components/ui/Toggle';
 import { RoiPreview } from '@/components/RoiPreview';
 import type { AlgorithmSensitivity, CameraAlgorithm, ZonePoint, ZonePolygon } from '@/types';
 import page from './Page.module.css';
 import styles from './AiSafety.module.css';
+import cs from './CameraSettings.module.css';
 
 // 비-화재 AI 이벤트는 카메라당 1종만 동시 동작 (PPTX V0.76: 'AI 감지 1개 + 화재 감시'). 화재는 독립적으로 함께 켤 수 있다.
 const EXCLUSIVE_AI = new Set(['intrusion', 'loitering', 'virtual_fence', 'parking', 'people_counting']);
@@ -45,26 +47,6 @@ function Glyph({ algoKey }: { algoKey: string }) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d={ICONS[algoKey] ?? 'M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z'} />
     </svg>
-  );
-}
-
-function Switch({ on, onToggle, disabled = false }: { on: boolean; onToggle: () => void; disabled?: boolean }) {
-  return (
-    <div
-      className={[page.switch, on ? page.switchOn : ''].filter(Boolean).join(' ')}
-      role="switch"
-      aria-checked={on}
-      aria-disabled={disabled}
-      tabIndex={disabled ? -1 : 0}
-      onClick={(e) => { e.stopPropagation(); if (!disabled) onToggle(); }}
-      onKeyDown={(e) => {
-        if (disabled) return;
-        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); onToggle(); }
-      }}
-      style={disabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
-    >
-      <span className={page.switchThumb} />
-    </div>
   );
 }
 
@@ -146,6 +128,8 @@ type SubTab = 'my-store' | 'recommend';
 
 export default function AiSafety() {
   const cameras = useDataStore((s) => s.cameras);
+  const sites    = useDataStore((s) => s.sites);
+  const contracts = useDataStore((s) => s.contracts);
   const algorithms = useDataStore((s) => s.algorithms);
   const patchAlgorithm = useDataStore((s) => s.patchAlgorithm);
   const addAlgorithmPolygon = useDataStore((s) => s.addAlgorithmPolygon);
@@ -159,9 +143,22 @@ export default function AiSafety() {
   const [hours, setHours] = useState('night');
   const [worries, setWorries] = useState<string[]>(['intrusion', 'fire']);
 
-  // 카메라/카드 상태
-  const tabCams = useMemo(() => cameras.slice(0, 5), [cameras]);
-  const [activeCamId, setActiveCamId] = useState(tabCams[0]?.id ?? '');
+  // 사이드바 — 계약처·사이트 필터
+  const [selectedContractId, setSelectedContractId] = useState<string>(() => contracts[0]?.id ?? '');
+  const filteredSites = useMemo(
+    () => sites.filter((s) => s.contractId === selectedContractId),
+    [sites, selectedContractId],
+  );
+  const [sidebarOpenSiteId, setSidebarOpenSiteId] = useState<string>(() => filteredSites[0]?.id ?? '');
+  useEffect(() => {
+    setSidebarOpenSiteId(filteredSites[0]?.id ?? '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedContractId]);
+  const toggleSiteAccordion = (siteId: string) =>
+    setSidebarOpenSiteId((prev) => (prev === siteId ? '' : siteId));
+
+  // 카메라 선택
+  const [activeCamId, setActiveCamId] = useState(() => cameras[0]?.id ?? '');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [drawMode, setDrawMode] = useState(false);
   const [extras, setExtras] = useState<Record<string, ExtraCfg>>({});
@@ -302,7 +299,7 @@ export default function AiSafety() {
             <span className={styles.algoDesc}>{a.desc}</span>
           </div>
           <div className={styles.algoSwitchWrap}>
-            <Switch on={a.enabled} onToggle={() => handleToggle(a)} />
+            <Toggle on={a.enabled} onToggle={() => handleToggle(a)} />
             {a.enabled && (
               <span className={[styles.algoChevron, open ? styles.algoChevronOpen : ''].filter(Boolean).join(' ')} aria-hidden>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -396,15 +393,12 @@ export default function AiSafety() {
             {/* 알림 단계 (고급) */}
             <div className={styles.algoField}>
               <span className={styles.algoFieldLabel}>알림 단계</span>
-              <select
-                className={page.settingsSelect}
+              <Select
+                size="sm"
                 value={extra.notify}
-                onChange={(e) => patchExtra(a.id, { notify: e.target.value as NotifyLevel })}
-              >
-                {NOTIFY_OPTS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+                options={NOTIFY_OPTS.map((o) => ({ value: o.value, label: o.label }))}
+                onChange={(v) => patchExtra(a.id, { notify: v as NotifyLevel })}
+              />
             </div>
 
             {/* 민감도 (고급) */}
@@ -452,63 +446,130 @@ export default function AiSafety() {
 
       {/* ===== 내 매장 AI 설정 ===== */}
       {activeTab === 'my-store' && (
-        <>
-          <Tabs
-            tabs={tabCams.map((c) => ({ key: c.id, label: c.name.split(' ')[0] }))}
-            active={activeCamId}
-            onChange={setActiveCamId}
-          />
-
-          <div className={page.algoLayout}>
-            <div className={page.algoLeft}>
-              <RoiPreview
-                camName={cam.name}
-                camStatus={cam.status}
-                videoIdx={videoIdx}
-                offline={offline}
-                algos={previewAlgos}
-                activeAlgoId={roiAlgo?.id ?? null}
-                drawMode={drawMode}
-                onDrawComplete={handleDrawComplete}
-                onPolygonRemove={handlePolygonRemove}
-                onPolygonUpdate={handlePolygonUpdate}
-                onCancelDraw={() => setDrawMode(false)}
-              />
+        <div className={styles.aiBodyRow}>
+          {/* ── 카메라 트리 사이드바 ── */}
+          <aside className={styles.aiSidebar}>
+            {/* 계약처 트리거 */}
+            <div className={page.sidebarSelect}>
+              <svg className={page.sidebarSelectIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              <select
+                className={page.sidebarSelectNative}
+                value={selectedContractId}
+                onChange={(e) => setSelectedContractId(e.target.value)}
+              >
+                {contracts.map((c) => (
+                  <option key={c.id} value={c.id}>{c.code} {c.name}</option>
+                ))}
+              </select>
+              <svg className={page.sidebarSelectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
             </div>
 
-            <div className={page.algoRight}>
-              <div className={styles.algoBanner} role="status">
-                <span>카메라당 AI 이벤트는 1종만 동작하고, 화재 감지는 함께 켤 수 있어요</span>
-                <span className={styles.algoBannerCount}>
-                  {activeExclusive ? `${activeExclusive.label} 동작 중` : 'AI 이벤트 꺼짐'}
-                </span>
+            {/* 사이트 아코디언 */}
+            {filteredSites.map((site) => {
+              const isOpen   = sidebarOpenSiteId === site.id;
+              const siteCams = cameras.filter((c) => c.siteId === site.id);
+              return (
+                <div key={site.id} className={cs.accordionCard}>
+                  <button className={cs.accordionHeader} onClick={() => toggleSiteAccordion(site.id)}>
+                    <span className={cs.accordionTitle}>
+                      {site.name}
+                      <span className={cs.accordionCount}>{siteCams.length}</span>
+                    </span>
+                    <svg
+                      className={`${cs.accordionChevron} ${isOpen ? cs.accordionChevronOpen : ''}`}
+                      width="24" height="24" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    >
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                  {isOpen && (
+                    <div className={cs.accordionList}>
+                      {siteCams.map((c) => {
+                        const isActive = c.id === activeCamId;
+                        const chipCls  = c.status === 'offline' ? cs.statusChipOffline : cs.statusChipOnline;
+                        return (
+                          <button
+                            key={c.id}
+                            className={`${cs.accordionItem} ${isActive ? cs.accordionItemActive : ''}`}
+                            onClick={() => setActiveCamId(c.id)}
+                            title={c.name}
+                          >
+                            <span className={`${cs.statusChip} ${chipCls}`}>
+                              {c.status === 'offline' ? 'OFF' : 'ON'}
+                            </span>
+                            <span className={cs.itemInfo}>
+                              <span className={`${cs.itemName} ${isActive ? cs.itemNameActive : ''}`}>{c.name}</span>
+                              <span className={cs.itemStatusText}>{c.status === 'offline' ? '오프라인' : '온라인'}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </aside>
+
+          {/* ── 메인 콘텐츠 ── */}
+          <div className={styles.aiMain}>
+            <div className={page.algoLayout}>
+              <div className={page.algoLeft}>
+                <RoiPreview
+                  camName={cam.name}
+                  camStatus={cam.status}
+                  videoIdx={videoIdx}
+                  offline={offline}
+                  algos={previewAlgos}
+                  activeAlgoId={roiAlgo?.id ?? null}
+                  drawMode={drawMode}
+                  onDrawComplete={handleDrawComplete}
+                  onPolygonRemove={handlePolygonRemove}
+                  onPolygonUpdate={handlePolygonUpdate}
+                  onCancelDraw={() => setDrawMode(false)}
+                />
               </div>
 
-              <Card title="기본 안심 기능">
-                <div className={styles.algoGrid}>{basicAlgos.map(renderCard)}</div>
-              </Card>
+              <div className={page.algoRight}>
+                <div className={styles.algoBanner} role="status">
+                  <span>카메라당 AI 이벤트는 1종만 동작하고, 화재 감지는 함께 켤 수 있어요</span>
+                  <span className={styles.algoBannerCount}>
+                    {activeExclusive ? `${activeExclusive.label} 동작 중` : 'AI 이벤트 꺼짐'}
+                  </span>
+                </div>
 
-              <Card title="AI 특화 기능">
-                <div className={styles.algoGrid}>{aiAlgos.map(renderCard)}</div>
-              </Card>
+                <Card title="기본 안심 기능">
+                  <div className={styles.algoGrid}>{basicAlgos.map(renderCard)}</div>
+                </Card>
+
+                <Card title="AI 특화 기능">
+                  <div className={styles.algoGrid}>{aiAlgos.map(renderCard)}</div>
+                </Card>
+              </div>
             </div>
+
+            <Card>
+              <div className={styles.notice}>
+                <span className={styles.noticeIcon} aria-hidden>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 8h.01M11 12h1v4h1" />
+                  </svg>
+                </span>
+                <span>
+                  카메라 기기 설정(시스템·네트워크·영상·OSD 등)은 <b>카메라 관리</b>에서 다룹니다.
+                  설치나 화각 조정이 필요하면 에스원에 도움을 요청하세요.
+                </span>
+              </div>
+            </Card>
           </div>
-
-          <Card>
-            <div className={styles.notice}>
-              <span className={styles.noticeIcon} aria-hidden>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 8h.01M11 12h1v4h1" />
-                </svg>
-              </span>
-              <span>
-                카메라 기기 설정(시스템·네트워크·영상·OSD 등)은 <b>카메라 관리</b>에서 다룹니다.
-                설치나 화각 조정이 필요하면 에스원에 도움을 요청하세요.
-              </span>
-            </div>
-          </Card>
-        </>
+        </div>
       )}
 
       {/* ===== 추천 안심 설정 ===== */}

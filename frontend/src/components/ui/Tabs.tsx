@@ -10,11 +10,12 @@ interface TabsProps {
   tabs: TabDef[];
   active: string;
   onChange: (key: string) => void;
+  variant?: 'default' | 'line';
 }
 
-export function Tabs({ tabs, active, onChange }: TabsProps) {
+export function Tabs({ tabs, active, onChange, variant = 'default' }: TabsProps) {
   return (
-    <div className={styles.tabs} role="tablist">
+    <div className={[styles.tabs, variant === 'line' ? styles.line : ''].filter(Boolean).join(' ')} role="tablist">
       {tabs.map((t) => (
         <button
           key={t.key}

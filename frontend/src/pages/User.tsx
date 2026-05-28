@@ -8,6 +8,8 @@ import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Drawer } from '@/components/ui/Drawer';
 import { Modal } from '@/components/ui/Modal';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useToast } from '@/hooks/useToast';
 import { formatDateTime } from '@/lib/time';
@@ -452,8 +454,7 @@ export default function User() {
         <div className={form.field}>
           <label className={form.label}>이메일</label>
           <div className={form.inputWrap}>
-            <input
-              className={form.input}
+            <Input
               type="email"
               value={invEmail}
               onChange={(e) => setInvEmail(e.target.value)}
@@ -464,22 +465,16 @@ export default function User() {
         <div className={form.field}>
           <label className={form.label}>역할</label>
           <div className={form.inputWrap}>
-            <select
-              className={form.select}
+            <Select
               value={invRole}
-              onChange={(e) => setInvRole(e.target.value as UserRole)}
-            >
-              {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </option>
-              ))}
-            </select>
+              options={(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+              onChange={(v) => setInvRole(v as UserRole)}
+            />
           </div>
         </div>
         <div className={form.field}>
           <label className={form.label}>접근 사이트</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', marginTop: '4px' }}>
+          <div className={form.siteGrid}>
             {sites.map((s) => (
               <Checkbox
                 key={s.id}
@@ -527,8 +522,7 @@ export default function User() {
             <div className={form.field}>
               <label className={form.label}>이름</label>
               <div className={form.inputWrap}>
-                <input
-                  className={form.input}
+                <Input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                 />
@@ -537,46 +531,34 @@ export default function User() {
             <div className={form.field}>
               <label className={form.label}>이메일 (읽기 전용)</label>
               <div className={form.inputWrap}>
-                <input className={form.input} value={editUser.email} disabled readOnly />
+                <Input value={editUser.email} disabled readOnly />
               </div>
             </div>
             <div className={form.rowCols2}>
               <div className={form.field}>
                 <label className={form.label}>역할</label>
                 <div className={form.inputWrap}>
-                  <select
-                    className={form.select}
+                  <Select
                     value={editRole}
-                    onChange={(e) => setEditRole(e.target.value as UserRole)}
-                  >
-                    {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-                      <option key={r} value={r}>
-                        {ROLE_LABEL[r]}
-                      </option>
-                    ))}
-                  </select>
+                    options={(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+                    onChange={(v) => setEditRole(v as UserRole)}
+                  />
                 </div>
               </div>
               <div className={form.field}>
                 <label className={form.label}>상태</label>
                 <div className={form.inputWrap}>
-                  <select
-                    className={form.select}
+                  <Select
                     value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as UserStatus)}
-                  >
-                    {(Object.keys(STATUS_LABEL) as UserStatus[]).map((st) => (
-                      <option key={st} value={st}>
-                        {STATUS_LABEL[st]}
-                      </option>
-                    ))}
-                  </select>
+                    options={(Object.keys(STATUS_LABEL) as UserStatus[]).map((st) => ({ value: st, label: STATUS_LABEL[st] }))}
+                    onChange={(v) => setEditStatus(v as UserStatus)}
+                  />
                 </div>
               </div>
             </div>
 
             <div className={form.sectionCaption}>접근 사이트</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', marginTop: '4px' }}>
+            <div className={form.siteGrid}>
               {sites.map((s) => (
                 <Checkbox
                   key={s.id}
@@ -631,7 +613,7 @@ export default function User() {
         {deleteUser && (
           <div style={{ color: 'var(--color-text)', lineHeight: 1.6 }}>
             <strong>{deleteUser.displayName}</strong> 사용자를 삭제합니까?
-            <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginTop: 8 }}>
+            <div className={form.hint}>
               계정이 영구 제거되며 복구할 수 없습니다.
             </div>
           </div>
