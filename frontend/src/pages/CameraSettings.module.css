@@ -178,7 +178,7 @@
 
 /* ── 아이템 리스트 (펼쳐진 영역) ── */
 .accordionList {
-  background: var(--color-bg-subtle);
+  background: var(--color-bg-default);
   border-top: 1px solid var(--color-border-default);
   border-left: 1px solid var(--color-border-default);
   border-right: 1px solid var(--color-border-default);
@@ -202,12 +202,20 @@
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
+.accordionItem:hover:not(.accordionItemActive) {
+  background: var(--color-bg-subtle);
+}
+
 .accordionItem:last-child {
   border-bottom: none;
 }
 
 .accordionItemActive {
   background: color-mix(in srgb, var(--color-action-primary-default) 8%, transparent);
+}
+
+[data-theme='dark'] .accordionItemActive {
+  background: var(--color-bg-muted);
 }
 
 /* 상태 chip */
@@ -260,6 +268,10 @@
 
 .itemNameActive {
   color: var(--color-action-primary-default);
+}
+
+[data-theme='dark'] .itemNameActive {
+  color: var(--color-blue-dark-350);
 }
 
 .itemStatusText {

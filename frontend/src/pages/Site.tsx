@@ -625,10 +625,12 @@ export default function Site() {
                     </Badge>
                   }
                 >
-                  <div className={page.kvRow}><span className={page.kvLabel}>계약처</span><span className={page.kvVal}>{c.name}</span></div>
-                  <div className={page.kvRow}><span className={page.kvLabel}>계약번호</span><span className={page.kvVal} style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span></div>
-                  <div className={page.kvRow}><span className={page.kvLabel}>사이트</span><span className={page.kvVal}>{cSites.length}개</span></div>
-                  <div className={page.kvRow}><span className={page.kvLabel}>카메라</span><span className={page.kvVal}>{cCams.length}대</span></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+                    <div className={page.kvRow}><span className={page.kvLabel}>계약처</span><span className={page.kvVal}>{c.name}</span></div>
+                    <div className={page.kvRow}><span className={page.kvLabel}>계약번호</span><span className={page.kvVal} style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span></div>
+                    <div className={page.kvRow}><span className={page.kvLabel}>사이트</span><span className={page.kvVal}>{cSites.length}개</span></div>
+                    <div className={page.kvRow}><span className={page.kvLabel}>카메라</span><span className={page.kvVal}>{cCams.length}대</span></div>
+                  </div>
                 </Card>
                 <Card title={`전체 카메라 (${cCams.length})`}>
                   {cCams.length === 0 ? (

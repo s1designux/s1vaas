@@ -857,7 +857,7 @@
 [data-theme='dark'] {
   --table-header-bg: var(--color-bg-subtle);
 
-  --shadow-card: none;
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.35);
   --shadow-card-hover: 0 0 0 1px var(--color-action-primary-subtle);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.4);
 
