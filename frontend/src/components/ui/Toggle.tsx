@@ -17,8 +17,12 @@ export function Toggle({ on, onToggle, disabled = false, 'aria-label': ariaLabel
       aria-label={ariaLabel}
       disabled={disabled}
       className={[styles.track, on ? styles.on : '', disabled ? styles.disabled : ''].filter(Boolean).join(' ')}
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation();
         if (!disabled) onToggle();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === ' ' || e.key === 'Enter') e.stopPropagation();
       }}
     >
       <span className={styles.knob} />
