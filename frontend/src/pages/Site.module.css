@@ -158,7 +158,7 @@
   line-height: 1.3;
 }
 
-.siteLabelActive { color: var(--color-text-primary); font-weight: var(--font-weight-bold); }
+.siteLabelActive { color: var(--color-action-primary-default); font-weight: var(--font-weight-bold); }
 
 [data-theme='dark'] .siteLabelActive { color: var(--color-blue-dark-350); }
 .siteLabelMuted {
