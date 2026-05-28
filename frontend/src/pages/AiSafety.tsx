@@ -449,14 +449,24 @@ export default function AiSafety() {
         <div className={styles.aiBodyRow}>
           {/* ── 카메라 트리 사이드바 ── */}
           <aside className={styles.aiSidebar}>
-            {/* 계약처 셀렉트 */}
-            <div style={{ marginBottom: 8 }}>
-              <Select
-                size="sm"
+            {/* 계약처 트리거 */}
+            <div className={page.sidebarSelect}>
+              <svg className={page.sidebarSelectIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              <select
+                className={page.sidebarSelectNative}
                 value={selectedContractId}
-                options={contracts.map((c) => ({ value: c.id, label: `${c.code} ${c.name}` }))}
-                onChange={(v) => setSelectedContractId(v)}
-              />
+                onChange={(e) => setSelectedContractId(e.target.value)}
+              >
+                {contracts.map((c) => (
+                  <option key={c.id} value={c.id}>{c.code} {c.name}</option>
+                ))}
+              </select>
+              <svg className={page.sidebarSelectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
             </div>
 
             {/* 사이트 아코디언 */}

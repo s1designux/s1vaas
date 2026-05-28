@@ -366,14 +366,24 @@ export default function CameraSettings() {
       <div className={cs.body}>
         {/* ── 좌측 아코디언 사이드바 ── */}
         <aside className={cs.sidebar}>
-          {/* 계약처 셀렉트 (DS Select) */}
-          <div style={{ marginBottom: 8 }}>
-            <Select
-              size="sm"
+          {/* 계약처 트리거 */}
+          <div className={page.sidebarSelect}>
+            <svg className={page.sidebarSelectIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            <select
+              className={page.sidebarSelectNative}
               value={selectedContractId}
-              options={contracts.map((c) => ({ value: c.id, label: `${c.code} ${c.name}` }))}
-              onChange={(v) => setSelectedContractId(v)}
-            />
+              onChange={(e) => setSelectedContractId(e.target.value)}
+            >
+              {contracts.map((c) => (
+                <option key={c.id} value={c.id}>{c.code} {c.name}</option>
+              ))}
+            </select>
+            <svg className={page.sidebarSelectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
           </div>
 
           {/* 사이트 아코디언 */}
@@ -579,18 +589,8 @@ export default function CameraSettings() {
           {/* 우측: 기본 정보 / OSD 설정 라인탭 패널 (탭바 고정, 내용만 스크롤) */}
           <div className={cs.livePanel}>
             <div className={cs.livePanelTabBar}>
-              <button
-                className={`${cs.livePanelTab} ${liveTab === 'osd' ? cs.livePanelTabActive : ''}`}
-                onClick={() => setLiveTab('osd')}
-              >
-                OSD 설정
-              </button>
-              <button
-                className={`${cs.livePanelTab} ${liveTab === 'image' ? cs.livePanelTabActive : ''}`}
-                onClick={() => setLiveTab('image')}
-              >
-                이미지 설정
-              </button>
+              <Chip selected={liveTab === 'osd'} onClick={() => setLiveTab('osd')}>OSD 설정</Chip>
+              <Chip selected={liveTab === 'image'} onClick={() => setLiveTab('image')}>이미지 설정</Chip>
             </div>
 
             <div className={cs.livePanelBody}>
