@@ -4,10 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
 import { useToast } from '@/hooks/useToast';
 import { relativeTime } from '@/lib/time';
-import {
-  MOCK_RESULTS_BY_QUERY,
-  RECENT_QUERIES,
-} from '@/mock/searchResults';
+import { CAM_OPTIONS, MOCK_RESULTS_BY_QUERY, SITE_OPTIONS } from '@/mock/searchResults';
 import type { SearchResult, SearchSensitivity } from '@/types/search';
 import page from './Page.module.css';
 import styles from './Search.module.css';
@@ -144,6 +141,30 @@ function SkeletonCard() {
   );
 }
 
+function scoreColor(score: number): string {
+  if (score >= 0.90) return '#22C55E';
+  if (score >= 0.80) return '#3B82F6';
+  if (score >= 0.70) return '#F59E0B';
+  return '#9CA3AF';
+}
+
+function ResultCardCompact({ result, onClick }: { result: SearchResult; onClick: () => void }) {
+  const pct = Math.round(result.score * 100);
+  const time = new Date(result.occurredAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return (
+    <button type="button" className={styles.compactCard} onClick={onClick}>
+      <div className={styles.compactThumb}>
+        <ThumbSvg seed={result.thumbnailSeed} />
+        <span className={styles.compactScore} style={{ background: scoreColor(result.score) }}>{pct}%</span>
+      </div>
+      <div className={styles.compactBody}>
+        <div className={styles.compactCam}>{result.cameraName}</div>
+        <div className={styles.compactTime}>{time}</div>
+      </div>
+    </button>
+  );
+}
+
 /* ── 헬퍼 ── */
 
 const PERSON_KW  = ['남성', '여성', '20대', '30대', '노년', '낙상', '마스크', '후드', '야간'];
@@ -187,6 +208,29 @@ export default function Search() {
   const [sensitivity]             = useState<SearchSensitivity>('mid');
   const [sortKey, setSortKey]     = useState<SortKey>('score');
   const [objType, setObjType]     = useState<ObjType>('all');
+
+  // 사이드바 필터
+  const [filterCamIds, setFilterCamIds] = useState<Set<string>>(new Set());
+  const [openSiteIds, setOpenSiteIds]   = useState<Set<string>>(new Set());
+  const [dateFrom, setDateFrom]         = useState('');
+  const [dateTo, setDateTo]             = useState('');
+  const [timeFrom, setTimeFrom]         = useState('');
+  const [timeTo, setTimeTo]             = useState('');
+  const [activeDatePreset, setActiveDatePreset] = useState('');
+
+  const toggleCam = (camId: string) =>
+    setFilterCamIds((p) => { const n = new Set(p); n.has(camId) ? n.delete(camId) : n.add(camId); return n; });
+  const toggleSite = (siteId: string) =>
+    setOpenSiteIds((p) => { const n = new Set(p); n.has(siteId) ? n.delete(siteId) : n.add(siteId); return n; });
+
+  const applyDatePreset = (preset: string) => {
+    setActiveDatePreset(preset);
+    const now = new Date(); const today = now.toISOString().split('T')[0];
+    if (preset === 'today')     { setDateFrom(today); setDateTo(today); }
+    if (preset === 'yesterday') { const d = new Date(now); d.setDate(d.getDate()-1); const y = d.toISOString().split('T')[0]; setDateFrom(y); setDateTo(y); }
+    if (preset === '7days')     { const d = new Date(now); d.setDate(d.getDate()-7); setDateFrom(d.toISOString().split('T')[0]); setDateTo(today); }
+    if (preset === '30days')    { const d = new Date(now); d.setDate(d.getDate()-30); setDateFrom(d.toISOString().split('T')[0]); setDateTo(today); }
+  };
 
   // 색상 검색
   const [topColor, setTopColor]       = useState('');
@@ -263,15 +307,18 @@ export default function Search() {
   const handleReset = () => {
     setInput(''); setPhase('idle'); setResults([]);
     setActiveQuery(''); setTopColor(''); setBottomColor('');
+    setFilterCamIds(new Set()); setDateFrom(''); setDateTo('');
+    setTimeFrom(''); setTimeTo(''); setActiveDatePreset('');
     clearUpload();
   };
 
   const sortedResults = useMemo(() => {
-    const arr = [...results].filter((r) => matchObjType(r, objType));
+    let arr = [...results].filter((r) => matchObjType(r, objType));
+    if (filterCamIds.size > 0) arr = arr.filter((r) => filterCamIds.has(r.cameraId));
     return sortKey === 'score'
       ? arr.sort((a, b) => b.score - a.score)
       : arr.sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt));
-  }, [results, sortKey, objType]);
+  }, [results, sortKey, objType, filterCamIds]);
 
   const personCount  = useMemo(() => results.filter((r) => matchObjType(r, 'person')).length,  [results]);
   const vehicleCount = useMemo(() => results.filter((r) => matchObjType(r, 'vehicle')).length, [results]);
@@ -312,7 +359,7 @@ export default function Search() {
         </div>
       </div>
 
-      {/* ═══ 콘텐츠 영역 ═══ */}
+{/* ═══ 콘텐츠 영역 ═══ */}
       <section className={styles.results}>
 
         {/* ── IDLE: 검색 런치패드 ── */}
@@ -497,18 +544,6 @@ export default function Search() {
               </div>
             </div>
 
-            {/* 최근 검색어 */}
-            <div className={styles.recentBlock}>
-              <div className={styles.recentLabel}>최근 검색어</div>
-              <div className={styles.recentChips}>
-                {RECENT_QUERIES.map((q) => (
-                  <button type="button" key={q} className={styles.recentChip}
-                    onClick={() => { setInput(q); runSearch(q); }}>
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
@@ -526,45 +561,127 @@ export default function Search() {
 
         {/* ── RESULTS ── */}
         {phase === 'results' && (
-          <>
-            <div className={styles.resultsHead}>
-              <div className={styles.resultsLeft}>
-                <div className={styles.resultsCount}>
-                  <span className={styles.resultsCountStrong}>"{activeQuery}"</span> 검색결과{' '}
-                  <span className={styles.resultsCountStrong}>{results.length}건</span>
-                  <span className={styles.elapsedText}>{(elapsedMs / 1000).toFixed(2)}s</span>
-                </div>
-                <div className={styles.objTypeTabs}>
-                  {([
-                    ['all',     '전체', results.length],
-                    ['person',  '인물', personCount],
-                    ['vehicle', '차량', vehicleCount],
-                  ] as [ObjType, string, number][]).map(([type, label, count]) => (
-                    <button key={type} type="button"
-                      className={[styles.objTypeTab, objType === type ? styles.objTypeTabActive : ''].filter(Boolean).join(' ')}
-                      onClick={() => setObjType(type)}>
-                      {label}<span className={styles.objTypeCount}>{count}</span>
+          <div className={styles.resultsLayout}>
+
+            {/* ── 왼쪽 필터 사이드바 ── */}
+            <aside className={styles.filterSidebar}>
+
+              {/* 객체 구분 */}
+              <div className={styles.sbSection}>
+                <div className={styles.sbTitle}>객체 구분</div>
+                <div className={styles.sbObjTabs}>
+                  {([['all','전체',results.length],['person','인물',personCount],['vehicle','차량',vehicleCount]] as [ObjType,string,number][]).map(([t,l,c]) => (
+                    <button key={t} type="button"
+                      className={[styles.sbObjTab, objType === t ? styles.sbObjTabActive : ''].filter(Boolean).join(' ')}
+                      onClick={() => setObjType(t)}>
+                      {l} <span>{c}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <Select
-                size="sm"
-                value={sortKey}
-                options={[{ value: 'score', label: '점수순' }, { value: 'time', label: '시각순' }]}
-                onChange={(v) => setSortKey(v as SortKey)}
-              />
-            </div>
-            {sortedResults.length === 0 ? (
-              <div className={styles.empty}>검색 결과가 없습니다. 다른 키워드를 시도해 보세요.</div>
-            ) : (
-              <div className={styles.grid}>
-                {sortedResults.map((r) => (
-                  <ResultCard key={r.id} result={r} onClick={() => handleCardClick(r)} />
-                ))}
+
+              {/* 카메라 트리 */}
+              <div className={styles.sbSection}>
+                <div className={styles.sbTitle}>카메라</div>
+                {SITE_OPTIONS.map((site) => {
+                  const siteCams = CAM_OPTIONS.filter((c) => c.siteId === site.id);
+                  const resultCamIds = new Set(results.map((r) => r.cameraId));
+                  const availCams = siteCams.filter((c) => resultCamIds.has(c.id));
+                  if (availCams.length === 0) return null;
+                  const isOpen = openSiteIds.has(site.id);
+                  return (
+                    <div key={site.id} className={styles.sbSite}>
+                      <button type="button" className={styles.sbSiteBtn} onClick={() => toggleSite(site.id)}>
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={[styles.sbSiteChevron, isOpen ? styles.sbSiteChevronOpen : ''].filter(Boolean).join(' ')}>
+                          <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                        <span>{site.name}</span>
+                        <span className={styles.sbSiteCount}>{availCams.length}</span>
+                      </button>
+                      {isOpen && availCams.map((cam) => {
+                        const cnt = results.filter((r) => r.cameraId === cam.id).length;
+                        return (
+                          <label key={cam.id} className={styles.sbCamRow}>
+                            <input type="checkbox" className={styles.sbCheckbox}
+                              checked={filterCamIds.has(cam.id)}
+                              onChange={() => toggleCam(cam.id)} />
+                            <span className={styles.sbCamName}>{cam.name}</span>
+                            <span className={styles.sbCamCount}>{cnt}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </>
+
+              {/* 정렬 */}
+              <div className={styles.sbSection}>
+                <div className={styles.sbTitle}>정렬</div>
+                <div className={styles.sbSortRow}>
+                  {[{v:'score',l:'유사도'},{v:'time',l:'시간순'}].map(({v,l}) => (
+                    <button key={v} type="button"
+                      className={[styles.sbSortBtn, sortKey === v ? styles.sbSortBtnActive : ''].filter(Boolean).join(' ')}
+                      onClick={() => setSortKey(v as SortKey)}>{l}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 일자 */}
+              <div className={styles.sbSection}>
+                <div className={styles.sbTitle}>일자</div>
+                <div className={styles.sbDatePresets}>
+                  {[['today','오늘'],['yesterday','어제'],['7days','7일'],['30days','30일']].map(([v,l]) => (
+                    <button key={v} type="button"
+                      className={[styles.sbPresetBtn, activeDatePreset === v ? styles.sbPresetBtnActive : ''].filter(Boolean).join(' ')}
+                      onClick={() => applyDatePreset(activeDatePreset === v ? '' : v)}>{l}</button>
+                  ))}
+                </div>
+                <div className={styles.sbDateRow}>
+                  <input type="date" className={styles.sbDateInput} value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setActiveDatePreset(''); }} />
+                  <span className={styles.sbDateSep}>~</span>
+                  <input type="date" className={styles.sbDateInput} value={dateTo} onChange={(e) => { setDateTo(e.target.value); setActiveDatePreset(''); }} />
+                </div>
+              </div>
+
+              {/* 시간 범위 */}
+              <div className={styles.sbSection}>
+                <div className={styles.sbTitle}>시간 범위</div>
+                <div className={styles.sbDateRow}>
+                  <input type="time" className={styles.sbDateInput} value={timeFrom} onChange={(e) => setTimeFrom(e.target.value)} placeholder="HH:MM" />
+                  <span className={styles.sbDateSep}>~</span>
+                  <input type="time" className={styles.sbDateInput} value={timeTo} onChange={(e) => setTimeTo(e.target.value)} placeholder="HH:MM" />
+                </div>
+              </div>
+
+              {/* 필터 초기화 */}
+              {(filterCamIds.size > 0 || dateFrom || dateTo || timeFrom || timeTo) && (
+                <button type="button" className={styles.sbResetBtn}
+                  onClick={() => { setFilterCamIds(new Set()); setDateFrom(''); setDateTo(''); setTimeFrom(''); setTimeTo(''); setActiveDatePreset(''); }}>
+                  필터 초기화
+                </button>
+              )}
+            </aside>
+
+            {/* ── 오른쪽 결과 영역 ── */}
+            <div className={styles.resultsMain}>
+              <div className={styles.resultsInfo}>
+                <span className={styles.resultsCount}>
+                  <span className={styles.resultsCountStrong}>"{activeQuery}"</span> {sortedResults.length}건
+                  <span className={styles.elapsedText}>{(elapsedMs / 1000).toFixed(2)}s</span>
+                </span>
+              </div>
+              {sortedResults.length === 0 ? (
+                <div className={styles.empty}>검색 결과가 없습니다. 필터 조건을 확인해 보세요.</div>
+              ) : (
+                <div className={styles.denseGrid}>
+                  {sortedResults.map((r) => (
+                    <ResultCardCompact key={r.id} result={r} onClick={() => handleCardClick(r)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </section>
     </div>

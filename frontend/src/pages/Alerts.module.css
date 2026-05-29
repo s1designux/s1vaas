@@ -10,78 +10,57 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg-app, var(--color-surface));
+  padding-bottom: var(--space-3);
+  margin-bottom: calc(-1 * var(--space-3));
+  /* DS 라인탭 배경 토큰을 이 페이지에서만 비활성화 */
+  --tab-bg: transparent;
 }
 
-/* 위험도 탭 */
-.riskTabs {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.riskTab {
+/* 위험도 라인탭 — DS Tabs(variant="line")의 label 슬롯에 들어갈 콘텐츠 스타일 */
+.riskTabLabel {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
-  border-radius: 999px;
-  border: 1.5px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition:
-    background-color var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast);
+  gap: var(--spacing-6);
 }
 
-.riskTab:hover {
-  border-color: var(--color-accent);
-  color: var(--color-text);
+.riskDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-tertiary);
 }
 
-/* 전체 탭 — accent */
-.riskTabActive {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-on, #fff);
-}
-
-/* 위험 탭 active */
-.riskTab_danger.riskTabActive {
+.riskDot_danger {
   background: var(--color-danger);
-  border-color: var(--color-danger);
-  color: #fff;
 }
 
-/* 주의 탭 active */
-.riskTab_caution.riskTabActive {
+.riskDot_caution {
   background: var(--color-warn);
-  border-color: var(--color-warn);
-  color: #1a1a1a;
 }
 
-/* 알림 탭 active */
-.riskTab_info.riskTabActive {
+.riskDot_info {
   background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-on, #fff);
 }
 
 .riskTabCount {
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
-  background: rgba(0, 0, 0, 0.1);
-  padding: 1px 7px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 20px;
-  text-align: center;
-}
-
-.riskTabActive .riskTabCount {
-  background: rgba(255, 255, 255, 0.22);
+  padding: var(--spacing-2) var(--spacing-6);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-10);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.6;
 }
 
 /* 유형 칩 */
@@ -155,8 +134,7 @@
 /* 알림 카드 */
 .alertCard {
   position: relative;
-  display: grid;
-  grid-template-columns: 5px 1fr;
+  display: block;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);

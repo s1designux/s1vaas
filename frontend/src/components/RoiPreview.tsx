@@ -53,6 +53,7 @@ export interface RoiPreviewProps {
   algos: CameraAlgorithm[];
   activeAlgoId: string | null;
   drawMode: boolean;
+  noCard?: boolean;
   onDrawComplete: (polygon: Omit<ZonePolygon, 'id'>) => void;
   onPolygonRemove: (algoId: string, polygonId: string) => void;
   onPolygonUpdate: (algoId: string, polygonId: string, points: ZonePoint[]) => void;
@@ -67,6 +68,7 @@ export function RoiPreview({
   algos,
   activeAlgoId,
   drawMode,
+  noCard = false,
   onDrawComplete,
   onPolygonRemove,
   onPolygonUpdate,
@@ -213,8 +215,8 @@ export function RoiPreview({
 
   const lastVertex = vertices.length > 0 ? vertices[vertices.length - 1] : null;
 
-  return (
-    <Card title={camName} actions={<Badge tone={camStatus === 'offline' ? 'danger' : 'success'} dot>{camStatus}</Badge>}>
+  const inner = (
+    <>
       <div
         ref={boxRef}
         className={page.preview}
@@ -415,6 +417,14 @@ export function RoiPreview({
           </div>
         )}
       </div>
+    </>
+  );
+
+  if (noCard) return inner;
+
+  return (
+    <Card title={camName} actions={<Badge tone={camStatus === 'offline' ? 'danger' : 'success'} dot>{camStatus}</Badge>}>
+      {inner}
     </Card>
   );
 }

@@ -656,12 +656,13 @@ export default function Site() {
                   actions={
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <Button
-                        variant="secondary"
+                        variant="danger"
                         size="sm"
                         onClick={() => { removeSite(st.id); select({ kind: 'contract', id: st.contractId }); toast.info('사이트 삭제', '소속 카메라는 미지정으로 이동했어요.'); }}
                       >
-                        삭제
+                        사이트 삭제
                       </Button>
+                      <Button variant="secondary" size="sm" onClick={() => toast.info('초기화', '변경 사항을 되돌렸습니다.')}>초기화</Button>
                       <Button variant="primary" size="sm" onClick={() => toast.success('저장됨', `${st.name} 정보가 저장되었습니다.`)}>저장</Button>
                     </div>
                   }

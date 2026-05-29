@@ -1,6 +1,7 @@
 // TODO: replace with fetch('/api/v1/alerts')
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Tabs } from '@/components/ui/Tabs';
 import { useToast } from '@/hooks/useToast';
 import { relativeTime, formatDateTime } from '@/lib/time';
 import { alertsSeed } from '@/mock/alerts';
@@ -219,29 +220,26 @@ export default function Alerts() {
   // ===== Render =====
   return (
     <div className={page.page}>
-      {/* ===== 필터바 — 위험도 탭 + 유형 칩 ===== */}
+      {/* ===== 필터바 — 위험도 라인탭 + 유형 칩 ===== */}
       <div className={styles.filterBar}>
-        {/* 위험도 탭 */}
-        <div className={styles.riskTabs}>
-          {(['all', 'danger', 'caution', 'info'] as RiskLevel[]).map((level) => (
-            <button
-              key={level}
-              type="button"
-              className={[
-                styles.riskTab,
-                riskFilter === level ? styles.riskTabActive : '',
-                styles[`riskTab_${level}`],
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              onClick={() => setRiskFilter(level)}
-            >
-              {level !== 'all' && <span>{RISK_EMOJI[level as Exclude<RiskLevel, 'all'>]}</span>}
-              {RISK_LABEL[level]}
-              <span className={styles.riskTabCount}>{riskCounts[level]}</span>
-            </button>
-          ))}
-        </div>
+        {/* 위험도 라인탭 (DS Tabs variant="line") */}
+        <Tabs
+          variant="line"
+          active={riskFilter}
+          onChange={(k) => setRiskFilter(k as RiskLevel)}
+          tabs={(['all', 'danger', 'caution', 'info'] as RiskLevel[]).map((level) => ({
+            key: level,
+            label: (
+              <span className={styles.riskTabLabel}>
+                {level !== 'all' && (
+                  <span className={[styles.riskDot, styles[`riskDot_${level}`]].join(' ')} aria-hidden />
+                )}
+                {RISK_LABEL[level]}
+                <span className={styles.riskTabCount}>{riskCounts[level]}</span>
+              </span>
+            ),
+          }))}
+        />
 
         {/* 유형 칩 */}
         <div className={styles.typeChips}>
@@ -306,13 +304,6 @@ export default function Alerts() {
                     .filter(Boolean)
                     .join(' ')}
                 >
-                  {/* 위험도 색상 스트립 */}
-                  <span
-                    className={[styles.riskStrip, styles[`riskStrip_${risk}`]]
-                      .filter(Boolean)
-                      .join(' ')}
-                  />
-
                   <div className={styles.alertBody}>
                     <div className={styles.alertTopRow}>
                       <span

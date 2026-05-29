@@ -23,6 +23,8 @@
 /* ── 계약처·즐겨찾기 탭 행 ── */
 .contractTabsWrap {
   margin-bottom: var(--spacing-12);
+  /* DS 라인탭 배경 토큰을 이 페이지에서만 비활성화 */
+  --tab-bg: transparent;
 }
 
 .tabMeta {

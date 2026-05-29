@@ -16,8 +16,7 @@ import page from './Page.module.css';
 import styles from './AiSafety.module.css';
 import cs from './CameraSettings.module.css';
 
-// 비-화재 AI 이벤트는 카메라당 1종만 동시 동작 (PPTX V0.76: 'AI 감지 1개 + 화재 감시'). 화재는 독립적으로 함께 켤 수 있다.
-const EXCLUSIVE_AI = new Set(['intrusion', 'loitering', 'virtual_fence', 'parking', 'people_counting']);
+// AI 특화 기능은 동일 시간대에 최대 2개. 기본 안심 기능은 AI 특화와 함께 자유롭게 사용 가능.
 const ROI_ALGOS = new Set(['intrusion', 'loitering', 'virtual_fence', 'privacy']);
 
 type NotifyLevel = 'instant' | 'min1' | 'min5' | 'none';
@@ -80,8 +79,8 @@ const SCENARIO_CONCERNS: { value: string; label: string; algoKey: string }[] = [
 ];
 
 const SCENARIO_META: { key: ScenarioKey; label: string; emoji: string; desc: string }[] = [
-  { key: 'afterClose', label: '마감 이후', emoji: '🌙', desc: '마감 후 다음 오픈 전까지' },
   { key: 'operating',  label: '운영 중',   emoji: '☀️', desc: '오픈~마감 영업 시간' },
+  { key: 'afterClose', label: '마감 이후', emoji: '🌙', desc: '마감 후 다음 오픈 전까지' },
   { key: 'atOpen',     label: '오픈 시',   emoji: '🌅', desc: '오픈 전후 ±1시간' },
   { key: 'atClose',    label: '마감 시',   emoji: '🌆', desc: '마감 전후 ±1시간' },
   { key: 'holiday',    label: '휴일 시',   emoji: '📅', desc: '선택한 휴일 하루 종일' },
@@ -102,7 +101,7 @@ const NOTIFY_OPTS: { value: NotifyLevel; label: string }[] = [
 
 // ── 감지 일정 ──
 type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
-interface ScheduleSlot { id: string; startH: number; endH: number; days: DayKey[]; algoIds: string[]; }
+interface ScheduleSlot { id: string; startH: number; endH: number; days: DayKey[]; algoIds: string[]; scenarioKey?: ScenarioKey; }
 
 const DAY_LIST: { key: DayKey; label: string }[] = [
   { key: 'mon', label: '월' }, { key: 'tue', label: '화' }, { key: 'wed', label: '수' },
@@ -123,9 +122,9 @@ const SCHED_ALGOS: { id: string; label: string }[] = [
   { id: 'virtual_fence', label: '가상 펜스' },
 ];
 const SAMPLE_SCHED: ScheduleSlot[] = [
-  { id: 'ss1', startH: 22, endH: 7,  days: ALL_DAYS, algoIds: ['intrusion','fire'] },
-  { id: 'ss2', startH: 7,  endH: 20, days: ALL_DAYS, algoIds: ['parking','people_counting'] },
-  { id: 'ss3', startH: 20, endH: 22, days: ALL_DAYS, algoIds: ['loitering'] },
+  { id: 'ss1', startH: 22, endH: 7,  days: ALL_DAYS, algoIds: ['intrusion','fire'],            scenarioKey: 'afterClose' },
+  { id: 'ss2', startH: 7,  endH: 20, days: ALL_DAYS, algoIds: ['parking','people_counting'],   scenarioKey: 'operating' },
+  { id: 'ss3', startH: 20, endH: 22, days: ALL_DAYS, algoIds: ['loitering'],                   scenarioKey: 'atClose' },
 ];
 
 function fmtH(h: number) { return `${String(h % 24).padStart(2,'0')}:00`; }
@@ -136,10 +135,9 @@ function fmtDays(days: DayKey[]) {
   return days.map(d => DAY_LIST.find(x => x.key === d)?.label ?? '').join('·');
 }
 
-function ScheduleSection({ slots, onAdd, onDelete }: {
+function ScheduleSection({ slots, onAdd }: {
   slots: ScheduleSlot[];
   onAdd: (s: Omit<ScheduleSlot,'id'>) => void;
-  onDelete: (id: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<Omit<ScheduleSlot,'id'>>({ startH: 22, endH: 7, days: ALL_DAYS, algoIds: [] });
@@ -160,68 +158,65 @@ function ScheduleSection({ slots, onAdd, onDelete }: {
   const START_H = Array.from({ length: 24 }, (_, i) => i);
   const END_H   = Array.from({ length: 24 }, (_, i) => i + 1);
 
-  // 타임라인 세그먼트
-  const segments = slots.flatMap(s => {
-    const c = ALGO_COLORS[s.algoIds[0]] ?? '#9CA3AF';
-    if (s.endH > s.startH)
-      return [{ left: s.startH / 24 * 100, w: (s.endH - s.startH) / 24 * 100, c, key: s.id }];
-    return [
-      { left: s.startH / 24 * 100, w: (24 - s.startH) / 24 * 100, c, key: `${s.id}a` },
-      { left: 0, w: s.endH / 24 * 100, c, key: `${s.id}b` },
-    ];
-  });
-
   const dEq = (a: DayKey[], b: DayKey[]) => [...a].sort().join() === [...b].sort().join();
+
+  // 사용된 알고리즘 목록 (범례용)
+  const usedAlgoIds = [...new Set(slots.flatMap(s => s.algoIds))];
 
   return (
     <Card title="감지 일정">
-      {/* 24h 타임라인 바 */}
-      <div className={styles.schedBar}>
-        <div className={styles.schedBarTrack}>
-          {segments.length === 0 && <div className={styles.schedBarEmpty} />}
-          {segments.map(seg => (
-            <div key={seg.key} className={styles.schedBarSeg}
-              style={{ left: `${seg.left}%`, width: `${seg.w}%`, background: seg.c }} />
-          ))}
+      {/* 일주일 타임라인 */}
+      <div className={styles.weekTimeline}>
+        {/* 시간 축 헤더 */}
+        <div className={styles.weekTimeHeader}>
+          <div className={styles.weekDayLabel} />
+          <div className={styles.weekAxis}>
+            {[0, 6, 12, 18, 24].map(h => (
+              <span key={h} className={styles.weekAxisTick} style={{ left: `${h / 24 * 100}%` }}>
+                {String(h).padStart(2, '0')}
+              </span>
+            ))}
+          </div>
         </div>
-        <div className={styles.schedBarTicks}>
-          {[0, 6, 12, 18, 24].map(h => (
-            <span key={h} className={styles.schedBarTick} style={{ left: `${h / 24 * 100}%` }}>
-              {String(h).padStart(2,'0')}
-            </span>
-          ))}
-        </div>
+        {/* 요일 행 */}
+        {DAY_LIST.map(({ key, label }) => {
+          const daySlots = slots.filter(s => s.days.includes(key));
+          return (
+            <div key={key} className={styles.weekRow}>
+              <div className={styles.weekDayLabel}>{label}</div>
+              <div className={styles.weekBar}>
+                {daySlots.length === 0 && <div className={styles.weekBarEmpty} />}
+                {daySlots.flatMap(slot => {
+                  const c = ALGO_COLORS[slot.algoIds[0]] ?? '#9CA3AF';
+                  const title = `${fmtH(slot.startH)}~${fmtH(slot.endH)}: ${slot.algoIds.map(id => SCHED_ALGOS.find(a => a.id === id)?.label ?? id).join(', ')}`;
+                  if (slot.endH > slot.startH) {
+                    return [<div key={slot.id} className={styles.weekSlot} title={title}
+                      style={{ left: `${slot.startH / 24 * 100}%`, width: `${(slot.endH - slot.startH) / 24 * 100}%`, background: c }} />];
+                  }
+                  return [
+                    <div key={`${slot.id}a`} className={styles.weekSlot} title={title}
+                      style={{ left: `${slot.startH / 24 * 100}%`, width: `${(24 - slot.startH) / 24 * 100}%`, background: c }} />,
+                    <div key={`${slot.id}b`} className={styles.weekSlot} title={title}
+                      style={{ left: '0%', width: `${slot.endH / 24 * 100}%`, background: c }} />,
+                  ];
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* 슬롯 목록 */}
-      <div className={styles.schedList}>
-        {slots.length === 0 && <p className={styles.schedEmpty}>설정된 감지 일정이 없습니다. 아래 '일정 추가'를 눌러 시작하세요.</p>}
-        {slots.map(slot => (
-          <div key={slot.id} className={styles.schedSlot}>
-            <div className={styles.schedSlotDot} style={{ background: ALGO_COLORS[slot.algoIds[0]] ?? '#9CA3AF' }} />
-            <div className={styles.schedSlotMeta}>
-              <span className={styles.schedSlotTime}>
-                {fmtH(slot.startH)} ~ {fmtH(slot.endH)}
-                {slot.endH < slot.startH && <span className={styles.schedNextDay}> +1일</span>}
-              </span>
-              <span className={styles.schedSlotDays}>{fmtDays(slot.days)}</span>
+      {/* 알고리즘 색상 범례 */}
+      {usedAlgoIds.length > 0 && (
+        <div className={styles.schedLegend}>
+          {usedAlgoIds.map(id => (
+            <div key={id} className={styles.schedLegendItem}>
+              <span className={styles.schedLegendDot} style={{ background: ALGO_COLORS[id] ?? '#9CA3AF' }} />
+              <span className={styles.schedLegendLabel}>{SCHED_ALGOS.find(a => a.id === id)?.label ?? id}</span>
             </div>
-            <div className={styles.schedSlotAlgos}>
-              {slot.algoIds.map(id => (
-                <span key={id} className={styles.schedAlgoChip}
-                  style={{ background: `${ALGO_COLORS[id] ?? '#9CA3AF'}18`, color: ALGO_COLORS[id] ?? '#9CA3AF', borderColor: `${ALGO_COLORS[id] ?? '#9CA3AF'}44` }}>
-                  {SCHED_ALGOS.find(a => a.id === id)?.label ?? id}
-                </span>
-              ))}
-            </div>
-            <button className={styles.schedDeleteBtn} onClick={() => onDelete(slot.id)} title="삭제">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {adding ? (
         <div className={styles.schedForm}>
@@ -314,6 +309,20 @@ export default function AiSafety() {
   const toast = useToast();
 
   const [showRecommendModal, setShowRecommendModal] = useState(false);
+  const [detailMode, setDetailMode] = useState(false);
+  // 추천 모달: 1=시나리오 설정, 2=카메라×슬롯 매트릭스
+  const [modalStep, setModalStep] = useState<1 | 2>(1);
+  const [activeSlotIdx, setActiveSlotIdx] = useState(0);
+  // step2Selection[slotIdx][cameraId] = 활성 algoId 배열
+  const [step2Selection, setStep2Selection] = useState<Record<number, Record<string, string[]>>>({});
+  // 메인 화면 슬롯 탭 (카메라별 적용된 schedule)
+  const [activeMainSlotIdx, setActiveMainSlotIdx] = useState(0);
+
+  // 온보딩 — 최초 방문 시 초기 세팅 화면 표시
+  const [isOnboarded, setIsOnboarded] = useState(() =>
+    localStorage.getItem('ai-safety-onboarded') === '1',
+  );
+  const [onboardStep, setOnboardStep] = useState(0); // 0~2
 
   // 추천 입력
   const [industry, setIndustry] = useState('cvs');
@@ -326,6 +335,13 @@ export default function AiSafety() {
     atOpen: [],
     atClose: [],
     holiday: [],
+  });
+  const [scenarioExpanded, setScenarioExpanded] = useState<Record<ScenarioKey, boolean>>({
+    afterClose: true,
+    operating: true,
+    atOpen: false,
+    atClose: false,
+    holiday: false,
   });
 
   // 사이드바 — 계약처·사이트 필터
@@ -353,15 +369,25 @@ export default function AiSafety() {
   const schedule = camSchedules[activeCamId] ?? [];
   const addSlot = (s: Omit<ScheduleSlot,'id'>) =>
     setCamSchedules(p => ({ ...p, [activeCamId]: [...(p[activeCamId] ?? []), { ...s, id: `ss${Date.now()}` }] }));
-  const deleteSlot = (id: string) =>
-    setCamSchedules(p => ({ ...p, [activeCamId]: (p[activeCamId] ?? []).filter(s => s.id !== id) }));
 
   const cam = cameras.find((c) => c.id === activeCamId);
   const camAlgos = useMemo(() => algorithms.filter((a) => a.cameraId === activeCamId), [algorithms, activeCamId]);
   const basicAlgos = camAlgos.filter((a) => a.kind === 'basic');
   const aiAlgos = camAlgos.filter((a) => a.kind === 'ai');
-  // 비-화재 AI 이벤트는 카메라당 1종만 동작 (화재는 별도). 켜져 있는 1종(없으면 null).
-  const activeExclusive = aiAlgos.find((a) => a.enabled && EXCLUSIVE_AI.has(a.algoKey)) ?? null;
+
+  // 메인 슬롯 탭 — 활성 슬롯이 있으면 그 algoIds로 카드/칩 분리, 없으면 enabled 기준
+  const safeMainSlotIdx = Math.min(activeMainSlotIdx, Math.max(0, schedule.length - 1));
+  const activeMainSlot = schedule[safeMainSlotIdx] ?? null;
+  const algoKeysInActiveSlot = useMemo(
+    () => new Set(activeMainSlot?.algoIds ?? []),
+    [activeMainSlot],
+  );
+  const isAlgoVisible = (a: CameraAlgorithm) =>
+    activeMainSlot ? algoKeysInActiveSlot.has(a.algoKey) : a.enabled;
+  const visibleBasicAlgos = basicAlgos.filter(isAlgoVisible);
+  const hiddenBasicAlgos = basicAlgos.filter((a) => !isAlgoVisible(a));
+  const visibleAiAlgos = aiAlgos.filter(isAlgoVisible);
+  const hiddenAiAlgos = aiAlgos.filter((a) => !isAlgoVisible(a));
 
   const videoIdx = useMemo(() => {
     const idx = cameras.findIndex((c) => c.id === activeCamId);
@@ -394,19 +420,19 @@ export default function AiSafety() {
     const slots: Omit<ScheduleSlot, 'id'>[] = [];
     const afterCloseAlgos = getAlgos('afterClose');
     if (afterCloseAlgos.length && operatingDays.length)
-      slots.push({ startH: closeH, endH: openH, days: operatingDays, algoIds: afterCloseAlgos });
+      slots.push({ startH: closeH, endH: openH, days: operatingDays, algoIds: afterCloseAlgos, scenarioKey: 'afterClose' });
     const operatingAlgos = getAlgos('operating');
     if (operatingAlgos.length && operatingDays.length)
-      slots.push({ startH: openH, endH: closeH, days: operatingDays, algoIds: operatingAlgos });
+      slots.push({ startH: openH, endH: closeH, days: operatingDays, algoIds: operatingAlgos, scenarioKey: 'operating' });
     const atOpenAlgos = getAlgos('atOpen');
     if (atOpenAlgos.length && operatingDays.length)
-      slots.push({ startH: Math.max(0, openH - 1), endH: Math.min(24, openH + 1), days: operatingDays, algoIds: atOpenAlgos });
+      slots.push({ startH: Math.max(0, openH - 1), endH: Math.min(24, openH + 1), days: operatingDays, algoIds: atOpenAlgos, scenarioKey: 'atOpen' });
     const atCloseAlgos = getAlgos('atClose');
     if (atCloseAlgos.length && operatingDays.length)
-      slots.push({ startH: Math.max(0, closeH - 1), endH: Math.min(24, closeH + 1), days: operatingDays, algoIds: atCloseAlgos });
+      slots.push({ startH: Math.max(0, closeH - 1), endH: Math.min(24, closeH + 1), days: operatingDays, algoIds: atCloseAlgos, scenarioKey: 'atClose' });
     const holidayAlgos = getAlgos('holiday');
     if (holidayAlgos.length && holidays.length)
-      slots.push({ startH: 0, endH: 24, days: holidays, algoIds: holidayAlgos });
+      slots.push({ startH: 0, endH: 24, days: holidays, algoIds: holidayAlgos, scenarioKey: 'holiday' });
     return slots;
   }, [openH, closeH, holidays, scenarioConcerns]);
 
@@ -417,35 +443,174 @@ export default function AiSafety() {
   const patchExtra = (id: string, patch: Partial<ExtraCfg>) =>
     setExtras((s) => ({ ...s, [id]: { ...getExtra(id), ...patch } }));
 
-  function applyRecommendation() {
-    if (generatedSlots.length === 0) {
-      toast.info('생성된 일정 없음', '감지 항목을 선택하면 타임테이블이 자동으로 만들어져요.');
-      return;
-    }
+  // 온보딩 완료 핸들러
+  function completeOnboarding(skip = false) {
+    localStorage.setItem('ai-safety-onboarded', '1');
+    setIsOnboarded(true);
+    setOnboardStep(0);
+    if (!skip) applyRecommendationSilent();
+  }
+
+  // applyRecommendation의 무소음 버전 (toast 없이, 온보딩 완료 후 자동 적용용)
+  function applyRecommendationSilent() {
+    if (generatedSlots.length === 0) return;
     cameras.forEach((c) => {
       setCamSchedules((p) => ({
         ...p,
         [c.id]: generatedSlots.map((s, i) => ({ ...s, id: `rec_${c.id}_${i}` })),
       }));
     });
-    toast.success(
-      '타임테이블 자동 생성',
-      `${generatedSlots.length}개 일정을 전체 카메라에 적용했습니다. 상세모드에서 확인하세요.`,
-    );
-    setShowRecommendModal(false);
   }
 
-  // 토글
-  const handleToggle = (a: CameraAlgorithm) => {
-    // 비-화재 AI 이벤트는 단일 선택: 다른 이벤트가 켜져 있으면 라디오처럼 전환한다.
-    if (!a.enabled && EXCLUSIVE_AI.has(a.algoKey) && activeExclusive && activeExclusive.id !== a.id) {
-      patchAlgorithm(activeExclusive.cameraId, activeExclusive.id, { enabled: false });
-      patchAlgorithm(a.cameraId, a.id, { enabled: true });
-      toast.info('AI 이벤트 전환', `'${activeExclusive.label}' → '${a.label}'. 카메라당 AI 이벤트는 1종만 동작해요 (화재 제외).`);
+  // 추천 모달 진입: Step1으로 초기화
+  function openRecommendModal() {
+    setModalStep(1);
+    setActiveSlotIdx(0);
+    setShowRecommendModal(true);
+  }
+
+  // 모달 내 카메라 스코프: 사이드바에서 선택한 계약처의 사이트에 속한 카메라
+  const scopedCameras = useMemo(() => {
+    const siteIds = new Set(sites.filter(s => s.contractId === selectedContractId).map(s => s.id));
+    return cameras.filter(c => c.siteId !== null && siteIds.has(c.siteId));
+  }, [cameras, sites, selectedContractId]);
+
+  // 슬롯에 매칭되는 시나리오 메타 찾기 — 슬롯에 박힌 scenarioKey 우선, 없으면 시간 기반 추론
+  const findScenarioForSlot = (slot: Omit<ScheduleSlot,'id'>) => {
+    if (slot.scenarioKey) return SCENARIO_META.find((s) => s.key === slot.scenarioKey);
+    return SCENARIO_META.find((s) => {
+      if (s.key === 'afterClose') return slot.startH === closeH;
+      if (s.key === 'operating')  return slot.startH === openH && slot.endH === closeH;
+      if (s.key === 'atOpen')     return slot.startH === Math.max(0, openH - 1) && slot.endH !== closeH;
+      if (s.key === 'atClose')    return slot.startH === Math.max(0, closeH - 1);
+      return slot.startH === 0 && slot.endH === 24;
+    });
+  };
+
+  // Step1 → Step2: 슬롯×카메라×기능 매트릭스 초기화 (슬롯 기본 algoIds로 모든 카메라 채움)
+  function goToStep2() {
+    if (generatedSlots.length === 0) {
+      toast.info('생성된 일정 없음', '감지 항목을 선택하면 타임테이블이 자동으로 만들어져요.');
       return;
     }
-    patchAlgorithm(a.cameraId, a.id, { enabled: !a.enabled });
-    if (a.enabled && expandedId === a.id) { setExpandedId(null); setDrawMode(false); }
+    const init: Record<number, Record<string, string[]>> = {};
+    generatedSlots.forEach((slot, idx) => {
+      init[idx] = {};
+      scopedCameras.forEach((c) => { init[idx][c.id] = [...slot.algoIds]; });
+    });
+    setStep2Selection(init);
+    setActiveSlotIdx(0);
+    setModalStep(2);
+  }
+
+  // 매트릭스 셀 토글
+  function toggleStep2Cell(slotIdx: number, camId: string, algoId: string) {
+    setStep2Selection(p => {
+      const cur = p[slotIdx]?.[camId] ?? [];
+      const next = cur.includes(algoId) ? cur.filter(x => x !== algoId) : [...cur, algoId];
+      return { ...p, [slotIdx]: { ...(p[slotIdx] ?? {}), [camId]: next } };
+    });
+  }
+
+  // 열 일괄 토글 — 한 슬롯에서 특정 algoId를 모든 카메라에 켜기/끄기
+  function toggleStep2Column(slotIdx: number, algoId: string) {
+    setStep2Selection(p => {
+      const slotMap = p[slotIdx] ?? {};
+      const allOn = scopedCameras.every(c => (slotMap[c.id] ?? []).includes(algoId));
+      const nextSlot: Record<string, string[]> = {};
+      scopedCameras.forEach(c => {
+        const cur = slotMap[c.id] ?? [];
+        nextSlot[c.id] = allOn ? cur.filter(x => x !== algoId) : (cur.includes(algoId) ? cur : [...cur, algoId]);
+      });
+      return { ...p, [slotIdx]: nextSlot };
+    });
+  }
+
+  function applyRecommendation() {
+    scopedCameras.forEach((c) => {
+      const camSlots = generatedSlots
+        .map((slot, idx) => ({
+          ...slot,
+          algoIds: step2Selection[idx]?.[c.id] ?? slot.algoIds,
+        }))
+        .filter(s => s.algoIds.length > 0);
+      setCamSchedules((p) => ({
+        ...p,
+        [c.id]: camSlots.map((s, i) => ({ ...s, id: `rec_${c.id}_${i}` })),
+      }));
+
+      // 카메라별 algo.enabled를 슬롯 union과 동기화 — 어느 슬롯에든 포함되면 ON, 아니면 OFF
+      const enabledKeys = new Set(camSlots.flatMap(s => s.algoIds));
+      algorithms.filter(a => a.cameraId === c.id).forEach((a) => {
+        const shouldBeEnabled = enabledKeys.has(a.algoKey);
+        if (shouldBeEnabled !== a.enabled) {
+          patchAlgorithm(c.id, a.id, { enabled: shouldBeEnabled });
+        }
+      });
+    });
+    toast.success(
+      '맞춤 타임테이블 적용',
+      `${scopedCameras.length}대 카메라에 카메라별 맞춤 일정을 적용했습니다.`,
+    );
+    setShowRecommendModal(false);
+    setModalStep(1);
+  }
+
+  // 활성 슬롯(없으면 카메라 전체) 기준 현재 켜진 AI 특화 기능 수
+  const AI_LIMIT = 2;
+  const aiEnabledCountInContext = activeMainSlot
+    ? activeMainSlot.algoIds.reduce((acc, id) => {
+        const algo = camAlgos.find((x) => x.algoKey === id);
+        return acc + (algo?.kind === 'ai' ? 1 : 0);
+      }, 0)
+    : aiAlgos.filter((x) => x.enabled).length;
+
+  // 슬롯에서 algoKey 제거 후 어느 슬롯에도 없으면 enabled=false 처리
+  const removeAlgoFromActiveSlot = (a: CameraAlgorithm) => {
+    if (!activeMainSlot) return;
+    const newSched = schedule.map((s, i) =>
+      i === safeMainSlotIdx
+        ? { ...s, algoIds: s.algoIds.filter((x) => x !== a.algoKey) }
+        : s,
+    );
+    setCamSchedules((p) => ({ ...p, [activeCamId]: newSched }));
+    const stillUsed = newSched.some((s) => s.algoIds.includes(a.algoKey));
+    if (!stillUsed && a.enabled) {
+      patchAlgorithm(a.cameraId, a.id, { enabled: false });
+    }
+    if (expandedId === a.id) { setExpandedId(null); setDrawMode(false); }
+  };
+
+  // 활성 슬롯에 algoKey 추가 + enabled=true. AI 특화는 동일 슬롯 최대 2개.
+  const addAlgoToActiveSlot = (a: CameraAlgorithm) => {
+    if (a.kind === 'ai' && aiEnabledCountInContext >= AI_LIMIT) {
+      toast.warn(
+        `AI 특화 기능은 최대 ${AI_LIMIT}개`,
+        `${activeMainSlot ? '이 시간대' : '동일 시간대'}에 AI 특화 기능은 최대 ${AI_LIMIT}개까지 사용할 수 있어요. 기존 기능을 먼저 끄세요.`,
+      );
+      return;
+    }
+    if (activeMainSlot) {
+      const newSched = schedule.map((s, i) =>
+        i === safeMainSlotIdx && !s.algoIds.includes(a.algoKey)
+          ? { ...s, algoIds: [...s.algoIds, a.algoKey] }
+          : s,
+      );
+      setCamSchedules((p) => ({ ...p, [activeCamId]: newSched }));
+    }
+    if (!a.enabled) {
+      patchAlgorithm(a.cameraId, a.id, { enabled: true });
+    }
+  };
+
+  // 등록된 카드의 해제 — 슬롯 모드면 활성 슬롯에서 제거, 아니면 enabled=false
+  const deactivateAlgo = (a: CameraAlgorithm) => {
+    if (activeMainSlot) {
+      removeAlgoFromActiveSlot(a);
+      return;
+    }
+    if (a.enabled) patchAlgorithm(a.cameraId, a.id, { enabled: false });
+    if (expandedId === a.id) { setExpandedId(null); setDrawMode(false); }
   };
 
   // ROI 핸들러 (확장된 카드 기준)
@@ -498,18 +663,15 @@ export default function AiSafety() {
             <span className={styles.algoDesc}>{a.desc}</span>
           </div>
           <div className={styles.algoSwitchWrap}>
-            <Toggle on={a.enabled} onToggle={() => handleToggle(a)} />
-            {a.enabled && (
-              <span className={[styles.algoChevron, open ? styles.algoChevronOpen : ''].filter(Boolean).join(' ')} aria-hidden>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </span>
-            )}
+            <span className={[styles.algoChevron, open ? styles.algoChevronOpen : ''].filter(Boolean).join(' ')} aria-hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </span>
           </div>
         </div>
 
-        {a.enabled && open && (
+        {open && (
           <div className={styles.algoBody}>
             {/* 감지 종류 */}
             {a.kind === 'ai' && a.algoKey !== 'fire' && (
@@ -617,6 +779,17 @@ export default function AiSafety() {
                 ))}
               </div>
             </div>
+
+            {/* 해제 액션 */}
+            <div className={styles.algoBodyActions}>
+              <button
+                type="button"
+                className={styles.algoRemoveBtn}
+                onClick={() => deactivateAlgo(a)}
+              >
+                {activeMainSlot ? '이 시간대에서 해제' : '이 기능 해제'}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -625,7 +798,209 @@ export default function AiSafety() {
 
   return (
     <div className={page.page}>
-      <div className={styles.aiBodyRow}>
+
+      {/* ═══ 온보딩 화면 ═══ */}
+      {!isOnboarded && (
+        <div className={styles.onboardWrap}>
+          {/* 단계 표시 */}
+          <div className={styles.onboardSteps}>
+            {['업종 · 시간', '걱정 상황', '설정 완료'].map((label, i) => (
+              <div key={i} className={[styles.onboardStep, onboardStep === i ? styles.onboardStepActive : onboardStep > i ? styles.onboardStepDone : ''].filter(Boolean).join(' ')}>
+                <span className={styles.onboardStepDot}>{onboardStep > i ? '✓' : i + 1}</span>
+                <span className={styles.onboardStepLabel}>{label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Step 0: 업종 + 영업시간 + 휴일 ── */}
+          {onboardStep === 0 && (
+            <div className={styles.onboardCard}>
+              <div className={styles.onboardCardHero}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={styles.onboardHeroIcon}>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <div>
+                  <div className={styles.onboardCardTitle}>매장 정보 입력</div>
+                  <div className={styles.onboardCardDesc}>업종과 영업 시간을 알려주시면 맞춤 보안 설정을 추천해드려요</div>
+                </div>
+              </div>
+
+              <div className={styles.onboardSection}>
+                <div className={styles.onboardSectionTitle}>업종</div>
+                <div className={styles.onboardChips}>
+                  {INDUSTRIES.map((o) => (
+                    <button key={o.value} type="button"
+                      className={[styles.onboardChip, industry === o.value ? styles.onboardChipActive : ''].filter(Boolean).join(' ')}
+                      onClick={() => setIndustry(o.value)}>{o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.onboardSection}>
+                <div className={styles.onboardSectionTitle}>영업 시간</div>
+                <div className={styles.onboardTimeRow}>
+                  <div className={styles.onboardTimeField}>
+                    <span className={styles.onboardTimeLabel}>오픈</span>
+                    <select className={styles.onboardTimeSelect} value={openH} onChange={(e) => setOpenH(+e.target.value)}>
+                      {Array.from({ length: 24 }, (_, i) => <option key={i} value={i}>{fmtH(i)}</option>)}
+                    </select>
+                  </div>
+                  <span className={styles.onboardTimeSep}>~</span>
+                  <div className={styles.onboardTimeField}>
+                    <span className={styles.onboardTimeLabel}>마감</span>
+                    <select className={styles.onboardTimeSelect} value={closeH} onChange={(e) => setCloseH(+e.target.value)}>
+                      {Array.from({ length: 24 }, (_, i) => <option key={i + 1} value={i + 1}>{fmtH(i + 1)}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.onboardSection}>
+                <div className={styles.onboardSectionTitle}>휴일</div>
+                <div className={styles.onboardChips}>
+                  <button type="button"
+                    className={[styles.onboardChip, holidays.length === 0 ? styles.onboardChipActive : ''].filter(Boolean).join(' ')}
+                    onClick={() => setHolidays([])}>없음</button>
+                  {DAY_LIST.map((d) => (
+                    <button key={d.key} type="button"
+                      className={[styles.onboardChip, holidays.includes(d.key) ? styles.onboardChipActive : ''].filter(Boolean).join(' ')}
+                      onClick={() => setHolidays((p) => p.includes(d.key) ? p.filter((x) => x !== d.key) : [...p, d.key])}>
+                      {d.label}요일
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.onboardActions}>
+                <button type="button" className={styles.onboardSkip} onClick={() => completeOnboarding(true)}>나중에 설정할게요</button>
+                <button type="button" className={styles.onboardNext} onClick={() => setOnboardStep(1)}>다음 →</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 1: 시나리오별 걱정 항목 ── */}
+          {onboardStep === 1 && (
+            <div className={styles.onboardCard}>
+              <div className={styles.onboardCardHero}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={styles.onboardHeroIcon}>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div>
+                  <div className={styles.onboardCardTitle}>상황별 걱정되는 것</div>
+                  <div className={styles.onboardCardDesc}>각 시간대에 걱정되는 상황을 선택하면 자동으로 감지 일정을 만들어드려요</div>
+                </div>
+              </div>
+
+              <div className={styles.onboardScenarios}>
+                {SCENARIO_META.filter((s) =>
+                  s.key !== 'holiday' || holidays.length > 0
+                ).map((scenario) => (
+                  <div key={scenario.key} className={styles.onboardScenario}>
+                    <div className={styles.onboardScenarioHead}>
+                      <span className={styles.onboardScenarioEmoji}>{scenario.emoji}</span>
+                      <div>
+                        <div className={styles.onboardScenarioLabel}>{scenario.label}</div>
+                        <div className={styles.onboardScenarioDesc}>{scenario.desc}</div>
+                      </div>
+                    </div>
+                    <div className={styles.onboardChips}>
+                      {SCENARIO_CONCERNS.map((c) => {
+                        const active = scenarioConcerns[scenario.key].includes(c.value);
+                        return (
+                          <button key={c.value} type="button"
+                            className={[styles.onboardChip, active ? styles.onboardChipActive : ''].filter(Boolean).join(' ')}
+                            onClick={() => toggleScenarioConcern(scenario.key, c.value)}>
+                            {c.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className={styles.onboardActions}>
+                <button type="button" className={styles.onboardBack} onClick={() => setOnboardStep(0)}>← 이전</button>
+                <button type="button" className={styles.onboardNext} onClick={() => setOnboardStep(2)}>다음 →</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: 요약 + 완료 ── */}
+          {onboardStep === 2 && (
+            <div className={styles.onboardCard}>
+              <div className={styles.onboardCardHero}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={styles.onboardHeroIconSuccess}>
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <div>
+                  <div className={styles.onboardCardTitle}>설정 완료 — 이렇게 추천할게요</div>
+                  <div className={styles.onboardCardDesc}>아래 타임테이블이 전체 카메라에 적용됩니다. 언제든지 변경할 수 있어요.</div>
+                </div>
+              </div>
+
+              {/* 요약 */}
+              <div className={styles.onboardSummary}>
+                <div className={styles.onboardSummaryRow}>
+                  <span className={styles.onboardSummaryLabel}>업종</span>
+                  <span className={styles.onboardSummaryVal}>{INDUSTRIES.find((o) => o.value === industry)?.label}</span>
+                </div>
+                <div className={styles.onboardSummaryRow}>
+                  <span className={styles.onboardSummaryLabel}>영업 시간</span>
+                  <span className={styles.onboardSummaryVal}>{fmtH(openH)} ~ {fmtH(closeH)}</span>
+                </div>
+                {holidays.length > 0 && (
+                  <div className={styles.onboardSummaryRow}>
+                    <span className={styles.onboardSummaryLabel}>휴일</span>
+                    <span className={styles.onboardSummaryVal}>{fmtDays(holidays)}</span>
+                  </div>
+                )}
+              </div>
+
+              {generatedSlots.length > 0 ? (
+                <div className={styles.onboardPreview}>
+                  {generatedSlots.map((slot, i) => {
+                    const scenLabel = SCENARIO_META.find((s) => {
+                      if (s.key === 'afterClose') return slot.startH === closeH;
+                      if (s.key === 'operating')  return slot.startH === openH && slot.endH === closeH;
+                      if (s.key === 'atOpen')     return slot.startH === Math.max(0, openH - 1) && slot.endH !== closeH;
+                      if (s.key === 'atClose')    return slot.startH === Math.max(0, closeH - 1);
+                      return slot.startH === 0 && slot.endH === 24;
+                    });
+                    return (
+                      <div key={i} className={styles.onboardPreviewSlot}>
+                        <span className={styles.onboardPreviewEmoji}>{scenLabel?.emoji ?? '📋'}</span>
+                        <div className={styles.onboardPreviewInfo}>
+                          <span className={styles.onboardPreviewLabel}>{scenLabel?.label ?? '일정'}</span>
+                          <span className={styles.onboardPreviewTime}>{fmtH(slot.startH)} ~ {fmtH(slot.endH)}</span>
+                        </div>
+                        <span className={styles.onboardPreviewAlgos}>
+                          {slot.algoIds.map((id) => SCHED_ALGOS.find((a) => a.id === id)?.label ?? id).join(' · ')}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={styles.onboardEmpty}>걱정 상황을 선택하지 않았어요. 이전 단계로 돌아가 선택하거나, 그냥 시작할 수 있어요.</div>
+              )}
+
+              <div className={styles.onboardActions}>
+                <button type="button" className={styles.onboardBack} onClick={() => setOnboardStep(1)}>← 이전</button>
+                <button type="button" className={styles.onboardComplete} onClick={() => completeOnboarding(false)}>
+                  안심 AI 설정 시작하기
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══ 메인 화면 (온보딩 완료 후) ═══ */}
+      {isOnboarded && <div className={styles.aiBodyRow}>
           {/* ── 카메라 트리 사이드바 ── */}
           <aside className={styles.aiSidebar}>
             {/* 계약처 트리거 */}
@@ -708,6 +1083,7 @@ export default function AiSafety() {
                   algos={previewAlgos}
                   activeAlgoId={roiAlgo?.id ?? null}
                   drawMode={drawMode}
+                  noCard
                   onDrawComplete={handleDrawComplete}
                   onPolygonRemove={handlePolygonRemove}
                   onPolygonUpdate={handlePolygonUpdate}
@@ -717,47 +1093,150 @@ export default function AiSafety() {
 
               <div className={page.algoRight}>
                 <div className={styles.algoHeaderRow}>
-                  <div className={styles.algoBanner} role="status">
-                    <span>카메라당 AI 이벤트는 1종만 동작하고, 화재 감지는 함께 켤 수 있어요</span>
-                    <span className={styles.algoBannerCount}>
-                      {activeExclusive ? `${activeExclusive.label} 동작 중` : 'AI 이벤트 꺼짐'}
-                    </span>
-                  </div>
-                  <Button variant="secondary" size="sm" onClick={() => setShowRecommendModal(true)}>
+                  <label className={styles.detailModeField}>
+                    <Toggle
+                      on={detailMode}
+                      onToggle={() => {
+                        const next = !detailMode;
+                        setDetailMode(next);
+                        if (!next) { setExpandedId(null); setDrawMode(false); }
+                      }}
+                      aria-label="상세모드"
+                    />
+                    <span className={styles.detailModeLabel}>상세모드</span>
+                  </label>
+                  <Button variant="secondary" size="sm" onClick={openRecommendModal}>
                     추천 안심 설정
                   </Button>
                 </div>
 
-                <div className={styles.cardGrid}>
-                  <Card title="기본 안심 기능">
-                    <div className={styles.algoGrid}>{basicAlgos.map(renderCard)}</div>
-                  </Card>
+                {detailMode && (
+                  <ScheduleSection slots={schedule} onAdd={addSlot} />
+                )}
 
-                  <Card title="AI 특화 기능">
-                    <div className={styles.algoGrid}>{aiAlgos.map(renderCard)}</div>
-                  </Card>
+                {/* 시간 슬롯 탭 — 카메라에 schedule이 있을 때만 */}
+                {schedule.length > 0 && (
+                  <div className={styles.mainSlotTabs} role="tablist" aria-label="시간 슬롯">
+                    {schedule.map((slot, idx) => {
+                      const scen = findScenarioForSlot(slot);
+                      const active = safeMainSlotIdx === idx;
+                      return (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          role="tab"
+                          aria-selected={active}
+                          className={[styles.mainSlotTab, active ? styles.mainSlotTabActive : ''].filter(Boolean).join(' ')}
+                          onClick={() => setActiveMainSlotIdx(idx)}
+                        >
+                          <span className={styles.mainSlotTabEmoji}>{scen?.emoji ?? '📋'}</span>
+                          <span className={styles.mainSlotTabLabel}>{scen?.label ?? '일정'}</span>
+                          <span className={styles.mainSlotTabTime}>{fmtH(slot.startH)}~{fmtH(slot.endH)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className={styles.cardGrid}>
+                  <div>
+                    <div className={styles.algoSectionHead}>
+                      <span className={styles.algoGroupTitle}>기본 안심 기능</span>
+                      <span className={styles.algoSectionHint}>AI 특화 기능과 함께 자유롭게 사용할 수 있어요</span>
+                    </div>
+                    {visibleBasicAlgos.length > 0
+                      ? <div className={styles.algoGrid}>{visibleBasicAlgos.map(renderCard)}</div>
+                      : <div className={styles.algoEmptyHint}>이 시간대에 적용된 감지가 없습니다.</div>}
+                    {hiddenBasicAlgos.length > 0 && (
+                      <div className={styles.algoActivateRow}>
+                        <span className={styles.algoActivateLabel}>+ 추가 활성화</span>
+                        {hiddenBasicAlgos.map((a) => (
+                          <button key={a.id} type="button" className={styles.algoActivateChip} onClick={() => addAlgoToActiveSlot(a)}>
+                            <span className={styles.algoActivateChipIcon} aria-hidden><Glyph algoKey={a.algoKey} /></span>
+                            {a.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className={styles.algoSectionHead}>
+                      <span className={styles.algoGroupTitle}>AI 특화 기능</span>
+                      <span className={[styles.algoSectionHint, aiEnabledCountInContext >= AI_LIMIT ? styles.algoSectionHintWarn : ''].filter(Boolean).join(' ')}>
+                        동일 시간대 최대 {AI_LIMIT}개 · 현재 {aiEnabledCountInContext}/{AI_LIMIT}
+                      </span>
+                    </div>
+                    {visibleAiAlgos.length > 0
+                      ? <div className={styles.algoGrid}>{visibleAiAlgos.map(renderCard)}</div>
+                      : <div className={styles.algoEmptyHint}>이 시간대에 적용된 감지가 없습니다.</div>}
+                    {hiddenAiAlgos.length > 0 && (
+                      <div className={styles.algoActivateRow}>
+                        <span className={[styles.algoActivateLabel, aiEnabledCountInContext >= AI_LIMIT ? styles.algoActivateLabelWarn : ''].filter(Boolean).join(' ')}>
+                          {aiEnabledCountInContext >= AI_LIMIT
+                            ? `한도 도달 — 기능을 해제하면 추가 활성화할 수 있어요`
+                            : '+ 추가 활성화'}
+                        </span>
+                        {hiddenAiAlgos.map((a) => {
+                          const disabled = aiEnabledCountInContext >= AI_LIMIT;
+                          return (
+                            <button
+                              key={a.id}
+                              type="button"
+                              className={styles.algoActivateChip}
+                              onClick={() => addAlgoToActiveSlot(a)}
+                              disabled={disabled}
+                              title={disabled ? `AI 특화 기능은 최대 ${AI_LIMIT}개까지 사용할 수 있어요` : undefined}
+                            >
+                              <span className={styles.algoActivateChipIcon} aria-hidden><Glyph algoKey={a.algoKey} /></span>
+                              {a.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <ScheduleSection slots={schedule} onAdd={addSlot} onDelete={deleteSlot} />
+            {detailMode && (
+              <Card>
+                <div className={styles.notice}>
+                  <span className={styles.noticeIcon} aria-hidden>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 8h.01M11 12h1v4h1" />
+                    </svg>
+                  </span>
+                  <span>
+                    카메라 기기 설정(시스템·네트워크·영상·OSD 등)은 <b>카메라 관리</b>에서 다룹니다.
+                    설치나 화각 조정이 필요하면 에스원에 도움을 요청하세요.
+                  </span>
+                </div>
+              </Card>
+            )}
 
-            <Card>
-              <div className={styles.notice}>
-                <span className={styles.noticeIcon} aria-hidden>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 8h.01M11 12h1v4h1" />
-                  </svg>
-                </span>
-                <span>
-                  카메라 기기 설정(시스템·네트워크·영상·OSD 등)은 <b>카메라 관리</b>에서 다룹니다.
-                  설치나 화각 조정이 필요하면 에스원에 도움을 요청하세요.
-                </span>
-              </div>
-            </Card>
+            {/* 온보딩 재시작 */}
+            <div className={styles.reOnboardRow}>
+              <button
+                type="button"
+                className={styles.reOnboardBtn}
+                onClick={() => {
+                  localStorage.removeItem('ai-safety-onboarded');
+                  setIsOnboarded(false);
+                  setOnboardStep(0);
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+                초기 설정 다시 보기
+              </button>
+            </div>
           </div>
-        </div>
+        </div>}
 
       {/* ===== 추천 안심 설정 모달 ===== */}
       {showRecommendModal && (
@@ -774,8 +1253,26 @@ export default function AiSafety() {
               </button>
             </div>
 
+            {/* 스텝 인디케이터 */}
+            <div className={styles.recSteps} role="tablist" aria-label="추천 안심 설정 단계">
+              {[1, 2].map((n) => (
+                <div
+                  key={n}
+                  className={[styles.recStep, modalStep === n ? styles.recStepActive : modalStep > n ? styles.recStepDone : ''].filter(Boolean).join(' ')}
+                  role="tab"
+                  aria-selected={modalStep === n}
+                >
+                  <span className={styles.recStepDot}>{modalStep > n ? '✓' : n}</span>
+                  <span className={styles.recStepLabel}>
+                    {n === 1 ? '시나리오 · 시간 설정' : '카메라별 감지 항목'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
             {/* 본문 스크롤 영역 */}
             <div className={styles.recModalBody}>
+              {modalStep === 1 && <>
               {/* 업종 */}
               <div className={styles.recSection}>
                 <div className={styles.recSectionTitle}>업종</div>
@@ -843,65 +1340,147 @@ export default function AiSafety() {
                         if (scenario.key === 'atClose')    return `${fmtH(Math.max(0, closeH - 1))} ~ ${fmtH(Math.min(24, closeH + 1))}`;
                         return '하루 종일';
                       })();
+                      const expanded = scenarioExpanded[scenario.key];
                       return (
                         <div key={scenario.key} className={styles.recScenarioCard}>
                           <div className={styles.recScenarioHead}>
                             <span className={styles.recScenarioEmoji}>{scenario.emoji}</span>
                             <span className={styles.recScenarioLabel}>{scenario.label}</span>
                             <span className={styles.recScenarioTime}>{timeLabel}</span>
+                            <Toggle
+                              on={expanded}
+                              onToggle={() => setScenarioExpanded((p) => ({ ...p, [scenario.key]: !p[scenario.key] }))}
+                              aria-label={`${scenario.label} 펼치기`}
+                            />
                           </div>
-                          <div className={styles.recScenarioDesc}>{scenario.desc}</div>
-                          <div className={styles.recScenarioConcerns}>
-                            {SCENARIO_CONCERNS.map((c) => {
-                              const active = scenarioConcerns[scenario.key].includes(c.value);
-                              return (
-                                <button key={c.value} type="button"
-                                  className={[styles.recConcernChip, active ? styles.recConcernChipActive : ''].filter(Boolean).join(' ')}
-                                  onClick={() => toggleScenarioConcern(scenario.key, c.value)}>
-                                  {c.label}
-                                </button>
-                              );
-                            })}
-                          </div>
+                          {expanded && (
+                            <>
+                              <div className={styles.recScenarioDesc}>{scenario.desc}</div>
+                              <div className={styles.recScenarioConcerns}>
+                                {SCENARIO_CONCERNS.map((c) => {
+                                  const active = scenarioConcerns[scenario.key].includes(c.value);
+                                  return (
+                                    <button key={c.value} type="button"
+                                      className={[styles.recConcernChip, active ? styles.recConcernChipActive : ''].filter(Boolean).join(' ')}
+                                      onClick={() => toggleScenarioConcern(scenario.key, c.value)}>
+                                      {c.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
                         </div>
                       );
                     })}
                 </div>
               </div>
 
-              {/* 생성 예정 타임테이블 미리보기 */}
-              {generatedSlots.length > 0 && (
-                <div className={styles.recPreview}>
-                  <div className={styles.recPreviewTitle}>생성될 타임테이블 ({generatedSlots.length}개)</div>
-                  {generatedSlots.map((slot, i) => {
-                    const scenLabel = SCENARIO_META.find((s) => {
-                      if (s.key === 'afterClose') return slot.startH === closeH;
-                      if (s.key === 'operating')  return slot.startH === openH && slot.endH === closeH;
-                      if (s.key === 'atOpen')     return slot.startH === Math.max(0, openH - 1) && slot.endH !== closeH;
-                      if (s.key === 'atClose')    return slot.startH === Math.max(0, closeH - 1);
-                      return slot.startH === 0 && slot.endH === 24;
-                    });
+              </>}
+
+              {modalStep === 2 && <>
+                {/* 슬롯 탭 — DS Tabs(line) 대신 시나리오 메타가 풍부해 커스텀 칩 사용 */}
+                <div className={styles.recSlotTabs} role="tablist" aria-label="시간 슬롯">
+                  {generatedSlots.map((slot, idx) => {
+                    const scen = findScenarioForSlot(slot);
+                    const active = activeSlotIdx === idx;
                     return (
-                      <div key={i} className={styles.recPreviewSlot}>
-                        <span className={styles.recPreviewEmoji}>{scenLabel?.emoji ?? '📋'}</span>
-                        <span className={styles.recPreviewLabel}>{scenLabel?.label ?? '일정'}</span>
-                        <span className={styles.recPreviewTime}>{fmtH(slot.startH)} ~ {fmtH(slot.endH)}</span>
-                        <span className={styles.recPreviewAlgos}>
-                          {slot.algoIds.map((id) => SCHED_ALGOS.find((a) => a.id === id)?.label ?? id).join(' · ')}
-                        </span>
-                      </div>
+                      <button
+                        key={idx}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        className={[styles.recSlotTab, active ? styles.recSlotTabActive : ''].filter(Boolean).join(' ')}
+                        onClick={() => setActiveSlotIdx(idx)}
+                      >
+                        <span className={styles.recSlotTabEmoji}>{scen?.emoji ?? '📋'}</span>
+                        <span className={styles.recSlotTabLabel}>{scen?.label ?? '일정'}</span>
+                        <span className={styles.recSlotTabTime}>{fmtH(slot.startH)}~{fmtH(slot.endH)}</span>
+                      </button>
                     );
                   })}
                 </div>
-              )}
+
+                {/* 매트릭스: 행=카메라, 열=감지 기능 */}
+                {scopedCameras.length === 0 ? (
+                  <div className={styles.recMatrixEmpty}>선택한 계약처에 카메라가 없습니다.</div>
+                ) : (
+                  <div className={styles.recMatrixWrap}>
+                    <table className={styles.recMatrix}>
+                      <thead>
+                        <tr>
+                          <th className={styles.recMatrixCornerCell}>카메라</th>
+                          {SCHED_ALGOS.map((algo) => {
+                            const allOn = scopedCameras.every(c => (step2Selection[activeSlotIdx]?.[c.id] ?? []).includes(algo.id));
+                            return (
+                              <th key={algo.id} className={styles.recMatrixHeadCell}>
+                                <button
+                                  type="button"
+                                  className={[styles.recMatrixHeadBtn, allOn ? styles.recMatrixHeadBtnAllOn : ''].filter(Boolean).join(' ')}
+                                  onClick={() => toggleStep2Column(activeSlotIdx, algo.id)}
+                                  title={`${allOn ? '전체 해제' : '전체 적용'} · ${algo.label}`}
+                                >
+                                  <span className={styles.recMatrixHeadDot} style={{ background: ALGO_COLORS[algo.id] ?? '#9CA3AF' }} />
+                                  {algo.label}
+                                </button>
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {scopedCameras.map((c) => {
+                          const enabled = step2Selection[activeSlotIdx]?.[c.id] ?? [];
+                          const site = sites.find(s => s.id === c.siteId);
+                          return (
+                            <tr key={c.id}>
+                              <th scope="row" className={styles.recMatrixRowHead}>
+                                <span className={styles.recMatrixCamName}>{c.name}</span>
+                                {site && <span className={styles.recMatrixSiteName}>{site.name}</span>}
+                              </th>
+                              {SCHED_ALGOS.map((algo) => {
+                                const checked = enabled.includes(algo.id);
+                                return (
+                                  <td key={algo.id} className={styles.recMatrixCell}>
+                                    <label className={styles.recMatrixCheckbox}>
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() => toggleStep2Cell(activeSlotIdx, c.id, algo.id)}
+                                        aria-label={`${c.name} · ${algo.label}`}
+                                      />
+                                      <span className={styles.recMatrixCheckboxBox} aria-hidden />
+                                    </label>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>}
             </div>
 
             {/* 푸터 */}
             <div className={styles.recModalFoot}>
-              <Button variant="secondary" size="sm" onClick={() => setShowRecommendModal(false)}>닫기</Button>
-              <Button variant="primary" size="sm" onClick={applyRecommendation} disabled={generatedSlots.length === 0}>
-                타임테이블 적용
-              </Button>
+              {modalStep === 1 ? (
+                <>
+                  <Button variant="secondary" size="sm" onClick={() => setShowRecommendModal(false)}>닫기</Button>
+                  <Button variant="primary" size="sm" onClick={goToStep2} disabled={generatedSlots.length === 0}>
+                    다음: 카메라별 설정 →
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="secondary" size="sm" onClick={() => setModalStep(1)}>← 이전</Button>
+                  <Button variant="primary" size="sm" onClick={applyRecommendation} disabled={scopedCameras.length === 0}>
+                    타임테이블 적용
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </>
