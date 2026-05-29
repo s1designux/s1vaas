@@ -37,21 +37,8 @@ type Sel =
   | { kind: 'unassigned'; id: string } // id = contractId
   | null;
 
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      className={[styles.chevron, open ? styles.chevronOpen : ''].filter(Boolean).join(' ')}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M9 18l6-6-6-6" />
-    </svg>
-  );
-}
+// Chevron component — reserved for future use
+// function Chevron({ open }: { open: boolean }) { ... }
 
 function StatusDot({ online }: { online: boolean }) {
   return <span className={[styles.dot, online ? styles.dotOn : styles.dotOff].join(' ')} aria-hidden />;
@@ -394,7 +381,7 @@ export default function Site() {
 
   // 현재 고객(계정) 기준 스코프 — 한 고객이 여러 계약처를 보유.
   const myContracts = useMemo(() => contracts.filter((c) => c.companyId === currentCompanyId), [contracts, currentCompanyId]);
-  const myContractIds = useMemo(() => new Set(myContracts.map((c) => c.id)), [myContracts]);
+  // const myContractIds = useMemo(() => new Set(myContracts.map((c) => c.id)), [myContracts]);
   const myFavorites = useMemo(() => favorites.filter((f) => f.ownerId === currentCompanyId), [favorites, currentCompanyId]);
   const ownerId = currentCompanyId;
 
@@ -423,18 +410,14 @@ export default function Site() {
   }, [cameras]);
 
   // 계약처 참조 표시는 계약명(예: 에스원빌딩). 번호(N******)는 별도로 노출.
-  const contractLabel = (id: string) => contracts.find((x) => x.id === id)?.name ?? id;
+  // const contractLabel = (id: string) => contracts.find((x) => x.id === id)?.name ?? id;
   const sitesOf = (contractId: string) => sites.filter((s) => s.contractId === contractId);
   const camsOf = (siteId: string) => cameras.filter((c) => c.siteId === siteId);
   const unassignedOf = (contractId: string) =>
     cameras.filter((c) => c.contractId === contractId && c.siteId === null);
 
-  const toggle = (set: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) =>
-    set((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  // const toggle = (set: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) =>
+  //   set((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
 
   const select = (s: Sel) => {
     setSel(s);

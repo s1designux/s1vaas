@@ -1,66 +1,49 @@
 // TODO: replace with fetch('/api/v1/alerts')
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Checkbox } from '@/components/ui/Checkbox';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useToast } from '@/hooks/useToast';
 import { relativeTime, formatDateTime } from '@/lib/time';
 import { alertsSeed } from '@/mock/alerts';
-import type {
-  SecurityAlert,
-  AlertStatus,
-  AlertPriority,
-  AlertType,
-} from '@/types/alert';
+import type { SecurityAlert, AlertStatus, AlertPriority, AlertType } from '@/types/alert';
 import page from './Page.module.css';
 import styles from './Alerts.module.css';
 
-type StatusFilter = 'all' | AlertStatus;
+// ===== Risk level — 전문 용어 제거, 소상공인 친화적 =====
+type RiskLevel = 'all' | 'danger' | 'caution' | 'info';
 
-const PRIORITY_OPTIONS: { value: AlertPriority; label: string }[] = [
-  { value: 'critical', label: '긴급' },
-  { value: 'high', label: '높음' },
-  { value: 'mid', label: '중간' },
-  { value: 'low', label: '낮음' },
-];
-
-const TYPE_OPTIONS: { value: AlertType; label: string }[] = [
-  { value: 'intrusion', label: '침입' },
-  { value: 'fire', label: '화재' },
-  { value: 'emergency', label: '비상' },
-  { value: 'offline', label: '오프라인' },
-  { value: 'storage', label: '저장소' },
-  { value: 'tamper', label: '탬퍼링' },
-];
-
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: '전체' },
-  { value: 'open', label: '미확인' },
-  { value: 'ack', label: '확인됨' },
-  { value: 'snoozed', label: '스누즈' },
-  { value: 'resolved', label: '종결' },
-];
-
-const PRIORITY_TONE: Record<AlertPriority, 'danger' | 'warn' | 'accent' | 'neutral'> = {
+const PRIORITY_TO_RISK: Record<AlertPriority, RiskLevel> = {
   critical: 'danger',
-  high: 'warn',
-  mid: 'accent',
-  low: 'neutral',
+  high: 'danger',
+  mid: 'caution',
+  low: 'info',
 };
 
-const STATUS_TONE: Record<AlertStatus, 'danger' | 'warn' | 'success' | 'neutral'> = {
-  open: 'danger',
-  ack: 'warn',
-  resolved: 'success',
-  snoozed: 'neutral',
+const RISK_LABEL: Record<RiskLevel, string> = {
+  all: '전체',
+  danger: '위험',
+  caution: '주의',
+  info: '알림',
+};
+
+const RISK_EMOJI: Record<Exclude<RiskLevel, 'all'>, string> = {
+  danger: '🔴',
+  caution: '🟡',
+  info: '🔵',
+};
+
+const RISK_DISPLAY: Record<AlertPriority, string> = {
+  critical: '위험',
+  high: '위험',
+  mid: '주의',
+  low: '알림',
 };
 
 const STATUS_LABEL: Record<AlertStatus, string> = {
   open: '미확인',
-  ack: '확인됨',
-  resolved: '종결',
-  snoozed: '스누즈',
+  ack: '확인중',
+  resolved: '처리완료',
+  snoozed: '잠시꺼짐',
 };
 
 const TYPE_LABEL: Record<AlertType, string> = {
@@ -72,79 +55,99 @@ const TYPE_LABEL: Record<AlertType, string> = {
   tamper: '탬퍼링',
 };
 
-const PRIORITY_LABEL: Record<AlertPriority, string> = {
-  critical: '긴급',
-  high: '높음',
-  mid: '중간',
-  low: '낮음',
+const TYPE_ICON: Record<AlertType, string> = {
+  intrusion: '🚨',
+  fire: '🔥',
+  emergency: '🆘',
+  offline: '📷',
+  storage: '💾',
+  tamper: '⚠️',
 };
 
-/** Snapshot SVG fallback — seed로 결정적인 도형 생성 */
-function SnapshotSvg({ seed, type }: { seed: string; type: AlertType }) {
+// ===== CCTV mock view =====
+function CctvView({
+  seed,
+  type,
+  isLive,
+  isDanger,
+}: {
+  seed: string;
+  type: AlertType;
+  isLive: boolean;
+  isDanger: boolean;
+}) {
   const hash = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0);
   const variant = hash % 3;
   return (
-    <svg
-      viewBox="0 0 320 180"
-      preserveAspectRatio="xMidYMid slice"
-      className={styles.snapshotSvg}
-    >
-      <defs>
-        <linearGradient id={`snap-${seed}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="var(--color-video-bg)" />
-          <stop offset="100%" stopColor="var(--color-bg-app)" />
-        </linearGradient>
-        <pattern id={`snap-grid-${seed}`} width="16" height="16" patternUnits="userSpaceOnUse">
-          <path d="M16 0H0V16" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
-        </pattern>
-      </defs>
-      <rect width="320" height="180" fill={`url(#snap-${seed})`} />
-      <rect width="320" height="180" fill={`url(#snap-grid-${seed})`} />
-      {variant === 0 && (
-        <g stroke="rgba(255,255,255,0.32)" fill="rgba(255,255,255,0.08)">
-          <rect x="60" y="80" width="60" height="70" />
-          <rect x="180" y="60" width="80" height="90" />
-        </g>
-      )}
-      {variant === 1 && (
-        <g stroke="rgba(255,255,255,0.28)" fill="rgba(255,255,255,0.08)">
-          <polygon points="40,150 90,80 140,150" />
-          <rect x="170" y="90" width="100" height="60" />
-        </g>
-      )}
-      {variant === 2 && (
-        <g stroke="rgba(255,255,255,0.28)" fill="rgba(255,255,255,0.08)">
-          <rect x="20" y="110" width="280" height="40" />
-          <rect x="40" y="80" width="60" height="70" />
-          <rect x="220" y="70" width="60" height="80" />
-        </g>
-      )}
-      <text
-        x="160"
-        y="95"
-        textAnchor="middle"
-        fontFamily="var(--font-mono)"
-        fontSize="11"
-        fill="rgba(255,255,255,0.55)"
-        letterSpacing="2"
-      >
-        {TYPE_LABEL[type].toUpperCase()}
-      </text>
-    </svg>
+    <div className={[styles.cctvFrame, isDanger ? styles.cctvFrameDanger : ''].filter(Boolean).join(' ')}>
+      <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" className={styles.cctvSvg}>
+        <defs>
+          <linearGradient id={`ccg-${seed}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#0d0f15" />
+            <stop offset="100%" stopColor="#060709" />
+          </linearGradient>
+          <pattern id={`ccp-${seed}`} width="16" height="16" patternUnits="userSpaceOnUse">
+            <path d="M16 0H0V16" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" />
+          </pattern>
+        </defs>
+        <rect width="320" height="180" fill={`url(#ccg-${seed})`} />
+        <rect width="320" height="180" fill={`url(#ccp-${seed})`} />
+        {variant === 0 && (
+          <g stroke="rgba(255,255,255,0.25)" fill="rgba(255,255,255,0.06)">
+            <rect x="60" y="80" width="60" height="70" />
+            <rect x="180" y="60" width="80" height="90" />
+          </g>
+        )}
+        {variant === 1 && (
+          <g stroke="rgba(255,255,255,0.22)" fill="rgba(255,255,255,0.06)">
+            <polygon points="40,150 90,80 140,150" />
+            <rect x="170" y="90" width="100" height="60" />
+          </g>
+        )}
+        {variant === 2 && (
+          <g stroke="rgba(255,255,255,0.22)" fill="rgba(255,255,255,0.06)">
+            <rect x="20" y="110" width="280" height="40" />
+            <rect x="40" y="80" width="60" height="70" />
+            <rect x="220" y="70" width="60" height="80" />
+          </g>
+        )}
+        <text
+          x="160"
+          y="168"
+          textAnchor="middle"
+          fontFamily="var(--font-mono)"
+          fontSize="10"
+          fill="rgba(255,255,255,0.28)"
+          letterSpacing="3"
+        >
+          {TYPE_LABEL[type].toUpperCase()} · NO SIGNAL
+        </text>
+      </svg>
+
+      {isLive && <span className={styles.liveBadge}>● LIVE</span>}
+
+      <span className={styles.cctvTimestamp}>
+        {new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+      </span>
+    </div>
   );
 }
 
-interface KpiProps {
+// ===== KPI card =====
+function Kpi({
+  label,
+  value,
+  suffix,
+  tone,
+}: {
   label: string;
   value: number;
   suffix?: string;
-  meta?: string;
-}
-
-function Kpi({ label, value, suffix, meta }: KpiProps) {
+  tone?: 'danger' | 'default';
+}) {
   const v = useCountUp(value);
   return (
-    <div className={page.kpi}>
+    <div className={[page.kpi, tone === 'danger' && value > 0 ? styles.kpiDanger : ''].filter(Boolean).join(' ')}>
       <div className={page.kpiLabel}>{label}</div>
       <div className={`${page.kpiValue} tabular`}>
         {v.toLocaleString()}
@@ -152,7 +155,7 @@ function Kpi({ label, value, suffix, meta }: KpiProps) {
           <span
             style={{
               fontSize: 'var(--font-size-16)',
-              color: 'var(--color-text-muted)',
+              color: tone === 'danger' && value > 0 ? 'var(--color-danger)' : 'var(--color-text-muted)',
               marginLeft: 'var(--spacing-4)',
               fontWeight: 'var(--font-weight-medium)',
             }}
@@ -161,24 +164,19 @@ function Kpi({ label, value, suffix, meta }: KpiProps) {
           </span>
         )}
       </div>
-      {meta && <div className={page.kpiMeta}>{meta}</div>}
     </div>
   );
 }
 
-const SLA_THRESHOLD_MIN = 10;
-
+// ===== Main component =====
 export default function Alerts() {
   const toast = useToast();
 
-  // in-page mutable copy
   const [alerts, setAlerts] = useState<SecurityAlert[]>(() => alertsSeed);
-
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [priorityFilter, setPriorityFilter] = useState<AlertPriority[]>([]);
-  const [typeFilter, setTypeFilter] = useState<AlertType[]>([]);
+  const [riskFilter, setRiskFilter] = useState<RiskLevel>('all');
+  const [typeFilter, setTypeFilter] = useState<AlertType | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(alertsSeed[0]?.id ?? null);
-  const [noteDraft, setNoteDraft] = useState('');
+  const [showLive, setShowLive] = useState(false);
 
   // ===== KPI =====
   const today0 = useMemo(() => {
@@ -187,67 +185,48 @@ export default function Alerts() {
     return d.getTime();
   }, []);
 
-  const todayCount = alerts.filter((a) => Date.parse(a.occurredAt) >= today0).length;
-  const openCount = alerts.filter((a) => a.status === 'open').length;
-  const resolvedWithResp = alerts.filter(
-    (a) => a.status === 'resolved' && typeof a.responseMin === 'number',
+  const todayDangerCount = useMemo(
+    () =>
+      alerts.filter((a) => {
+        const isToday = Date.parse(a.occurredAt) >= today0;
+        const isDanger = a.priority === 'critical' || a.priority === 'high';
+        return isToday && isDanger;
+      }).length,
+    [alerts, today0],
   );
-  const avgResponse =
-    resolvedWithResp.length > 0
-      ? Math.round(
-          resolvedWithResp.reduce((s, a) => s + (a.responseMin ?? 0), 0) /
-            resolvedWithResp.length,
-        )
-      : 0;
-  const slaBreaches = alerts.filter(
-    (a) => typeof a.responseMin === 'number' && (a.responseMin ?? 0) > SLA_THRESHOLD_MIN,
-  ).length;
 
-  // ===== filter status counts (for left panel) =====
-  const statusCounts = useMemo(() => {
-    const c: Record<StatusFilter, number> = {
-      all: alerts.length,
-      open: 0,
-      ack: 0,
-      resolved: 0,
-      snoozed: 0,
-    };
+  const openCount = useMemo(() => alerts.filter((a) => a.status === 'open').length, [alerts]);
+
+  // ===== risk counts for tabs =====
+  const riskCounts = useMemo(() => {
+    const c: Record<RiskLevel, number> = { all: 0, danger: 0, caution: 0, info: 0 };
     for (const a of alerts) {
-      c[a.status] += 1;
+      c.all++;
+      c[PRIORITY_TO_RISK[a.priority]]++;
     }
     return c;
   }, [alerts]);
 
-  // ===== filtered list =====
+  // ===== filtered + sorted list =====
   const filtered = useMemo(() => {
+    const RISK_ORDER: Record<RiskLevel, number> = { all: 3, danger: 0, caution: 1, info: 2 };
     return alerts
-      .filter((a) => (statusFilter === 'all' ? true : a.status === statusFilter))
-      .filter((a) => (priorityFilter.length === 0 ? true : priorityFilter.includes(a.priority)))
-      .filter((a) => (typeFilter.length === 0 ? true : typeFilter.includes(a.type)))
-      .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt));
-  }, [alerts, statusFilter, priorityFilter, typeFilter]);
+      .filter((a) => (riskFilter === 'all' ? true : PRIORITY_TO_RISK[a.priority] === riskFilter))
+      .filter((a) => (typeFilter === null ? true : a.type === typeFilter))
+      .sort((a, b) => {
+        const ra = PRIORITY_TO_RISK[a.priority];
+        const rb = PRIORITY_TO_RISK[b.priority];
+        if (RISK_ORDER[ra] !== RISK_ORDER[rb]) return RISK_ORDER[ra] - RISK_ORDER[rb];
+        return Date.parse(b.occurredAt) - Date.parse(a.occurredAt);
+      });
+  }, [alerts, riskFilter, typeFilter]);
 
-  const selected = useMemo(
-    () => alerts.find((a) => a.id === selectedId) ?? null,
-    [alerts, selectedId],
-  );
+  const selected = useMemo(() => alerts.find((a) => a.id === selectedId) ?? null, [alerts, selectedId]);
+
+  const isDanger =
+    selected !== null && (selected.priority === 'critical' || selected.priority === 'high');
 
   // ===== handlers =====
-  const togglePriority = (p: AlertPriority) => {
-    setPriorityFilter((prev) =>
-      prev.includes(p) ? prev.filter((v) => v !== p) : [...prev, p],
-    );
-  };
-  const toggleType = (t: AlertType) => {
-    setTypeFilter((prev) => (prev.includes(t) ? prev.filter((v) => v !== t) : [...prev, t]));
-  };
-  const resetFilters = () => {
-    setStatusFilter('all');
-    setPriorityFilter([]);
-    setTypeFilter([]);
-    toast.info('필터 초기화', '모든 필터를 해제했습니다.');
-  };
-
   const updateAlert = (id: string, patch: Partial<SecurityAlert>) => {
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
   };
@@ -255,24 +234,17 @@ export default function Alerts() {
   const handleAck = () => {
     if (!selected) return;
     if (selected.status === 'ack' || selected.status === 'resolved') {
-      toast.warn('이미 확인 처리된 알림입니다.');
+      toast.warn('이미 확인한 알림입니다.');
       return;
     }
     updateAlert(selected.id, { status: 'ack' });
-    toast.success('확인 처리됨', `${selected.cameraName} 알림을 확인했습니다.`);
-  };
-
-  const handleAssign = () => {
-    if (!selected) return;
-    const nextOwner = selected.assignedTo ? selected.assignedTo : '김민수';
-    updateAlert(selected.id, { assignedTo: nextOwner });
-    toast.info('담당자 배정', `${nextOwner} 님에게 배정되었습니다.`);
+    toast.success('확인 완료', `${selected.cameraName} 알림을 확인했습니다.`);
   };
 
   const handleResolve = () => {
     if (!selected) return;
     if (selected.status === 'resolved') {
-      toast.warn('이미 종결된 알림입니다.');
+      toast.warn('이미 처리완료된 알림입니다.');
       return;
     }
     const minutesElapsed = Math.max(
@@ -283,125 +255,109 @@ export default function Alerts() {
       status: 'resolved',
       responseMin: selected.responseMin ?? minutesElapsed,
     });
-    toast.success('종결 처리', '알림을 정상 종결했습니다.');
+    toast.success('처리완료', '알림을 해결했습니다.');
   };
 
-  const handleEscalate = () => {
-    if (!selected) return;
-    updateAlert(selected.id, { priority: 'critical' });
-    toast.danger('에스컬레이션', '관제센터 책임자에게 통보되었습니다.');
+  const handleCapture = () => {
+    toast.success('캡처 저장', '현재 화면이 저장되었습니다.');
   };
 
-  const handleAddNote = () => {
-    if (!selected) return;
-    const text = noteDraft.trim();
-    if (!text) {
-      toast.warn('노트 내용을 입력해 주세요.');
-      return;
-    }
-    const next = {
-      at: new Date().toISOString(),
-      by: selected.assignedTo ?? '관제 담당',
-      text,
-    };
-    updateAlert(selected.id, { notes: [...selected.notes, next] });
-    setNoteDraft('');
-    toast.success('노트 추가', '대응 노트가 기록되었습니다.');
+  const handleShare = () => {
+    toast.info('영상 공유', '공유 링크가 클립보드에 복사되었습니다.');
   };
 
+  const handleSelectAlert = (id: string) => {
+    setSelectedId(id);
+    setShowLive(false);
+  };
+
+  // ===== Render =====
   return (
     <div className={page.page}>
-
-      <div className={page.kpiRow}>
-        <Kpi label="오늘 발생" value={todayCount} suffix="건" meta="자정 ~ 현재" />
-        <Kpi label="미처리" value={openCount} suffix="건" meta="status = open" />
-        <Kpi
-          label="평균 응답"
-          value={avgResponse}
-          suffix="분"
-          meta={`종결 ${resolvedWithResp.length}건 평균`}
-        />
-        <Kpi
-          label="SLA 위반"
-          value={slaBreaches}
-          suffix="건"
-          meta={`> ${SLA_THRESHOLD_MIN}분 응답`}
-        />
+      {/* ===== KPI row (2개만) ===== */}
+      <div className={page.kpiRow2}>
+        <Kpi label="오늘 위험 알림" value={todayDangerCount} suffix="건" tone="danger" />
+        <Kpi label="미확인 건수" value={openCount} suffix="건" />
       </div>
 
+      {/* ===== 필터바 — 위험도 탭 + 유형 칩 ===== */}
+      <div className={styles.filterBar}>
+        {/* 위험도 탭 */}
+        <div className={styles.riskTabs}>
+          {(['all', 'danger', 'caution', 'info'] as RiskLevel[]).map((level) => (
+            <button
+              key={level}
+              type="button"
+              className={[
+                styles.riskTab,
+                riskFilter === level ? styles.riskTabActive : '',
+                styles[`riskTab_${level}`],
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => setRiskFilter(level)}
+            >
+              {level !== 'all' && <span>{RISK_EMOJI[level as Exclude<RiskLevel, 'all'>]}</span>}
+              {RISK_LABEL[level]}
+              <span className={styles.riskTabCount}>{riskCounts[level]}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 유형 칩 */}
+        <div className={styles.typeChips}>
+          <button
+            type="button"
+            className={[styles.typeChip, typeFilter === null ? styles.typeChipActive : '']
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => setTypeFilter(null)}
+          >
+            전체 유형
+          </button>
+          {(Object.keys(TYPE_LABEL) as AlertType[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={[styles.typeChip, typeFilter === t ? styles.typeChipActive : '']
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => setTypeFilter(typeFilter === t ? null : t)}
+            >
+              {TYPE_ICON[t]} {TYPE_LABEL[t]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== 2-column layout ===== */}
       <div className={styles.layout}>
-        {/* ===== Left filter ===== */}
-        <aside className={styles.filter}>
-          <div className={styles.filterGroup}>
-            <div className={styles.filterTitle}>상태</div>
-            {STATUS_OPTIONS.map((opt) => (
-              <label key={opt.value} className={styles.filterRow}>
-                <input
-                  type="radio"
-                  name="alert-status"
-                  checked={statusFilter === opt.value}
-                  onChange={() => setStatusFilter(opt.value)}
-                />
-                <span>{opt.label}</span>
-                <span className={styles.filterCount}>{statusCounts[opt.value]}</span>
-              </label>
-            ))}
-          </div>
-
-          <div className={styles.filterGroup}>
-            <div className={styles.filterTitle}>우선순위</div>
-            {PRIORITY_OPTIONS.map((opt) => (
-              <Checkbox
-                key={opt.value}
-                checked={priorityFilter.includes(opt.value)}
-                onChange={() => togglePriority(opt.value)}
-              >
-                {opt.label}
-              </Checkbox>
-            ))}
-          </div>
-
-          <div className={styles.filterGroup}>
-            <div className={styles.filterTitle}>유형</div>
-            {TYPE_OPTIONS.map((opt) => (
-              <Checkbox
-                key={opt.value}
-                checked={typeFilter.includes(opt.value)}
-                onChange={() => toggleType(opt.value)}
-              >
-                {opt.label}
-              </Checkbox>
-            ))}
-          </div>
-
-          <Button variant="secondary" size="sm" block onClick={resetFilters}>
-            초기화
-          </Button>
-        </aside>
-
-        {/* ===== Center list ===== */}
+        {/* ===== 알림 목록 ===== */}
         <section className={styles.list}>
           <div className={styles.listHeader}>
             <span className={styles.listCount}>
-              {filtered.length}건 표시 / 전체 {alerts.length}건
+              {filtered.length === alerts.length
+                ? `전체 ${alerts.length}건`
+                : `${filtered.length}건 / 전체 ${alerts.length}건`}
             </span>
           </div>
 
           {filtered.length === 0 ? (
-            <div className={styles.empty}>조건에 맞는 알림이 없습니다.</div>
+            <div className={styles.empty}>해당 조건의 알림이 없습니다.</div>
           ) : (
             filtered.map((a) => {
               const isSelected = a.id === selectedId;
+              const risk = PRIORITY_TO_RISK[a.priority];
               return (
                 <div
                   key={a.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => setSelectedId(a.id)}
+                  onClick={() => handleSelectAlert(a.id)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      setSelectedId(a.id);
+                      handleSelectAlert(a.id);
                     }
                   }}
                   className={[
@@ -411,34 +367,39 @@ export default function Alerts() {
                     .filter(Boolean)
                     .join(' ')}
                 >
+                  {/* 위험도 색상 스트립 */}
                   <span
-                    className={[styles.statusBar, styles[`statusBar_${a.status}`]].join(' ')}
+                    className={[styles.riskStrip, styles[`riskStrip_${risk}`]]
+                      .filter(Boolean)
+                      .join(' ')}
                   />
+
                   <div className={styles.alertBody}>
                     <div className={styles.alertTopRow}>
-                      <span className={styles.alertTime}>{relativeTime(a.occurredAt)}</span>
-                      <Badge tone={PRIORITY_TONE[a.priority]} dot>
-                        {PRIORITY_LABEL[a.priority]}
-                      </Badge>
-                      <Badge tone="info">{TYPE_LABEL[a.type]}</Badge>
+                      <span
+                        className={[styles.riskPill, styles[`riskPill_${risk}`]]
+                          .filter(Boolean)
+                          .join(' ')}
+                      >
+                        {risk !== 'all' && RISK_EMOJI[risk as Exclude<RiskLevel, 'all'>]}{' '}
+                        {RISK_DISPLAY[a.priority]}
+                      </span>
+                      <span className={styles.typeTag}>
+                        {TYPE_ICON[a.type]} {TYPE_LABEL[a.type]}
+                      </span>
+                      {a.status === 'open' && (
+                        <span className={styles.unreadDot} aria-label="미확인" />
+                      )}
                     </div>
-                    <div className={styles.alertMsg} title={a.message}>
-                      {a.message}
-                    </div>
+
+                    <div className={styles.alertMsg}>{a.message}</div>
+
                     <div className={styles.alertMeta}>
                       <span>
                         {a.siteName} · {a.cameraName}
                       </span>
-                      <span className={styles.alertMetaSep}>|</span>
-                      <span>담당자: {a.assignedTo ?? '미배정'}</span>
-                      <span className={styles.alertMetaSep}>|</span>
-                      <span>룰: {a.ruleName}</span>
+                      <span className={styles.alertTime}>{relativeTime(a.occurredAt)}</span>
                     </div>
-                  </div>
-                  <div className={styles.alertRight}>
-                    <Badge tone={STATUS_TONE[a.status]} dot>
-                      {STATUS_LABEL[a.status]}
-                    </Badge>
                   </div>
                 </div>
               );
@@ -446,95 +407,104 @@ export default function Alerts() {
           )}
         </section>
 
-        {/* ===== Right detail ===== */}
+        {/* ===== 상세 패널 ===== */}
         <aside className={styles.detail}>
           {!selected ? (
-            <div className={styles.detailEmpty}>알림을 선택하면 상세가 표시됩니다.</div>
+            <div className={styles.detailEmpty}>
+              <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>📋</span>
+              알림을 선택하면 상세 내용이 표시됩니다.
+            </div>
           ) : (
             <>
-              <div className={styles.snapshot}>
-                <SnapshotSvg seed={selected.snapshotSeed} type={selected.type} />
-                <span className={styles.snapshotBadge}>{selected.cameraId.toUpperCase()}</span>
+              {/* CCTV 뷰 */}
+              <div className={styles.cctvSection}>
+                <CctvView
+                  seed={selected.snapshotSeed}
+                  type={selected.type}
+                  isLive={showLive}
+                  isDanger={isDanger}
+                />
+
+                {/* CCTV 액션 버튼 */}
+                <div className={styles.cctvActions}>
+                  <button
+                    type="button"
+                    className={[styles.cctvBtn, showLive ? styles.cctvBtnLive : '']
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => setShowLive((v) => !v)}
+                  >
+                    {showLive ? '📹 실시간 보는 중' : '📹 실시간 보기'}
+                  </button>
+                  <button type="button" className={styles.cctvBtn} onClick={handleCapture}>
+                    📸 캡처 저장
+                  </button>
+                  <button type="button" className={styles.cctvBtn} onClick={handleShare}>
+                    🔗 영상 공유
+                  </button>
+                </div>
               </div>
 
-              <div className={styles.detailTitle}>{selected.message}</div>
-
-              <div className={styles.detailMetaGrid}>
-                <span className={styles.detailMetaKey}>상태</span>
-                <span className={styles.detailMetaVal}>
-                  <Badge tone={STATUS_TONE[selected.status]} dot>
+              {/* 알림 정보 */}
+              <div className={styles.detailBody}>
+                <div className={styles.detailTitleRow}>
+                  <span
+                    className={[
+                      styles.riskPill,
+                      styles[`riskPill_${PRIORITY_TO_RISK[selected.priority]}`],
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
+                    {RISK_EMOJI[PRIORITY_TO_RISK[selected.priority] as Exclude<RiskLevel, 'all'>]}{' '}
+                    {RISK_DISPLAY[selected.priority]}
+                  </span>
+                  <span className={styles.detailStatus}>
                     {STATUS_LABEL[selected.status]}
-                  </Badge>
-                </span>
-                <span className={styles.detailMetaKey}>우선순위</span>
-                <span className={styles.detailMetaVal}>
-                  <Badge tone={PRIORITY_TONE[selected.priority]} dot>
-                    {PRIORITY_LABEL[selected.priority]}
-                  </Badge>
-                </span>
-                <span className={styles.detailMetaKey}>유형</span>
-                <span className={styles.detailMetaVal}>{TYPE_LABEL[selected.type]}</span>
-                <span className={styles.detailMetaKey}>사이트</span>
-                <span className={styles.detailMetaVal}>
-                  {selected.siteName} · {selected.cameraName}
-                </span>
-                <span className={styles.detailMetaKey}>발생</span>
-                <span className={styles.detailMetaVal}>
-                  {formatDateTime(selected.occurredAt)}
-                </span>
-                <span className={styles.detailMetaKey}>담당자</span>
-                <span className={styles.detailMetaVal}>
-                  {selected.assignedTo ?? '미배정'}
-                  {typeof selected.responseMin === 'number' && (
-                    <span style={{ color: 'var(--color-text-muted)', marginLeft: 'var(--spacing-8)' }}>
-                      · 응답 {selected.responseMin}분
+                  </span>
+                </div>
+
+                <div className={styles.detailTitle}>{selected.message}</div>
+
+                <div className={styles.detailMeta}>
+                  <div className={styles.detailMetaRow}>
+                    <span className={styles.detailMetaKey}>유형</span>
+                    <span className={styles.detailMetaVal}>
+                      {TYPE_ICON[selected.type]} {TYPE_LABEL[selected.type]}
                     </span>
-                  )}
-                </span>
-              </div>
-
-              <div className={styles.actionGrid}>
-                <Button variant="primary" size="sm" onClick={handleAck}>
-                  Acknowledge
-                </Button>
-                <Button variant="secondary" size="sm" onClick={handleAssign}>
-                  Assign
-                </Button>
-                <Button variant="secondary" size="sm" onClick={handleResolve}>
-                  Resolve
-                </Button>
-                <Button variant="secondary" size="sm" onClick={handleEscalate}>
-                  Escalate
-                </Button>
-              </div>
-
-              <div className={styles.notesSection}>
-                <div className={styles.notesLabel}>대응 노트</div>
-                {selected.notes.length === 0 ? (
-                  <div className={styles.noteEmpty}>아직 등록된 노트가 없습니다.</div>
-                ) : (
-                  selected.notes.map((n, i) => (
-                    <div key={`${selected.id}-note-${i}`} className={styles.noteItem}>
-                      <div className={styles.noteHead}>
-                        <span className={styles.noteHeadBy}>{n.by}</span>
-                        <span>{relativeTime(n.at)}</span>
-                      </div>
-                      <div className={styles.noteText}>{n.text}</div>
-                    </div>
-                  ))
-                )}
-                <div className={styles.noteInputRow}>
-                  <textarea
-                    className={styles.noteTextarea}
-                    placeholder="대응 메모를 남겨주세요…"
-                    value={noteDraft}
-                    onChange={(e) => setNoteDraft(e.target.value)}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button variant="secondary" size="sm" onClick={handleAddNote}>
-                      추가
-                    </Button>
                   </div>
+                  <div className={styles.detailMetaRow}>
+                    <span className={styles.detailMetaKey}>위치</span>
+                    <span className={styles.detailMetaVal}>
+                      {selected.siteName} · {selected.cameraName}
+                    </span>
+                  </div>
+                  <div className={styles.detailMetaRow}>
+                    <span className={styles.detailMetaKey}>발생 시각</span>
+                    <span className={styles.detailMetaVal}>
+                      {formatDateTime(selected.occurredAt)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 처리 버튼 */}
+                <div className={styles.actionRow}>
+                  <Button
+                    variant={selected.status === 'open' ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={handleAck}
+                    disabled={selected.status === 'resolved'}
+                  >
+                    ✓ 확인
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleResolve}
+                    disabled={selected.status === 'resolved'}
+                  >
+                    ✓ 해결
+                  </Button>
                 </div>
               </div>
             </>

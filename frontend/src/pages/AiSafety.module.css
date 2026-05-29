@@ -210,16 +210,16 @@
 
 /* ===== 알고리즘 카드 ===== */
 .cardGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-12, 12px);
-  align-items: start;
 }
 
 .algoGrid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
+  align-items: start;
 }
 
 .algoCard {
