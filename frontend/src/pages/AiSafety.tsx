@@ -66,50 +66,26 @@ const INDUSTRIES: Opt[] = [
   { value: 'etc', label: '기타' },
 ];
 
-const HOURS: Opt[] = [
-  { value: '24h', label: '24시간 영업' },
-  { value: 'day', label: '주간 (09–18시)' },
-  { value: 'night', label: '야간 (18–09시)' },
-  { value: 'custom', label: '맞춤 운영' },
+type ScenarioKey = 'afterClose' | 'operating' | 'atOpen' | 'atClose' | 'holiday';
+
+const SCENARIO_CONCERNS: { value: string; label: string; algoKey: string }[] = [
+  { value: 'intrusion', label: '침입·도난', algoKey: 'intrusion' },
+  { value: 'loiter',    label: '배회·서성임', algoKey: 'loitering' },
+  { value: 'fence',     label: '경계선 침범', algoKey: 'virtual_fence' },
+  { value: 'fire',      label: '화재·연기', algoKey: 'fire' },
+  { value: 'parking',   label: '불법 주정차', algoKey: 'parking' },
+  { value: 'counting',  label: '방문객 수', algoKey: 'people_counting' },
+  { value: 'privacy',   label: '사생활 보호', algoKey: 'privacy' },
+  { value: 'motion',    label: '움직임 기록', algoKey: 'motion' },
 ];
 
-const WORRIES: { value: string; label: string; algoKeys: string[] }[] = [
-  { value: 'intrusion', label: '무단 침입·도난', algoKeys: ['intrusion'] },
-  { value: 'afterhours', label: '영업 외 시간 출입', algoKeys: ['intrusion'] },
-  { value: 'loiter', label: '배회·서성임', algoKeys: ['loitering'] },
-  { value: 'crossing', label: '경계선 침범', algoKeys: ['virtual_fence'] },
-  { value: 'fire', label: '화재·연기', algoKeys: ['fire'] },
-  { value: 'parking', label: '불법 주정차', algoKeys: ['parking'] },
-  { value: 'counting', label: '방문객 수 집계', algoKeys: ['people_counting'] },
-  { value: 'privacy', label: '사생활 보호', algoKeys: ['privacy'] },
-  { value: 'movement', label: '상시 움직임 기록', algoKeys: ['motion'] },
+const SCENARIO_META: { key: ScenarioKey; label: string; emoji: string; desc: string }[] = [
+  { key: 'afterClose', label: '마감 이후', emoji: '🌙', desc: '마감 후 다음 오픈 전까지' },
+  { key: 'operating',  label: '운영 중',   emoji: '☀️', desc: '오픈~마감 영업 시간' },
+  { key: 'atOpen',     label: '오픈 시',   emoji: '🌅', desc: '오픈 전후 ±1시간' },
+  { key: 'atClose',    label: '마감 시',   emoji: '🌆', desc: '마감 전후 ±1시간' },
+  { key: 'holiday',    label: '휴일 시',   emoji: '📅', desc: '선택한 휴일 하루 종일' },
 ];
-
-const INDUSTRY_DEFAULT: Record<string, string[]> = {
-  cvs: ['intrusion', 'fire'],
-  cafe: ['loitering', 'privacy'],
-  restaurant: ['fire', 'motion'],
-  retail: ['intrusion', 'loitering'],
-  office: ['intrusion', 'virtual_fence'],
-  etc: ['motion'],
-};
-
-const ALGO_LABEL: Record<string, string> = {
-  motion: '움직임 감지',
-  privacy: '프라이버시 마스크',
-  intrusion: '침입 감지',
-  loitering: '배회 감지',
-  virtual_fence: '가상 펜스',
-  fire: '화재 감지',
-  parking: '주정차 감시',
-  people_counting: '피플카운팅',
-};
-
-interface RecItem {
-  algoKey: string;
-  label: string;
-  reason: string;
-}
 
 const SENS_OPTS: { value: AlgorithmSensitivity; title: string; desc: string }[] = [
   { value: 'low', title: '덜 민감하게', desc: '오탐을 줄여요' },
@@ -123,8 +99,6 @@ const NOTIFY_OPTS: { value: NotifyLevel; label: string }[] = [
   { value: 'min5', label: '5분 간격 알림' },
   { value: 'none', label: '알림 없음' },
 ];
-
-type SubTab = 'my-store' | 'recommend';
 
 // ── 감지 일정 ──
 type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
@@ -339,12 +313,20 @@ export default function AiSafety() {
   const removeAlgorithmPolygon = useDataStore((s) => s.removeAlgorithmPolygon);
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState<SubTab>('recommend');
+  const [showRecommendModal, setShowRecommendModal] = useState(false);
 
   // 추천 입력
   const [industry, setIndustry] = useState('cvs');
-  const [hours, setHours] = useState('night');
-  const [worries, setWorries] = useState<string[]>(['intrusion', 'fire']);
+  const [openH, setOpenH] = useState(9);
+  const [closeH, setCloseH] = useState(22);
+  const [holidays, setHolidays] = useState<DayKey[]>([]);
+  const [scenarioConcerns, setScenarioConcerns] = useState<Record<ScenarioKey, string[]>>({
+    afterClose: ['intrusion', 'fire'],
+    operating: ['motion'],
+    atOpen: [],
+    atClose: [],
+    holiday: [],
+  });
 
   // 사이드바 — 계약처·사이트 필터
   const [selectedContractId, setSelectedContractId] = useState<string>(() => contracts[0]?.id ?? '');
@@ -391,60 +373,66 @@ export default function AiSafety() {
     setDrawMode(false);
   }, [activeCamId]);
 
-  // 추천 결과 계산
-  const recommended: RecItem[] = useMemo(() => {
-    const reason = new Map<string, string>();
-    for (const w of worries) {
-      const def = WORRIES.find((x) => x.value === w);
-      def?.algoKeys.forEach((k) => { if (!reason.has(k)) reason.set(k, `'${def.label}' 걱정에 맞춘 기능`); });
-    }
-    (INDUSTRY_DEFAULT[industry] ?? []).forEach((k) => {
-      if (!reason.has(k)) reason.set(k, `${INDUSTRIES.find((i) => i.value === industry)?.label} 업종 기본 추천`);
-    });
-    if (hours === 'night') {
-      ['intrusion', 'loitering'].forEach((k) => { if (!reason.has(k)) reason.set(k, '야간 운영 시 권장'); });
-    } else if (hours === '24h') {
-      if (!reason.has('motion')) reason.set('motion', '24시간 운영 시 권장');
-    }
-    return [...reason.entries()].map(([algoKey, r]) => ({ algoKey, label: ALGO_LABEL[algoKey] ?? algoKey, reason: r }));
-  }, [industry, hours, worries]);
+  // 시나리오별 걱정 항목 토글
+  const toggleScenarioConcern = (scenario: ScenarioKey, concern: string) =>
+    setScenarioConcerns((prev) => ({
+      ...prev,
+      [scenario]: prev[scenario].includes(concern)
+        ? prev[scenario].filter((x) => x !== concern)
+        : [...prev[scenario], concern],
+    }));
+
+  // 타임테이블 자동 생성
+  const generatedSlots = useMemo(() => {
+    const operatingDays = ALL_DAYS.filter((d) => !holidays.includes(d));
+    const getAlgos = (key: ScenarioKey) =>
+      [...new Set(
+        (scenarioConcerns[key] ?? [])
+          .map((v) => SCENARIO_CONCERNS.find((c) => c.value === v)?.algoKey)
+          .filter((x): x is string => Boolean(x)),
+      )];
+    const slots: Omit<ScheduleSlot, 'id'>[] = [];
+    const afterCloseAlgos = getAlgos('afterClose');
+    if (afterCloseAlgos.length && operatingDays.length)
+      slots.push({ startH: closeH, endH: openH, days: operatingDays, algoIds: afterCloseAlgos });
+    const operatingAlgos = getAlgos('operating');
+    if (operatingAlgos.length && operatingDays.length)
+      slots.push({ startH: openH, endH: closeH, days: operatingDays, algoIds: operatingAlgos });
+    const atOpenAlgos = getAlgos('atOpen');
+    if (atOpenAlgos.length && operatingDays.length)
+      slots.push({ startH: Math.max(0, openH - 1), endH: Math.min(24, openH + 1), days: operatingDays, algoIds: atOpenAlgos });
+    const atCloseAlgos = getAlgos('atClose');
+    if (atCloseAlgos.length && operatingDays.length)
+      slots.push({ startH: Math.max(0, closeH - 1), endH: Math.min(24, closeH + 1), days: operatingDays, algoIds: atCloseAlgos });
+    const holidayAlgos = getAlgos('holiday');
+    if (holidayAlgos.length && holidays.length)
+      slots.push({ startH: 0, endH: 24, days: holidays, algoIds: holidayAlgos });
+    return slots;
+  }, [openH, closeH, holidays, scenarioConcerns]);
 
   if (!cam) return <div className={page.page}>카메라가 없습니다.</div>;
   const offline = cam.status === 'offline';
-
-  const toggleWorry = (v: string) =>
-    setWorries((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
 
   const getExtra = (id: string): ExtraCfg => extras[id] ?? DEFAULT_EXTRA;
   const patchExtra = (id: string, patch: Partial<ExtraCfg>) =>
     setExtras((s) => ({ ...s, [id]: { ...getExtra(id), ...patch } }));
 
   function applyRecommendation() {
-    const recKeys = recommended.map((r) => r.algoKey);
-    if (recKeys.length === 0) {
-      toast.info('추천 결과 없음', '걱정되는 상황을 선택하면 맞춤 기능을 추천해 드려요.');
+    if (generatedSlots.length === 0) {
+      toast.info('생성된 일정 없음', '감지 항목을 선택하면 타임테이블이 자동으로 만들어져요.');
       return;
     }
-    let skipped = false;
     cameras.forEach((c) => {
-      const list = algorithms.filter((a) => a.cameraId === c.id);
-      let exclusiveTaken = list.some((a) => a.enabled && EXCLUSIVE_AI.has(a.algoKey));
-      recKeys.forEach((key) => {
-        const a = list.find((x) => x.algoKey === key);
-        if (!a || a.enabled) return;
-        if (EXCLUSIVE_AI.has(a.algoKey)) {
-          if (exclusiveTaken) { skipped = true; return; }
-          exclusiveTaken = true;
-        }
-        patchAlgorithm(a.cameraId, a.id, { enabled: true });
-      });
+      setCamSchedules((p) => ({
+        ...p,
+        [c.id]: generatedSlots.map((s, i) => ({ ...s, id: `rec_${c.id}_${i}` })),
+      }));
     });
     toast.success(
-      '추천 안심 설정 적용',
-      skipped
-        ? '매장 카메라에 적용했어요. 카메라당 AI 이벤트 1종 제한으로 일부는 제외됐어요.'
-        : '추천 기능을 매장 카메라 전체에 적용했어요.',
+      '타임테이블 자동 생성',
+      `${generatedSlots.length}개 일정을 전체 카메라에 적용했습니다. 상세모드에서 확인하세요.`,
     );
+    setShowRecommendModal(false);
   }
 
   // 토글
@@ -637,27 +625,7 @@ export default function AiSafety() {
 
   return (
     <div className={page.page}>
-      {/* ===== 서브 탭 칩 ===== */}
-      <div className={styles.subNavRow}>
-        <button
-          type="button"
-          className={[styles.subChip, activeTab === 'recommend' ? styles.subChipActive : ''].filter(Boolean).join(' ')}
-          onClick={() => setActiveTab('recommend')}
-        >
-          추천 안심 설정
-        </button>
-        <button
-          type="button"
-          className={[styles.subChip, activeTab === 'my-store' ? styles.subChipActive : ''].filter(Boolean).join(' ')}
-          onClick={() => setActiveTab('my-store')}
-        >
-          내 매장 AI설정
-        </button>
-      </div>
-
-      {/* ===== 내 매장 AI 설정 ===== */}
-      {activeTab === 'my-store' && (
-        <div className={styles.aiBodyRow}>
+      <div className={styles.aiBodyRow}>
           {/* ── 카메라 트리 사이드바 ── */}
           <aside className={styles.aiSidebar}>
             {/* 계약처 트리거 */}
@@ -748,11 +716,16 @@ export default function AiSafety() {
               </div>
 
               <div className={page.algoRight}>
-                <div className={styles.algoBanner} role="status">
-                  <span>카메라당 AI 이벤트는 1종만 동작하고, 화재 감지는 함께 켤 수 있어요</span>
-                  <span className={styles.algoBannerCount}>
-                    {activeExclusive ? `${activeExclusive.label} 동작 중` : 'AI 이벤트 꺼짐'}
-                  </span>
+                <div className={styles.algoHeaderRow}>
+                  <div className={styles.algoBanner} role="status">
+                    <span>카메라당 AI 이벤트는 1종만 동작하고, 화재 감지는 함께 켤 수 있어요</span>
+                    <span className={styles.algoBannerCount}>
+                      {activeExclusive ? `${activeExclusive.label} 동작 중` : 'AI 이벤트 꺼짐'}
+                    </span>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => setShowRecommendModal(true)}>
+                    추천 안심 설정
+                  </Button>
                 </div>
 
                 <div className={styles.cardGrid}>
@@ -785,87 +758,153 @@ export default function AiSafety() {
             </Card>
           </div>
         </div>
-      )}
 
-      {/* ===== 추천 안심 설정 ===== */}
-      {activeTab === 'recommend' && (
-        <Card title="맞춤 추천 안심 설정">
-          <div className={styles.recPanel}>
-            <div className={styles.recRow}>
-              <span className={styles.recRowLabel}>업종</span>
-              <div className={page.chips}>
-                {INDUSTRIES.map((o) => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    className={[page.chip, industry === o.value ? page.chipActive : ''].filter(Boolean).join(' ')}
-                    onClick={() => setIndustry(o.value)}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
+      {/* ===== 추천 안심 설정 모달 ===== */}
+      {showRecommendModal && (
+        <>
+          <div className={styles.recModalBackdrop} onClick={() => setShowRecommendModal(false)} />
+          <div className={styles.recModal}>
+            {/* 헤더 */}
+            <div className={styles.recModalHead}>
+              <span className={styles.recModalTitle}>맞춤 추천 안심 설정</span>
+              <button type="button" className={styles.recModalClose} onClick={() => setShowRecommendModal(false)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
             </div>
 
-            <div className={styles.recRow}>
-              <span className={styles.recRowLabel}>운영 시간</span>
-              <div className={page.chips}>
-                {HOURS.map((o) => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    className={[page.chip, hours === o.value ? page.chipActive : ''].filter(Boolean).join(' ')}
-                    onClick={() => setHours(o.value)}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.recRow}>
-              <span className={styles.recRowLabel}>
-                걱정되는 상황<span className={styles.recRowHint}>여러 개 선택 가능</span>
-              </span>
-              <div className={page.chips}>
-                {WORRIES.map((o) => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    className={[page.chip, worries.includes(o.value) ? page.chipActive : ''].filter(Boolean).join(' ')}
-                    onClick={() => toggleWorry(o.value)}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.recResult}>
-              <div className={styles.recResultHead}>
-                <span className={styles.recResultTitle}>추천 안심 기능 {recommended.length > 0 && `(${recommended.length})`}</span>
-                <Button variant="primary" size="sm" onClick={applyRecommendation} disabled={recommended.length === 0}>
-                  추천 설정 적용
-                </Button>
-              </div>
-              {recommended.length === 0 ? (
-                <div className={styles.recEmpty}>걱정되는 상황을 선택하면 맞춤 안심 기능을 추천해 드려요.</div>
-              ) : (
-                <div className={styles.recList}>
-                  {recommended.map((r) => (
-                    <div key={r.algoKey} className={styles.recItem}>
-                      <div className={styles.recItemIcon} aria-hidden><Glyph algoKey={r.algoKey} /></div>
-                      <div className={styles.recItemText}>
-                        <div className={styles.recItemLabel}>{r.label}</div>
-                        <div className={styles.recItemReason}>{r.reason}</div>
-                      </div>
-                    </div>
+            {/* 본문 스크롤 영역 */}
+            <div className={styles.recModalBody}>
+              {/* 업종 */}
+              <div className={styles.recSection}>
+                <div className={styles.recSectionTitle}>업종</div>
+                <div className={page.chips}>
+                  {INDUSTRIES.map((o) => (
+                    <button key={o.value} type="button"
+                      className={[page.chip, industry === o.value ? page.chipActive : ''].filter(Boolean).join(' ')}
+                      onClick={() => setIndustry(o.value)}>{o.label}</button>
                   ))}
+                </div>
+              </div>
+
+              {/* 영업 시간 */}
+              <div className={styles.recSection}>
+                <div className={styles.recSectionTitle}>영업 시간</div>
+                <div className={styles.recTimeRow}>
+                  <div className={styles.recTimeField}>
+                    <span className={styles.recTimeLabel}>오픈</span>
+                    <select className={styles.recTimeSelect} value={openH} onChange={(e) => setOpenH(+e.target.value)}>
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i} value={i}>{fmtH(i)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <span className={styles.recTimeSep}>~</span>
+                  <div className={styles.recTimeField}>
+                    <span className={styles.recTimeLabel}>마감</span>
+                    <select className={styles.recTimeSelect} value={closeH} onChange={(e) => setCloseH(+e.target.value)}>
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>{fmtH(i + 1)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* 휴일 */}
+              <div className={styles.recSection}>
+                <div className={styles.recSectionTitle}>휴일</div>
+                <div className={page.chips} style={{ flexWrap: 'wrap' }}>
+                  <button type="button"
+                    className={[page.chip, holidays.length === 0 ? page.chipActive : ''].filter(Boolean).join(' ')}
+                    onClick={() => setHolidays([])}>없음</button>
+                  {DAY_LIST.map((d) => (
+                    <button key={d.key} type="button"
+                      className={[page.chip, holidays.includes(d.key) ? page.chipActive : ''].filter(Boolean).join(' ')}
+                      onClick={() => setHolidays((prev) =>
+                        prev.includes(d.key) ? prev.filter((x) => x !== d.key) : [...prev, d.key]
+                      )}>{d.label}요일</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 시나리오별 감지 항목 */}
+              <div className={styles.recSection}>
+                <div className={styles.recSectionTitle}>주요 감지 항목</div>
+                <div className={styles.recScenarios}>
+                  {SCENARIO_META
+                    .filter((s) => s.key !== 'holiday' || holidays.length > 0)
+                    .map((scenario) => {
+                      const timeLabel = (() => {
+                        if (scenario.key === 'afterClose') return `${fmtH(closeH)} ~ ${fmtH(openH)}`;
+                        if (scenario.key === 'operating')  return `${fmtH(openH)} ~ ${fmtH(closeH)}`;
+                        if (scenario.key === 'atOpen')     return `${fmtH(Math.max(0, openH - 1))} ~ ${fmtH(Math.min(24, openH + 1))}`;
+                        if (scenario.key === 'atClose')    return `${fmtH(Math.max(0, closeH - 1))} ~ ${fmtH(Math.min(24, closeH + 1))}`;
+                        return '하루 종일';
+                      })();
+                      return (
+                        <div key={scenario.key} className={styles.recScenarioCard}>
+                          <div className={styles.recScenarioHead}>
+                            <span className={styles.recScenarioEmoji}>{scenario.emoji}</span>
+                            <span className={styles.recScenarioLabel}>{scenario.label}</span>
+                            <span className={styles.recScenarioTime}>{timeLabel}</span>
+                          </div>
+                          <div className={styles.recScenarioDesc}>{scenario.desc}</div>
+                          <div className={styles.recScenarioConcerns}>
+                            {SCENARIO_CONCERNS.map((c) => {
+                              const active = scenarioConcerns[scenario.key].includes(c.value);
+                              return (
+                                <button key={c.value} type="button"
+                                  className={[styles.recConcernChip, active ? styles.recConcernChipActive : ''].filter(Boolean).join(' ')}
+                                  onClick={() => toggleScenarioConcern(scenario.key, c.value)}>
+                                  {c.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* 생성 예정 타임테이블 미리보기 */}
+              {generatedSlots.length > 0 && (
+                <div className={styles.recPreview}>
+                  <div className={styles.recPreviewTitle}>생성될 타임테이블 ({generatedSlots.length}개)</div>
+                  {generatedSlots.map((slot, i) => {
+                    const scenLabel = SCENARIO_META.find((s) => {
+                      if (s.key === 'afterClose') return slot.startH === closeH;
+                      if (s.key === 'operating')  return slot.startH === openH && slot.endH === closeH;
+                      if (s.key === 'atOpen')     return slot.startH === Math.max(0, openH - 1) && slot.endH !== closeH;
+                      if (s.key === 'atClose')    return slot.startH === Math.max(0, closeH - 1);
+                      return slot.startH === 0 && slot.endH === 24;
+                    });
+                    return (
+                      <div key={i} className={styles.recPreviewSlot}>
+                        <span className={styles.recPreviewEmoji}>{scenLabel?.emoji ?? '📋'}</span>
+                        <span className={styles.recPreviewLabel}>{scenLabel?.label ?? '일정'}</span>
+                        <span className={styles.recPreviewTime}>{fmtH(slot.startH)} ~ {fmtH(slot.endH)}</span>
+                        <span className={styles.recPreviewAlgos}>
+                          {slot.algoIds.map((id) => SCHED_ALGOS.find((a) => a.id === id)?.label ?? id).join(' · ')}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
+
+            {/* 푸터 */}
+            <div className={styles.recModalFoot}>
+              <Button variant="secondary" size="sm" onClick={() => setShowRecommendModal(false)}>닫기</Button>
+              <Button variant="primary" size="sm" onClick={applyRecommendation} disabled={generatedSlots.length === 0}>
+                타임테이블 적용
+              </Button>
+            </div>
           </div>
-        </Card>
+        </>
       )}
     </div>
   );
