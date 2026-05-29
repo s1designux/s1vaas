@@ -126,6 +126,209 @@ const NOTIFY_OPTS: { value: NotifyLevel; label: string }[] = [
 
 type SubTab = 'my-store' | 'recommend';
 
+// ── 감지 일정 ──
+type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+interface ScheduleSlot { id: string; startH: number; endH: number; days: DayKey[]; algoIds: string[]; }
+
+const DAY_LIST: { key: DayKey; label: string }[] = [
+  { key: 'mon', label: '월' }, { key: 'tue', label: '화' }, { key: 'wed', label: '수' },
+  { key: 'thu', label: '목' }, { key: 'fri', label: '금' }, { key: 'sat', label: '토' }, { key: 'sun', label: '일' },
+];
+const ALL_DAYS: DayKey[] = ['mon','tue','wed','thu','fri','sat','sun'];
+const WEEKDAYS: DayKey[] = ['mon','tue','wed','thu','fri'];
+const WEEKENDS: DayKey[] = ['sat','sun'];
+
+const ALGO_COLORS: Record<string, string> = {
+  intrusion: '#3B82F6', fire: '#EF4444', loitering: '#8B5CF6',
+  parking: '#10B981', people_counting: '#06B6D4', motion: '#9CA3AF', virtual_fence: '#F59E0B',
+};
+const SCHED_ALGOS: { id: string; label: string }[] = [
+  { id: 'intrusion', label: '침입 감지' }, { id: 'fire', label: '화재 감지' },
+  { id: 'loitering', label: '배회 감지' }, { id: 'parking', label: '주정차 감시' },
+  { id: 'people_counting', label: '피플카운팅' }, { id: 'motion', label: '움직임 감지' },
+  { id: 'virtual_fence', label: '가상 펜스' },
+];
+const SAMPLE_SCHED: ScheduleSlot[] = [
+  { id: 'ss1', startH: 22, endH: 7,  days: ALL_DAYS, algoIds: ['intrusion','fire'] },
+  { id: 'ss2', startH: 7,  endH: 20, days: ALL_DAYS, algoIds: ['parking','people_counting'] },
+  { id: 'ss3', startH: 20, endH: 22, days: ALL_DAYS, algoIds: ['loitering'] },
+];
+
+function fmtH(h: number) { return `${String(h % 24).padStart(2,'0')}:00`; }
+function fmtDays(days: DayKey[]) {
+  if (days.length === 7) return '매일';
+  if (days.length === 5 && WEEKDAYS.every(d => days.includes(d))) return '평일';
+  if (days.length === 2 && WEEKENDS.every(d => days.includes(d))) return '주말';
+  return days.map(d => DAY_LIST.find(x => x.key === d)?.label ?? '').join('·');
+}
+
+function ScheduleSection({ slots, onAdd, onDelete }: {
+  slots: ScheduleSlot[];
+  onAdd: (s: Omit<ScheduleSlot,'id'>) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState<Omit<ScheduleSlot,'id'>>({ startH: 22, endH: 7, days: ALL_DAYS, algoIds: [] });
+  const patch = (p: Partial<Omit<ScheduleSlot,'id'>>) => setForm(prev => ({ ...prev, ...p }));
+
+  const toggleAlgo = (id: string) =>
+    patch({ algoIds: form.algoIds.includes(id) ? form.algoIds.filter(x => x !== id) : [...form.algoIds, id] });
+  const toggleDay = (d: DayKey) =>
+    patch({ days: form.days.includes(d) ? form.days.filter(x => x !== d) : [...form.days, d] });
+
+  const handleSave = () => {
+    if (!form.algoIds.length || !form.days.length) return;
+    onAdd(form);
+    setAdding(false);
+    setForm({ startH: 22, endH: 7, days: ALL_DAYS, algoIds: [] });
+  };
+
+  const START_H = Array.from({ length: 24 }, (_, i) => i);
+  const END_H   = Array.from({ length: 24 }, (_, i) => i + 1);
+
+  // 타임라인 세그먼트
+  const segments = slots.flatMap(s => {
+    const c = ALGO_COLORS[s.algoIds[0]] ?? '#9CA3AF';
+    if (s.endH > s.startH)
+      return [{ left: s.startH / 24 * 100, w: (s.endH - s.startH) / 24 * 100, c, key: s.id }];
+    return [
+      { left: s.startH / 24 * 100, w: (24 - s.startH) / 24 * 100, c, key: `${s.id}a` },
+      { left: 0, w: s.endH / 24 * 100, c, key: `${s.id}b` },
+    ];
+  });
+
+  const dEq = (a: DayKey[], b: DayKey[]) => [...a].sort().join() === [...b].sort().join();
+
+  return (
+    <Card title="감지 일정">
+      {/* 24h 타임라인 바 */}
+      <div className={styles.schedBar}>
+        <div className={styles.schedBarTrack}>
+          {segments.length === 0 && <div className={styles.schedBarEmpty} />}
+          {segments.map(seg => (
+            <div key={seg.key} className={styles.schedBarSeg}
+              style={{ left: `${seg.left}%`, width: `${seg.w}%`, background: seg.c }} />
+          ))}
+        </div>
+        <div className={styles.schedBarTicks}>
+          {[0, 6, 12, 18, 24].map(h => (
+            <span key={h} className={styles.schedBarTick} style={{ left: `${h / 24 * 100}%` }}>
+              {String(h).padStart(2,'0')}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* 슬롯 목록 */}
+      <div className={styles.schedList}>
+        {slots.length === 0 && <p className={styles.schedEmpty}>설정된 감지 일정이 없습니다. 아래 '일정 추가'를 눌러 시작하세요.</p>}
+        {slots.map(slot => (
+          <div key={slot.id} className={styles.schedSlot}>
+            <div className={styles.schedSlotDot} style={{ background: ALGO_COLORS[slot.algoIds[0]] ?? '#9CA3AF' }} />
+            <div className={styles.schedSlotMeta}>
+              <span className={styles.schedSlotTime}>
+                {fmtH(slot.startH)} ~ {fmtH(slot.endH)}
+                {slot.endH < slot.startH && <span className={styles.schedNextDay}> +1일</span>}
+              </span>
+              <span className={styles.schedSlotDays}>{fmtDays(slot.days)}</span>
+            </div>
+            <div className={styles.schedSlotAlgos}>
+              {slot.algoIds.map(id => (
+                <span key={id} className={styles.schedAlgoChip}
+                  style={{ background: `${ALGO_COLORS[id] ?? '#9CA3AF'}18`, color: ALGO_COLORS[id] ?? '#9CA3AF', borderColor: `${ALGO_COLORS[id] ?? '#9CA3AF'}44` }}>
+                  {SCHED_ALGOS.find(a => a.id === id)?.label ?? id}
+                </span>
+              ))}
+            </div>
+            <button className={styles.schedDeleteBtn} onClick={() => onDelete(slot.id)} title="삭제">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {adding ? (
+        <div className={styles.schedForm}>
+          {/* 시간 */}
+          <div className={styles.schedFormRow}>
+            <span className={styles.schedFormLabel}>시간</span>
+            <div className={styles.schedFormTimeRow}>
+              <select className={styles.schedTimeSelect} value={form.startH} onChange={e => patch({ startH: +e.target.value })}>
+                {START_H.map(h => <option key={h} value={h}>{fmtH(h)}</option>)}
+              </select>
+              <span className={styles.schedTimeTilde}>~</span>
+              <select className={styles.schedTimeSelect} value={form.endH} onChange={e => patch({ endH: +e.target.value })}>
+                {END_H.map(h => <option key={h} value={h}>{fmtH(h)}</option>)}
+              </select>
+              {form.endH <= form.startH && (
+                <span className={styles.schedNextDay}>익일 {fmtH(form.endH)}에 종료</span>
+              )}
+            </div>
+          </div>
+
+          {/* 요일 */}
+          <div className={styles.schedFormRow}>
+            <span className={styles.schedFormLabel}>요일</span>
+            <div className={styles.schedFormDaysRow}>
+              {[
+                { label: '매일', days: ALL_DAYS },
+                { label: '평일', days: WEEKDAYS },
+                { label: '주말', days: WEEKENDS },
+              ].map(p => (
+                <button key={p.label}
+                  className={[styles.schedPresetBtn, dEq(form.days, p.days) ? styles.schedPresetBtnActive : ''].filter(Boolean).join(' ')}
+                  onClick={() => patch({ days: p.days })}>
+                  {p.label}
+                </button>
+              ))}
+              <span className={styles.schedDaySep} />
+              {DAY_LIST.map(d => (
+                <button key={d.key}
+                  className={[styles.schedDayBtn, form.days.includes(d.key) ? styles.schedDayBtnActive : ''].filter(Boolean).join(' ')}
+                  onClick={() => toggleDay(d.key)}>
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 감지 기능 */}
+          <div className={styles.schedFormRow}>
+            <span className={styles.schedFormLabel}>감지 기능</span>
+            <div className={styles.schedFormAlgosRow}>
+              {SCHED_ALGOS.map(a => {
+                const active = form.algoIds.includes(a.id);
+                return (
+                  <button key={a.id}
+                    className={[styles.schedAlgoBtn, active ? styles.schedAlgoBtnActive : ''].filter(Boolean).join(' ')}
+                    style={active ? { background: `${ALGO_COLORS[a.id]}15`, borderColor: ALGO_COLORS[a.id], color: ALGO_COLORS[a.id] } : {}}
+                    onClick={() => toggleAlgo(a.id)}>
+                    {a.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={styles.schedFormActions}>
+            <button className={styles.schedSaveBtn} disabled={!form.algoIds.length || !form.days.length} onClick={handleSave}>저장</button>
+            <button className={styles.schedCancelBtn} onClick={() => setAdding(false)}>취소</button>
+          </div>
+        </div>
+      ) : (
+        <button className={styles.schedAddBtn} onClick={() => setAdding(true)}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          일정 추가
+        </button>
+      )}
+    </Card>
+  );
+}
+
 export default function AiSafety() {
   const cameras = useDataStore((s) => s.cameras);
   const sites    = useDataStore((s) => s.sites);
@@ -136,7 +339,7 @@ export default function AiSafety() {
   const removeAlgorithmPolygon = useDataStore((s) => s.removeAlgorithmPolygon);
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState<SubTab>('my-store');
+  const [activeTab, setActiveTab] = useState<SubTab>('recommend');
 
   // 추천 입력
   const [industry, setIndustry] = useState('cvs');
@@ -162,6 +365,14 @@ export default function AiSafety() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [drawMode, setDrawMode] = useState(false);
   const [extras, setExtras] = useState<Record<string, ExtraCfg>>({});
+  const [camSchedules, setCamSchedules] = useState<Record<string, ScheduleSlot[]>>(
+    () => cameras[0]?.id ? { [cameras[0].id]: SAMPLE_SCHED } : {}
+  );
+  const schedule = camSchedules[activeCamId] ?? [];
+  const addSlot = (s: Omit<ScheduleSlot,'id'>) =>
+    setCamSchedules(p => ({ ...p, [activeCamId]: [...(p[activeCamId] ?? []), { ...s, id: `ss${Date.now()}` }] }));
+  const deleteSlot = (id: string) =>
+    setCamSchedules(p => ({ ...p, [activeCamId]: (p[activeCamId] ?? []).filter(s => s.id !== id) }));
 
   const cam = cameras.find((c) => c.id === activeCamId);
   const camAlgos = useMemo(() => algorithms.filter((a) => a.cameraId === activeCamId), [algorithms, activeCamId]);
@@ -430,17 +641,17 @@ export default function AiSafety() {
       <div className={styles.subNavRow}>
         <button
           type="button"
-          className={[styles.subChip, activeTab === 'my-store' ? styles.subChipActive : ''].filter(Boolean).join(' ')}
-          onClick={() => setActiveTab('my-store')}
-        >
-          내 매장 AI설정
-        </button>
-        <button
-          type="button"
           className={[styles.subChip, activeTab === 'recommend' ? styles.subChipActive : ''].filter(Boolean).join(' ')}
           onClick={() => setActiveTab('recommend')}
         >
           추천 안심 설정
+        </button>
+        <button
+          type="button"
+          className={[styles.subChip, activeTab === 'my-store' ? styles.subChipActive : ''].filter(Boolean).join(' ')}
+          onClick={() => setActiveTab('my-store')}
+        >
+          내 매장 AI설정
         </button>
       </div>
 
@@ -555,6 +766,8 @@ export default function AiSafety() {
                 </div>
               </div>
             </div>
+
+            <ScheduleSection slots={schedule} onAdd={addSlot} onDelete={deleteSlot} />
 
             <Card>
               <div className={styles.notice}>

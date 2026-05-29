@@ -123,15 +123,9 @@
 /* ===== 2-column layout ===== */
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
   align-items: start;
-}
-
-@media (max-width: 1200px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr) 340px;
-  }
 }
 
 @media (max-width: 1024px) {

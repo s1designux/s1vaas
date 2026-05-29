@@ -443,3 +443,330 @@
   color: var(--color-action);
   margin-top: 1px;
 }
+
+/* ===== 감지 일정 ===== */
+
+/* 24h 타임라인 바 */
+.schedBar {
+  margin-bottom: var(--spacing-16);
+}
+
+.schedBarTrack {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-default);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.schedBarSeg {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+
+.schedBarSeg:hover { opacity: 1; }
+
+.schedBarEmpty {
+  position: absolute;
+  inset: 0;
+}
+
+.schedBarTicks {
+  position: relative;
+  height: 16px;
+}
+
+.schedBarTick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  line-height: 1;
+}
+
+/* 슬롯 목록 */
+.schedList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  margin-bottom: var(--spacing-12);
+}
+
+.schedEmpty {
+  font-size: var(--font-size-14);
+  color: var(--color-text-tertiary);
+  text-align: center;
+  padding: var(--spacing-16) 0;
+}
+
+.schedSlot {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding: var(--spacing-10) var(--spacing-14);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-default);
+}
+
+.schedSlotDot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.schedSlotMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.schedSlotTime {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.schedSlotDays {
+  font-size: var(--font-size-12);
+  color: var(--color-text-tertiary);
+}
+
+.schedNextDay {
+  font-size: var(--font-size-12);
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-regular);
+}
+
+.schedSlotAlgos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  flex: 1;
+}
+
+.schedAlgoChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.schedDeleteBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.schedDeleteBtn:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-status-error);
+}
+
+/* 추가 폼 */
+.schedForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-14);
+  padding: var(--spacing-16);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-subtle);
+  margin-bottom: var(--spacing-12);
+}
+
+.schedFormRow {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: var(--spacing-12);
+  align-items: flex-start;
+}
+
+.schedFormLabel {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  padding-top: 6px;
+}
+
+.schedFormTimeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  flex-wrap: wrap;
+}
+
+.schedTimeSelect {
+  appearance: none;
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: var(--font-size-14);
+  font-family: var(--font-mono);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  outline: none;
+}
+
+.schedTimeSelect:focus {
+  border-color: var(--color-action-primary-default);
+}
+
+.schedTimeTilde {
+  font-size: var(--font-size-14);
+  color: var(--color-text-tertiary);
+}
+
+.schedFormDaysRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  padding-top: 2px;
+}
+
+.schedPresetBtn {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-default);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.schedPresetBtnActive {
+  background: var(--color-action-primary-default);
+  border-color: var(--color-action-primary-default);
+  color: #fff;
+}
+
+.schedDaySep {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border-default);
+  margin: 0 4px;
+}
+
+.schedDayBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-default);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedDayBtnActive {
+  background: var(--color-action-primary-default);
+  border-color: var(--color-action-primary-default);
+  color: #fff;
+}
+
+.schedFormAlgosRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-6);
+  padding-top: 2px;
+}
+
+.schedAlgoBtn {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-default);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.schedFormActions {
+  display: flex;
+  gap: var(--spacing-8);
+  justify-content: flex-end;
+}
+
+.schedSaveBtn {
+  padding: 6px 18px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-action-primary-default);
+  color: #fff;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.schedSaveBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.schedCancelBtn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-default);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-14);
+  cursor: pointer;
+}
+
+/* 일정 추가 버튼 */
+.schedAddBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  width: 100%;
+  padding: var(--spacing-10) var(--spacing-14);
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.schedAddBtn:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-action-primary-default);
+  border-color: var(--color-action-primary-default);
+}

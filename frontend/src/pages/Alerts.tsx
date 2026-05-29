@@ -1,7 +1,6 @@
 // TODO: replace with fetch('/api/v1/alerts')
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { useCountUp } from '@/hooks/useCountUp';
 import { useToast } from '@/hooks/useToast';
 import { relativeTime, formatDateTime } from '@/lib/time';
 import { alertsSeed } from '@/mock/alerts';
@@ -133,41 +132,6 @@ function CctvView({
   );
 }
 
-// ===== KPI card =====
-function Kpi({
-  label,
-  value,
-  suffix,
-  tone,
-}: {
-  label: string;
-  value: number;
-  suffix?: string;
-  tone?: 'danger' | 'default';
-}) {
-  const v = useCountUp(value);
-  return (
-    <div className={[page.kpi, tone === 'danger' && value > 0 ? styles.kpiDanger : ''].filter(Boolean).join(' ')}>
-      <div className={page.kpiLabel}>{label}</div>
-      <div className={`${page.kpiValue} tabular`}>
-        {v.toLocaleString()}
-        {suffix && (
-          <span
-            style={{
-              fontSize: 'var(--font-size-16)',
-              color: tone === 'danger' && value > 0 ? 'var(--color-danger)' : 'var(--color-text-muted)',
-              marginLeft: 'var(--spacing-4)',
-              fontWeight: 'var(--font-weight-medium)',
-            }}
-          >
-            {suffix}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ===== Main component =====
 export default function Alerts() {
   const toast = useToast();
@@ -177,25 +141,6 @@ export default function Alerts() {
   const [typeFilter, setTypeFilter] = useState<AlertType | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(alertsSeed[0]?.id ?? null);
   const [showLive, setShowLive] = useState(false);
-
-  // ===== KPI =====
-  const today0 = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.getTime();
-  }, []);
-
-  const todayDangerCount = useMemo(
-    () =>
-      alerts.filter((a) => {
-        const isToday = Date.parse(a.occurredAt) >= today0;
-        const isDanger = a.priority === 'critical' || a.priority === 'high';
-        return isToday && isDanger;
-      }).length,
-    [alerts, today0],
-  );
-
-  const openCount = useMemo(() => alerts.filter((a) => a.status === 'open').length, [alerts]);
 
   // ===== risk counts for tabs =====
   const riskCounts = useMemo(() => {
@@ -274,12 +219,6 @@ export default function Alerts() {
   // ===== Render =====
   return (
     <div className={page.page}>
-      {/* ===== KPI row (2개만) ===== */}
-      <div className={page.kpiRow2}>
-        <Kpi label="오늘 위험 알림" value={todayDangerCount} suffix="건" tone="danger" />
-        <Kpi label="미확인 건수" value={openCount} suffix="건" />
-      </div>
-
       {/* ===== 필터바 — 위험도 탭 + 유형 칩 ===== */}
       <div className={styles.filterBar}>
         {/* 위험도 탭 */}
