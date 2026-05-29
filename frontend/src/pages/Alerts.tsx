@@ -311,27 +311,6 @@ export default function Alerts() {
 
   return (
     <div className={page.page}>
-      <div className={page.header}>
-        <div className={page.actions}>
-          <Button variant="secondary" size="sm" onClick={resetFilters}>
-            필터 초기화
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => toast.info('내보내기', `${filtered.length}건을 CSV로 내보냅니다.`)}
-          >
-            내보내기
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => toast.info('룰 만들기', '룰 빌더 모듈은 추후 연결됩니다.')}
-          >
-            + 룰 만들기
-          </Button>
-        </div>
-      </div>
 
       <div className={page.kpiRow}>
         <Kpi label="오늘 발생" value={todayCount} suffix="건" meta="자정 ~ 현재" />

@@ -546,17 +546,19 @@ export default function Site() {
                       );
                     })}
 
-                    {/* 미지정 */}
-                    <button
-                      className={[styles.siteRow, styles.siteRowUnassigned, sel?.kind === 'unassigned' && sel.id === c.id ? styles.siteRowActive : ''].filter(Boolean).join(' ')}
-                      onClick={() => select({ kind: 'unassigned', id: c.id })}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: 'var(--color-text-tertiary)' }}>
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                      </svg>
-                      <span className={[styles.siteLabel, styles.siteLabelMuted, sel?.kind === 'unassigned' && sel.id === c.id ? styles.siteLabelActive : ''].filter(Boolean).join(' ')}>미지정</span>
-                      <span className={styles.siteCount}>{unassigned.length}</span>
-                    </button>
+                    {/* 미지정 카메라 — 미지정 카메라가 있을 때만 표출 */}
+                    {unassigned.length > 0 && (
+                      <button
+                        className={[styles.siteRow, styles.siteRowUnassigned, sel?.kind === 'unassigned' && sel.id === c.id ? styles.siteRowActive : ''].filter(Boolean).join(' ')}
+                        onClick={() => select({ kind: 'unassigned', id: c.id })}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: 'var(--color-text-tertiary)' }}>
+                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                        <span className={[styles.siteLabel, styles.siteLabelMuted, sel?.kind === 'unassigned' && sel.id === c.id ? styles.siteLabelActive : ''].filter(Boolean).join(' ')}>미지정 카메라</span>
+                        <span className={styles.siteCount}>{unassigned.length}</span>
+                      </button>
+                    )}
 
                     {/* 사이트 추가 */}
                     <button
@@ -794,7 +796,7 @@ export default function Site() {
                                 block
                                 onClick={() => toggleFavoriteCamera(f.id, c.id)}
                               >
-                                제거
+                                즐겨찾기에서 빼기
                               </Button>
                             }
                           />

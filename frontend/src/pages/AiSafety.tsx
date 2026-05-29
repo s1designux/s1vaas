@@ -544,13 +544,15 @@ export default function AiSafety() {
                   </span>
                 </div>
 
-                <Card title="기본 안심 기능">
-                  <div className={styles.algoGrid}>{basicAlgos.map(renderCard)}</div>
-                </Card>
+                <div className={styles.cardGrid}>
+                  <Card title="기본 안심 기능">
+                    <div className={styles.algoGrid}>{basicAlgos.map(renderCard)}</div>
+                  </Card>
 
-                <Card title="AI 특화 기능">
-                  <div className={styles.algoGrid}>{aiAlgos.map(renderCard)}</div>
-                </Card>
+                  <Card title="AI 특화 기능">
+                    <div className={styles.algoGrid}>{aiAlgos.map(renderCard)}</div>
+                  </Card>
+                </div>
               </div>
             </div>
 

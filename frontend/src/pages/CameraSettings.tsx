@@ -452,7 +452,7 @@ export default function CameraSettings() {
               <div className={cs.accordionCard}>
                 <button className={cs.accordionHeader} onClick={() => toggleAccordion(uid)}>
                   <span className={cs.accordionTitle}>
-                    미지정
+                    미지정 카메라
                     <span className={cs.accordionCount}>{unassigned.length}</span>
                   </span>
                   <svg

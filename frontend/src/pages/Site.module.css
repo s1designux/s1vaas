@@ -144,7 +144,7 @@
   background: var(--color-bg-muted);
 }
 
-.siteRowUnassigned { border-bottom: none; }
+.siteRowUnassigned { border-bottom: 1px solid var(--color-border-subtle); }
 
 .siteLabel {
   flex: 1;
@@ -222,26 +222,25 @@
 .addSiteRow {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
+  gap: var(--spacing-8, 8px);
+  padding: var(--spacing-12, 12px) var(--spacing-20, 20px);
   border: none;
   background: transparent;
   width: 100%;
   cursor: pointer;
   text-align: left;
-  font-size: var(--font-size-13);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-tertiary);
-  border-top: 1px dashed var(--color-border-default);
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .addSiteRow:hover {
-  background: color-mix(in srgb, var(--color-action-primary-default) 6%, transparent);
-  color: var(--color-action-primary-default);
+  background: var(--color-bg-subtle);
 }
 
 .addSiteRowIcon {
-  font-size: 15px;
+  font-size: var(--font-size-14);
   line-height: 1;
   flex-shrink: 0;
 }

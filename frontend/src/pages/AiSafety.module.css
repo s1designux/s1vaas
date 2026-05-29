@@ -41,7 +41,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-6);
-  margin-bottom: var(--spacing-12);
+  margin-bottom: var(--spacing-6);
   flex-wrap: wrap;
 }
 
@@ -209,6 +209,13 @@
 }
 
 /* ===== 알고리즘 카드 ===== */
+.cardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-12, 12px);
+  align-items: start;
+}
+
 .algoGrid {
   display: flex;
   flex-direction: column;
