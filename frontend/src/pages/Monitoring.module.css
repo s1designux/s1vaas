@@ -846,7 +846,8 @@
 .videoFrame {
   position: relative;
   aspect-ratio: 16 / 9;
-  width: 100%;
+  width: 66.6667%;
+  align-self: center;
   flex-shrink: 0;
   background: var(--color-video-bg);
   border-radius: var(--radius-md);
