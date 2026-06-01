@@ -1,6 +1,19 @@
 export type AlertStatus = 'open' | 'ack' | 'resolved' | 'snoozed';
 export type AlertPriority = 'low' | 'mid' | 'high' | 'critical';
-export type AlertType = 'intrusion' | 'fire' | 'emergency' | 'offline' | 'storage' | 'tamper';
+// AI 알고리즘 타입 (안심 AI 설정의 SCENARIO_CONCERNS와 동기) + 시스템 타입(emergency/offline/storage/tamper)
+export type AlertType =
+  | 'intrusion'
+  | 'loitering'
+  | 'virtual_fence'
+  | 'fire'
+  | 'parking'
+  | 'people_counting'
+  | 'privacy'
+  | 'motion'
+  | 'emergency'
+  | 'offline'
+  | 'storage'
+  | 'tamper';
 
 export interface SecurityAlert {
   id: string;

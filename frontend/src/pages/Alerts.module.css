@@ -14,6 +14,7 @@
   top: 0;
   z-index: 10;
   background: var(--color-bg-home);
+  padding-top: var(--space-4);
   padding-bottom: var(--space-3);
 }
 
@@ -154,10 +155,10 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--color-danger);
+  background: var(--color-accent);
   margin-left: auto;
   flex-shrink: 0;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+  box-shadow: 0 0 0 3px var(--color-accent-muted, rgba(21, 83, 198, 0.18));
 }
 
 /* 메시지 */

@@ -19,19 +19,6 @@ const PRIORITY_TO_RISK: Record<AlertPriority, RiskLevel> = {
   low: 'info',
 };
 
-const RISK_EMOJI: Record<RiskLevel, string> = {
-  danger: '🔴',
-  caution: '🟡',
-  info: '🔵',
-};
-
-const RISK_DISPLAY: Record<AlertPriority, string> = {
-  critical: '위험',
-  high: '위험',
-  mid: '주의',
-  low: '알림',
-};
-
 const STATUS_LABEL: Record<AlertStatus, string> = {
   open: '미확인',
   ack: '확인중',
@@ -40,8 +27,16 @@ const STATUS_LABEL: Record<AlertStatus, string> = {
 };
 
 const TYPE_LABEL: Record<AlertType, string> = {
-  intrusion: '침입',
-  fire: '화재',
+  // AI 알고리즘 (안심 AI 설정 SCENARIO_CONCERNS와 동기)
+  intrusion: '침입·도난',
+  loitering: '배회·서성임',
+  virtual_fence: '경계선 침범',
+  fire: '화재·연기',
+  parking: '불법 주정차',
+  people_counting: '방문객 수',
+  privacy: '사생활 보호',
+  motion: '움직임 기록',
+  // 시스템 타입 (칩 필터에는 노출하지 않음)
   emergency: '비상',
   offline: '오프라인',
   storage: '저장소',
@@ -50,12 +45,30 @@ const TYPE_LABEL: Record<AlertType, string> = {
 
 const TYPE_ICON: Record<AlertType, string> = {
   intrusion: '🚨',
+  loitering: '🚶',
+  virtual_fence: '🚧',
   fire: '🔥',
+  parking: '🅿️',
+  people_counting: '👥',
+  privacy: '🛡️',
+  motion: '📈',
   emergency: '🆘',
   offline: '📷',
   storage: '💾',
   tamper: '⚠️',
 };
+
+// 칩 필터에 노출할 AI 알고리즘 타입만 추림
+const AI_ALGO_TYPES: AlertType[] = [
+  'intrusion',
+  'loitering',
+  'virtual_fence',
+  'fire',
+  'parking',
+  'people_counting',
+  'privacy',
+  'motion',
+];
 
 // ===== CCTV mock view =====
 function CctvView({
@@ -207,7 +220,7 @@ export default function Alerts() {
           <Chip selected={typeFilter === null} onClick={() => setTypeFilter(null)}>
             전체 유형
           </Chip>
-          {(Object.keys(TYPE_LABEL) as AlertType[]).map((t) => (
+          {AI_ALGO_TYPES.map((t) => (
             <Chip
               key={t}
               selected={typeFilter === t}
@@ -236,7 +249,6 @@ export default function Alerts() {
           ) : (
             filtered.map((a) => {
               const isSelected = a.id === selectedId;
-              const risk = PRIORITY_TO_RISK[a.priority];
               return (
                 <div
                   key={a.id}
@@ -258,13 +270,6 @@ export default function Alerts() {
                 >
                   <div className={styles.alertBody}>
                     <div className={styles.alertTopRow}>
-                      <span
-                        className={[styles.riskPill, styles[`riskPill_${risk}`]]
-                          .filter(Boolean)
-                          .join(' ')}
-                      >
-                        {RISK_EMOJI[risk]} {RISK_DISPLAY[a.priority]}
-                      </span>
                       <span className={styles.typeTag}>
                         {TYPE_ICON[a.type]} {TYPE_LABEL[a.type]}
                       </span>
@@ -329,16 +334,6 @@ export default function Alerts() {
               {/* 알림 정보 */}
               <div className={styles.detailBody}>
                 <div className={styles.detailTitleRow}>
-                  <span
-                    className={[
-                      styles.riskPill,
-                      styles[`riskPill_${PRIORITY_TO_RISK[selected.priority]}`],
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    {RISK_EMOJI[PRIORITY_TO_RISK[selected.priority]]} {RISK_DISPLAY[selected.priority]}
-                  </span>
                   <span className={styles.detailStatus}>
                     {STATUS_LABEL[selected.status]}
                   </span>

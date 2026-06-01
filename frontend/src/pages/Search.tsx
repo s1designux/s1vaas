@@ -5,8 +5,9 @@ import { Chip } from '@/components/ui/Chip';
 import { Input } from '@/components/ui/Input';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { useToast } from '@/hooks/useToast';
-import { CAM_OPTIONS, MOCK_RESULTS_BY_QUERY, SITE_OPTIONS } from '@/mock/searchResults';
+import { MOCK_RESULTS_BY_QUERY } from '@/mock/searchResults';
 import type { SearchResult, SearchSensitivity } from '@/types/search';
+import { useDataStore } from '@/store/dataStore';
 import page from './Page.module.css';
 import styles from './Search.module.css';
 
@@ -169,6 +170,38 @@ function SwatchBtn({ item, active, onClick }: {
 
 export default function Search() {
   const toast = useToast();
+
+  // 계약처/사이트/카메라 트리 — 사이트 관리·실시간 보기와 동일하게 현재 고객의 모든 계약처와 그 하위 사이트·카메라를 노출
+  const contracts = useDataStore((s) => s.contracts);
+  const allSites = useDataStore((s) => s.sites);
+  const allCameras = useDataStore((s) => s.cameras);
+  const currentCompanyId = useDataStore((s) => s.currentCompanyId);
+  const myContracts = useMemo(
+    () => contracts.filter((c) => c.companyId === currentCompanyId),
+    [contracts, currentCompanyId],
+  );
+  const mySitesByContract = useMemo(() => {
+    const m = new Map<string, typeof allSites>();
+    for (const c of myContracts) m.set(c.id, []);
+    for (const s of allSites) {
+      const arr = m.get(s.contractId);
+      if (arr) arr.push(s);
+    }
+    return m;
+  }, [allSites, myContracts]);
+  const myCamerasBySite = useMemo(() => {
+    const siteIdSet = new Set<string>();
+    mySitesByContract.forEach((sites) => sites.forEach((s) => siteIdSet.add(s.id)));
+    const m = new Map<string, typeof allCameras>();
+    for (const cam of allCameras) {
+      if (cam.siteId !== null && siteIdSet.has(cam.siteId)) {
+        const arr = m.get(cam.siteId) ?? [];
+        arr.push(cam);
+        m.set(cam.siteId, arr);
+      }
+    }
+    return m;
+  }, [allCameras, mySitesByContract]);
 
   const [input, setInput]         = useState('');
   const [phase, setPhase]         = useState<SearchPhase>('idle');
@@ -538,41 +571,60 @@ export default function Search() {
                 </div>
               </div>
 
-              {/* 카메라 트리 */}
+              {/* 카메라 트리 — 사이트 관리·실시간 보기와 연동: 계약처(N계약번호) ▸ 사이트 ▸ 카메라 */}
               <div className={styles.sbSection}>
                 <div className={styles.sbTitle}>카메라</div>
-                {SITE_OPTIONS.map((site) => {
-                  const siteCams = CAM_OPTIONS.filter((c) => c.siteId === site.id);
+                {(() => {
                   const resultCamIds = new Set(results.map((r) => r.cameraId));
-                  const availCams = siteCams.filter((c) => resultCamIds.has(c.id));
-                  if (availCams.length === 0) return null;
-                  const isOpen = openSiteIds.has(site.id);
-                  return (
-                    <div key={site.id} className={styles.sbSite}>
-                      <button type="button" className={styles.sbSiteBtn} onClick={() => toggleSite(site.id)}>
-                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={[styles.sbSiteChevron, isOpen ? styles.sbSiteChevronOpen : ''].filter(Boolean).join(' ')}>
-                          <path d="M9 18l6-6-6-6"/>
-                        </svg>
-                        <span>{site.name}</span>
-                        <span className={styles.sbSiteCount}>{availCams.length}</span>
-                      </button>
-                      {isOpen && availCams.map((cam) => {
-                        const cnt = results.filter((r) => r.cameraId === cam.id).length;
-                        return (
-                          <div key={cam.id} className={styles.sbCamRow}>
-                            <Checkbox
-                              checked={filterCamIds.has(cam.id)}
-                              onChange={() => toggleCam(cam.id)}
-                            >
-                              {cam.name}
-                            </Checkbox>
-                            <span className={styles.sbCamCount}>{cnt}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
+                  return myContracts.map((contract) => {
+                    const cSites = mySitesByContract.get(contract.id) ?? [];
+                    // 이 계약처에 결과가 있는 카메라가 하나라도 있는지 확인
+                    const contractAvail = cSites.flatMap((s) =>
+                      (myCamerasBySite.get(s.id) ?? []).filter((c) => resultCamIds.has(c.id)),
+                    );
+                    if (contractAvail.length === 0) return null;
+                    return (
+                      <div key={contract.id} className={styles.sbContract}>
+                        <div className={styles.sbContractHead}>
+                          <span className={styles.sbContractName}>{contract.name}</span>
+                          <span className={styles.sbContractCode}>{contract.code}</span>
+                          <span className={styles.sbSiteCount}>{contractAvail.length}</span>
+                        </div>
+                        {cSites.map((site) => {
+                          const siteCams = myCamerasBySite.get(site.id) ?? [];
+                          const availCams = siteCams.filter((c) => resultCamIds.has(c.id));
+                          if (availCams.length === 0) return null;
+                          const isOpen = openSiteIds.has(site.id);
+                          return (
+                            <div key={site.id} className={styles.sbSite}>
+                              <button type="button" className={styles.sbSiteBtn} onClick={() => toggleSite(site.id)}>
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={[styles.sbSiteChevron, isOpen ? styles.sbSiteChevronOpen : ''].filter(Boolean).join(' ')}>
+                                  <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                                <span>{site.name}</span>
+                                <span className={styles.sbSiteCount}>{availCams.length}</span>
+                              </button>
+                              {isOpen && availCams.map((cam) => {
+                                const cnt = results.filter((r) => r.cameraId === cam.id).length;
+                                return (
+                                  <div key={cam.id} className={styles.sbCamRow}>
+                                    <Checkbox
+                                      checked={filterCamIds.has(cam.id)}
+                                      onChange={() => toggleCam(cam.id)}
+                                    >
+                                      {cam.name}
+                                    </Checkbox>
+                                    <span className={styles.sbCamCount}>{cnt}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
 
               {/* 정렬 */}
