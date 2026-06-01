@@ -386,9 +386,14 @@ export default function Site() {
   const ownerId = currentCompanyId;
 
   const [openContractId, setOpenContractId] = useState<string | null>(() => myContracts[0]?.id ?? null);
-  const [sel, setSel] = useState<Sel>(() =>
-    myContracts[0] ? { kind: 'contract', id: myContracts[0].id } : null,
-  );
+  const [sel, setSel] = useState<Sel>(() => {
+    const firstContract = myContracts[0];
+    if (!firstContract) return null;
+    const firstSite = sites.find((s) => s.contractId === firstContract.id) ?? null;
+    return firstSite
+      ? { kind: 'site', id: firstSite.id }
+      : { kind: 'contract', id: firstContract.id };
+  });
   const [showAddModal, setShowAddModal] = useState(false);
   const [showFavModal, setShowFavModal] = useState(false);
   // 드래그 순서변경

@@ -5,7 +5,7 @@
   border-color: rgba(220, 38, 38, 0.35) !important;
 }
 
-/* ===== 필터바 ===== */
+/* ===== 필터바 — 위험도 라인탭 + 유형 칩 (sticky 한 덩어리) ===== */
 .filterBar {
   display: flex;
   flex-direction: column;
@@ -13,9 +13,8 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--color-bg-app, var(--color-surface));
+  background: var(--color-bg-home);
   padding-bottom: var(--space-3);
-  margin-bottom: calc(-1 * var(--space-3));
   /* DS 라인탭 배경 토큰을 이 페이지에서만 비활성화 */
   --tab-bg: transparent;
 }

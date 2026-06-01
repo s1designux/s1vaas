@@ -93,11 +93,10 @@ p {
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(2px);
+    /* transform 제거 — translateY가 sticky 컨테이닝 블록을 깨뜨림 */
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 

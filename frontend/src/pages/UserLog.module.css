@@ -34,22 +34,9 @@
   box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
+/* 폭만 지정 — 배경/보더/반경 등은 DatePicker 내부 trigger 가 담당 (중첩 박스 방지) */
 .filterDate {
   width: 130px;
-  height: 32px;
-  padding: 0 8px;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-sans);
-  outline: none;
-  transition: border-color var(--transition-fast);
-}
-
-.filterDate:focus {
-  border-color: var(--color-accent);
 }
 
 .filterSelect {
@@ -119,7 +106,7 @@
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-card-md, 10px);
   box-shadow: var(--shadow-card);
-  padding: var(--spacing-16) var(--spacing-24) var(--spacing-12);
+  padding: var(--spacing-16) var(--spacing-24) var(--spacing-24);
 }
 
 /* ── Table cell overrides ── */

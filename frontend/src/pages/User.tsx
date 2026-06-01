@@ -9,12 +9,14 @@ import { Drawer } from '@/components/ui/Drawer';
 import { Modal } from '@/components/ui/Modal';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
+import { Tabs } from '@/components/ui/Tabs';
+import { DataListTable } from '@/components/ui/DataListTable';
 import { Select } from '@/components/ui/Select';
-import { useCountUp } from '@/hooks/useCountUp';
 import { useToast } from '@/hooks/useToast';
 import { formatDateTime } from '@/lib/time';
 import type { AppUser, UserRole, UserStatus } from '@/types';
 import page from './Page.module.css';
+import logStyles from './UserLog.module.css';
 import form from '@/components/ui/Form.module.css';
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -62,59 +64,6 @@ const PERM_MATRIX: Record<UserRole, Record<string, boolean>> = {
   readonly:  { view: true,  record: false, config: false, site: false, user: false, audit: false },
 };
 
-/** 페이지 상단 breadcrumb */
-function Breadcrumb({ items }: { items: string[] }) {
-  return (
-    <nav className={page.breadcrumb} aria-label="breadcrumb">
-      {items.map((it, i) => (
-        <span key={i} className={page.breadcrumbItem}>
-          {i > 0 && <span className={page.breadcrumbSep}>›</span>}
-          <span className={i === items.length - 1 ? page.breadcrumbLast : undefined}>{it}</span>
-        </span>
-      ))}
-    </nav>
-  );
-}
-
-function UserKpi({
-  label,
-  value,
-  meta,
-  variant,
-}: {
-  label: string;
-  value: number;
-  meta?: string;
-  variant: 'total' | 'active';
-}) {
-  const v = useCountUp(value);
-  return (
-    <div className={page.userKpi}>
-      <div className={page.kpiRowTop}>
-        <div className={page.kpiLabel}>{label}</div>
-        <div className={[page.kpiIconBadge, variant === 'total' ? page.kpiIconBadge_site : page.kpiIconBadge_uptime].join(' ')}>
-          {variant === 'total' ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-          )}
-        </div>
-      </div>
-      <div className={`${page.kpiValueLg} tabular`}>
-        {v.toLocaleString()}
-        <span className={page.kpiUnit}>명</span>
-      </div>
-      {meta && <div className={page.kpiMeta}>{meta}</div>}
-    </div>
-  );
-}
-
 type UserTab = 'permission' | 'log';
 
 export default function User() {
@@ -127,6 +76,10 @@ export default function User() {
   const removeUser = useDataStore((s) => s.removeUser);
   const toast = useToast();
   const [filter, setFilter] = useState<UserRole | 'all'>('all');
+  // pagination
+  const PAGE_SIZE_OPTIONS = [10, 25, 50];
+  const [page_, setPage_] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // invite modal
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -146,13 +99,15 @@ export default function User() {
   // delete confirm
   const [deleteUser, setDeleteUser] = useState<AppUser | null>(null);
 
-  // permission matrix visibility
-  const [permOpen, setPermOpen] = useState(false);
-
   const filtered = useMemo(
     () => (filter === 'all' ? users : users.filter((u) => u.role === filter)),
     [users, filter],
   );
+
+  const pagedUsers = useMemo(() => {
+    const start = (page_ - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page_, pageSize]);
 
   const activeIn30d = useMemo(() => {
     const thirty = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -222,75 +177,30 @@ export default function User() {
   };
 
   return (
-    <div
-      className={page.page}
-      style={tab === 'log' ? { height: '100%', overflow: 'hidden' } : undefined}
-    >
-      {/* 2-depth tab chips */}
-      <div className={page.chips}>
-        <button
-          type="button"
-          className={[page.chip, tab === 'permission' ? page.chipActive : ''].filter(Boolean).join(' ')}
-          onClick={() => setTab('permission')}
-        >
-          사용자 권한
-        </button>
-        <button
-          type="button"
-          className={[page.chip, tab === 'log' ? page.chipActive : ''].filter(Boolean).join(' ')}
-          onClick={() => setTab('log')}
-        >
-          사용자 로그
-        </button>
+    <div className={page.page}>
+      {/* 2-depth tabs — DS Tabs(line). 환경설정과 동일하게 배경/활성 채움 제거(flatTabsWrap) */}
+      <div className={page.flatTabsWrap}>
+        <Tabs
+          variant="line"
+          active={tab}
+          onChange={(k) => setTab(k as UserTab)}
+          tabs={[
+            { key: 'permission', label: '사용자 권한' },
+            { key: 'log', label: '사용자 로그' },
+          ]}
+        />
       </div>
 
       {/* ── 사용자 로그 탭 ── */}
       {tab === 'log' && (
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <UserLog />
         </div>
       )}
 
       {/* ── 사용자 권한 탭 ── */}
       {tab === 'permission' && <>
-      <Breadcrumb items={['에스원 클라우드', '사용자 관리']} />
-      <div className={page.header}>
-        <div className={page.actions}>
-          <Button variant="primary" size="sm" onClick={openInvite}>
-            + 사용자 추가
-          </Button>
-        </div>
-      </div>
-
-      <div className={page.userKpiRow}>
-        <UserKpi
-          label="총 사용자"
-          value={users.length}
-          meta="지난 달 대비 +0%"
-          variant="total"
-        />
-        <UserKpi
-          label="최근 30일 활성"
-          value={activeIn30d}
-          meta={`활성률 ${Math.round((activeIn30d / Math.max(1, users.length)) * 100)}%`}
-          variant="active"
-        />
-        <button
-          type="button"
-          className={page.permShortcut}
-          onClick={() => setPermOpen((v) => !v)}
-          aria-expanded={permOpen}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3l8 4v5c0 5-4 9-8 10-4-1-8-5-8-10V7z" />
-            <path d="M9 12l2 2 4-4" />
-          </svg>
-          <span>권한 그룹 설정 바로가기</span>
-        </button>
-      </div>
-
-      {permOpen && (
-        <Card title="역할 × 권한 매트릭스">
+      <Card title="역할 × 권한 매트릭스">
           <div className={page.roleCards}>
             {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
               <div
@@ -343,94 +253,106 @@ export default function User() {
             </table>
           </div>
         </Card>
-      )}
 
-      <div className={page.userTableCard}>
-        <table className={page.userTable}>
-          <thead>
-            <tr>
-              <th>이름</th>
-              <th>역할</th>
-              <th>이메일</th>
-              <th>최근 접속</th>
-              <th style={{ width: 100, textAlign: 'right' }}>ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((u) => {
-              const st: UserStatus = u.status ?? (u.lastLoginAt ? 'active' : 'invited');
-              return (
-                <tr key={u.id}>
-                  <td>
-                    <div className={page.userMeta}>
-                      <span className={page.userAvatar}>{u.displayName.charAt(0)}</span>
-                      <div className={page.userInfo}>
-                        <span className={page.userName}>{u.displayName}</span>
-                        <span className={page.userEmail}>
-                          <Badge tone={STATUS_TONE[st]} dot>
-                            {STATUS_LABEL[st]}
-                          </Badge>
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <Badge tone={ROLE_TONE[u.role]} dot={false}>
-                      {ROLE_LABEL[u.role]}
-                    </Badge>
-                  </td>
-                  <td style={{ color: 'var(--color-text-muted)' }}>{u.email}</td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' }}>
-                    {formatDateTime(u.lastLoginAt)}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className={page.userActions}>
-                      <button
-                        className={page.iconBtn}
-                        type="button"
-                        onClick={() => openEdit(u)}
-                        aria-label="편집"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4z" />
-                        </svg>
-                      </button>
-                      <button
-                        className={[page.iconBtn, page.iconBtnDanger].join(' ')}
-                        type="button"
-                        onClick={() => setDeleteUser(u)}
-                        aria-label="삭제"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 6h18" />
-                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <div className={page.tableFoot}>
-          <span className={page.tableFootInfo}>
-            총 {users.length}명 · 최근 30일 활성 {activeIn30d}명
-          </span>
-          <div className={page.pager}>
-            <button type="button" className={page.pagerBtn} aria-label="이전">
-              ‹
-            </button>
-            <button type="button" className={[page.pagerBtn, page.pagerActive].join(' ')}>
-              1
-            </button>
-            <button type="button" className={page.pagerBtn} aria-label="다음">
-              ›
-            </button>
-          </div>
+      <div className={logStyles.tableCard}>
+        <div className={page.userTableHead}>
+          <span className={page.userTableTitle}>사용자 목록 <small style={{ color: 'var(--color-text-muted)', fontWeight: 'var(--font-weight-regular)', marginLeft: 6 }}>총 {users.length}명 · 최근 30일 활성 {activeIn30d}명</small></span>
+          <Button variant="primary" size="sm" onClick={openInvite}>
+            + 사용자 추가
+          </Button>
         </div>
+        <DataListTable>
+          <DataListTable.Table>
+            <table>
+              <colgroup>
+                <col />
+                <col style={{ width: 110 }} />
+                <col />
+                <col style={{ width: 160 }} />
+                <col style={{ width: 90 }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>이름</th>
+                  <th>역할</th>
+                  <th style={{ textAlign: 'left' }}>이메일</th>
+                  <th style={{ textAlign: 'left' }}>최근 접속</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedUsers.length > 0 ? pagedUsers.map((u) => {
+                  const st: UserStatus = u.status ?? (u.lastLoginAt ? 'active' : 'invited');
+                  return (
+                    <tr key={u.id}>
+                      <td className={logStyles.tdBold}>
+                        <div className={page.userMeta}>
+                          <span className={page.userAvatar}>{u.displayName.charAt(0)}</span>
+                          <div className={page.userInfo}>
+                            <span className={page.userName}>{u.displayName}</span>
+                            <span className={page.userEmail}>
+                              <Badge tone={STATUS_TONE[st]} dot>
+                                {STATUS_LABEL[st]}
+                              </Badge>
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <Badge tone={ROLE_TONE[u.role]} dot={false}>
+                          {ROLE_LABEL[u.role]}
+                        </Badge>
+                      </td>
+                      <td className={logStyles.tdMuted}>{u.email}</td>
+                      <td className={logStyles.tdMono}>{formatDateTime(u.lastLoginAt)}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div className={page.userActions}>
+                          <button
+                            className={page.iconBtn}
+                            type="button"
+                            onClick={() => openEdit(u)}
+                            aria-label="편집"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4z" />
+                            </svg>
+                          </button>
+                          <button
+                            className={[page.iconBtn, page.iconBtnDanger].join(' ')}
+                            type="button"
+                            onClick={() => setDeleteUser(u)}
+                            aria-label="삭제"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  <DataListTable.EmptyRow colSpan={5} message="조건에 맞는 사용자가 없습니다." />
+                )}
+              </tbody>
+            </table>
+          </DataListTable.Table>
+          <DataListTable.Footer
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageSizeChange={(size) => { setPageSize(size); setPage_(1); }}
+          >
+            <DataListTable.Pagination
+              total={filtered.length}
+              page={page_}
+              pageSize={pageSize}
+              onChange={setPage_}
+            />
+          </DataListTable.Footer>
+        </DataListTable>
       </div>
 
       {/* Invite Modal */}

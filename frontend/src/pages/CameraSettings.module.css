@@ -369,14 +369,6 @@
   min-height: 0;
 }
 
-/* 채널 영역과 설정 패널 사이 수직 구분선 */
-.liveDivider {
-  width: 1px;
-  flex-shrink: 0;
-  align-self: stretch;
-  background: var(--color-border-subtle);
-  margin: 0 var(--spacing-12);
-}
 
 /* 좌측 카메라 컬럼 (카드 없음) */
 .liveCamera {
@@ -583,6 +575,6 @@
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }

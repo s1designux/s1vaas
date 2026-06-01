@@ -5,6 +5,10 @@
   overflow-x: auto;
   scrollbar-width: none;
   flex-shrink: 0;
+  /* 모든 변종 탭은 상단 고정 — 스크롤 시 컨텐츠만 움직이도록 */
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .tabs::-webkit-scrollbar {
@@ -52,7 +56,6 @@
 
 /* ── line variant: DS S1 v2.4 Line Tab (tab.json, .s1-tab) ── */
 .tabs.line {
-  display: flex;
   align-items: flex-end;
   background: var(--tab-bg);
   border-bottom: var(--border-width-default) solid var(--tab-indicator-default);
@@ -66,7 +69,8 @@
   justify-content: center;
   padding: 0 var(--spacing-padding-inline-lg);
   height: 40px;
-  font-size: var(--font-size-md);
+  /* 환경설정 라인탭 기준(default variant = 14px medium)에 맞춰 통일 */
+  font-size: var(--font-size-14);
   font-weight: var(--font-weight-medium);
   color: var(--tab-label-default);
   background: transparent;

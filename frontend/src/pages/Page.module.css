@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  animation: fade-in 0.35s ease-out;
+  /* fade-in 애니메이션 제거 — 내부 sticky 요소의 컨테이닝 블록 안정성 우선 */
 }
 
 .header {
@@ -1031,6 +1031,21 @@
   overflow: hidden;
 }
 
+.userTableHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0;
+  margin-bottom: var(--space-3);
+}
+
+.userTableTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
 .userTable {
   width: 100%;
   border-collapse: collapse;
@@ -1148,16 +1163,9 @@
 /* ===== Settings page v2 ===== */
 .settingsPage {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  grid-template-rows: auto auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
-  animation: fade-in 0.35s ease-out;
-}
-
-@media (max-width: 1024px) {
-  .settingsPage {
-    grid-template-columns: 1fr;
-  }
+  /* fade-in 애니메이션 제거 — 내부 sticky 요소의 컨테이닝 블록 안정성 우선 */
 }
 
 .settingsLeft {
@@ -1167,10 +1175,33 @@
   min-width: 0;
 }
 
-.settingsRight {
-  display: flex;
-  flex-direction: column;
+/* 시스템 탭 내부 저장소 상태/시스템 사양 2열 그리드 */
+.systemInfoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .systemInfoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 평탄형 라인탭 래퍼 — 컨테이너 배경 + 탭 간 세로 분리선 + 활성 탭 배경 채움을 모두 제거.
+   환경설정·사용자 관리 등에서 텍스트 + 하단 인디케이터만 남기고 싶을 때 공통으로 사용. */
+.flatTabsWrap [role="tablist"] {
+  /* sticky 시 컨텐츠가 비치지 않도록 페이지 bg로 — 투명 대신 평탄 느낌 유지 */
+  background: var(--color-bg-home);
+}
+
+.flatTabsWrap [role="tab"] {
+  border-left: none;
+  border-right: none;
+}
+
+.flatTabsWrap [role="tab"][aria-selected="true"] {
+  background: transparent;
 }
 
 .rowCols2 {
@@ -1410,52 +1441,6 @@
   border-radius: var(--radius-full);
   background: var(--color-success);
   display: inline-block;
-}
-
-/* help card — dark panel */
-.helpCard {
-  background: var(--color-gray-dark-0);
-  color: var(--color-base-white);
-  border-radius: var(--radius-md);
-  padding: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-[data-theme='dark'] .helpCard {
-  background: var(--color-base-black);
-  border: 1px solid var(--color-border);
-}
-
-.helpTitle {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-}
-
-.helpDesc {
-  font-size: var(--font-size-xs);
-  color: var(--color-video-text-secondary);
-  line-height: 1.6;
-}
-
-.helpBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--color-base-white);
-  color: var(--color-gray-dark-0);
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
-}
-
-.helpBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* foot */

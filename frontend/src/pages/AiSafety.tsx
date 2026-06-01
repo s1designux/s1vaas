@@ -285,12 +285,15 @@ export default function AiSafety() {
   // 타임테이블 자동 생성
   const generatedSlots = useMemo(() => {
     const operatingDays = ALL_DAYS.filter((d) => !holidays.includes(d));
-    const getAlgos = (key: ScenarioKey) =>
-      [...new Set(
+    const getAlgos = (key: ScenarioKey) => {
+      // 시나리오가 접혀(off) 있으면 슬롯에서 제외
+      if (!scenarioExpanded[key]) return [];
+      return [...new Set(
         (scenarioConcerns[key] ?? [])
           .map((v) => SCENARIO_CONCERNS.find((c) => c.value === v)?.algoKey)
           .filter((x): x is string => Boolean(x)),
       )];
+    };
     const slots: Omit<ScheduleSlot, 'id'>[] = [];
     const afterCloseAlgos = getAlgos('afterClose');
     if (afterCloseAlgos.length && operatingDays.length)
@@ -308,7 +311,7 @@ export default function AiSafety() {
     if (holidayAlgos.length && holidays.length)
       slots.push({ startH: 0, endH: 24, days: holidays, algoIds: holidayAlgos, scenarioKey: 'holiday' });
     return slots;
-  }, [openH, closeH, holidays, scenarioConcerns]);
+  }, [openH, closeH, holidays, scenarioConcerns, scenarioExpanded]);
 
   if (!cam) return <div className={page.page}>카메라가 없습니다.</div>;
   const offline = cam.status === 'offline';
@@ -789,29 +792,39 @@ export default function AiSafety() {
               <div className={styles.onboardScenarios}>
                 {SCENARIO_META.filter((s) =>
                   s.key !== 'holiday' || holidays.length > 0
-                ).map((scenario) => (
-                  <div key={scenario.key} className={styles.onboardScenario}>
-                    <div className={styles.onboardScenarioHead}>
-                      <span className={styles.onboardScenarioEmoji}>{scenario.emoji}</span>
-                      <div>
-                        <div className={styles.onboardScenarioLabel}>{scenario.label}</div>
-                        <div className={styles.onboardScenarioDesc}>{scenario.desc}</div>
+                ).map((scenario) => {
+                  const expanded = scenarioExpanded[scenario.key];
+                  return (
+                    <div key={scenario.key} className={styles.onboardScenario}>
+                      <div className={styles.onboardScenarioHead}>
+                        <span className={styles.onboardScenarioEmoji}>{scenario.emoji}</span>
+                        <div className={styles.onboardScenarioHeadText}>
+                          <div className={styles.onboardScenarioLabel}>{scenario.label}</div>
+                          <div className={styles.onboardScenarioDesc}>{scenario.desc}</div>
+                        </div>
+                        <Toggle
+                          on={expanded}
+                          onToggle={() => setScenarioExpanded((p) => ({ ...p, [scenario.key]: !p[scenario.key] }))}
+                          aria-label={`${scenario.label} 펼치기`}
+                        />
                       </div>
+                      {expanded && (
+                        <div className={styles.onboardChips}>
+                          {SCENARIO_CONCERNS.map((c) => {
+                            const active = scenarioConcerns[scenario.key].includes(c.value);
+                            return (
+                              <button key={c.value} type="button"
+                                className={[styles.onboardChip, active ? styles.onboardChipActive : ''].filter(Boolean).join(' ')}
+                                onClick={() => toggleScenarioConcern(scenario.key, c.value)}>
+                                {c.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                    <div className={styles.onboardChips}>
-                      {SCENARIO_CONCERNS.map((c) => {
-                        const active = scenarioConcerns[scenario.key].includes(c.value);
-                        return (
-                          <button key={c.value} type="button"
-                            className={[styles.onboardChip, active ? styles.onboardChipActive : ''].filter(Boolean).join(' ')}
-                            onClick={() => toggleScenarioConcern(scenario.key, c.value)}>
-                            {c.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className={styles.onboardActions}>

@@ -2289,8 +2289,13 @@
 
 .onboardScenarioHead {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--spacing-10);
+}
+
+.onboardScenarioHeadText {
+  flex: 1;
+  min-width: 0;
 }
 
 .onboardScenarioEmoji { font-size: 20px; flex-shrink: 0; }

@@ -37,13 +37,6 @@ const EVENT_TYPE_LABELS: Partial<Record<EventType, string>> = {
   offline: '오프라인', online: '온라인', storage_warn: '저장소 경고',
 };
 
-const EVENT_DOT_COLOR: Partial<Record<EventType, string>> = {
-  motion: 'var(--color-accent)', intrusion: 'var(--color-danger)',
-  line_crossing: 'var(--color-info)', face_match: 'var(--color-success)',
-  lpr: 'var(--color-warn)', offline: 'var(--color-danger)',
-  online: 'var(--color-success)', storage_warn: 'var(--color-warn)',
-};
-
 const TIMELINE_LABELS = ['00:00', '06:00', '12:00', '18:00', '24:00'];
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -507,7 +500,6 @@ function EventItem({ ev, isActive, onClick }: { ev: AppEvent; isActive: boolean;
       </div>
       <div className={styles.eventBody}>
         <div className={styles.eventRow1}>
-          <span className={styles.eventDot} style={{ background: EVENT_DOT_COLOR[ev.type] ?? 'var(--color-accent)' }} />
           <span className={styles.eventTypeName}>{EVENT_TYPE_LABELS[ev.type] ?? ev.type}</span>
         </div>
         <div className={styles.eventRow2}>
@@ -812,7 +804,6 @@ export default function Monitoring() {
                         <Chip
                           key={f.type}
                           selected={eventTypeFilter === f.type}
-                          dotColor={EVENT_DOT_COLOR[f.type] ?? 'var(--color-accent)'}
                           onClick={() => setEventTypeFilter(f.type)}
                         >
                           {f.label}

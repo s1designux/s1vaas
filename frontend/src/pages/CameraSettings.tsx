@@ -582,9 +582,6 @@ export default function CameraSettings() {
             </div>
           </div>
 
-          {/* 채널 / 정보 구분선 */}
-          <div className={cs.liveDivider} aria-hidden />
-
           {/* 우측: OSD 설정 · 이미지 설정 카드 패널 (탭 제거, 시스템 메뉴와 동일하게 타이틀 카드로 묶음) */}
           <div className={cs.livePanel}>
             <div className={cs.livePanelBody}>

@@ -13,8 +13,6 @@ import { useMenuStore } from '@/store/menuStore';
 import { ALL_ITEMS } from '@/components/layout/Sidebar';
 import { useNavigate } from 'react-router-dom';
 import page from './Page.module.css';
-// Phase G — panel-2026-04-28 GPT 에셋 (Dashboard dark variant 무드보드, GP_HIER_P1_01 후순위 결정 자료)
-import dashboardDarkMood from '@/assets/images/panel-2026-04-28/dashboard_dark_mockup_hint.png';
 
 type Section = 'account' | 'video' | 'notification' | 'security' | 'system' | 'menu';
 type ThemeChoice = 'light' | 'dark' | 'system';
@@ -146,18 +144,20 @@ export default function Settings() {
   return (
     <div className={page.settingsPage}>
       <div className={page.settingsLeft}>
-        <Tabs
-          tabs={[
-            { key: 'account', label: '계정 · 프로필' },
-            { key: 'video', label: '영상 · 저장' },
-            { key: 'notification', label: '알림' },
-            { key: 'security', label: '보안' },
-            { key: 'system', label: '시스템' },
-            { key: 'menu', label: '메뉴 옵션' },
-          ]}
-          active={section}
-          onChange={(k) => setSection(k as Section)}
-        />
+        <div className={page.flatTabsWrap}>
+          <Tabs
+            tabs={[
+              { key: 'account', label: '계정 · 프로필' },
+              { key: 'video', label: '영상 · 저장' },
+              { key: 'notification', label: '알림' },
+              { key: 'security', label: '보안' },
+              { key: 'system', label: '시스템' },
+              { key: 'menu', label: '메뉴 옵션' },
+            ]}
+            active={section}
+            onChange={(k) => setSection(k as Section)}
+          />
+        </div>
 
         <Card
           title={
@@ -500,6 +500,61 @@ export default function Settings() {
           )}
         </Card>
 
+        {section === 'system' && (
+          <div className={page.systemInfoGrid}>
+            <Card
+              title="저장소 상태"
+              actions={
+                <span className={page.infoIcon} aria-hidden>
+                  ⓘ
+                </span>
+              }
+            >
+              <StorageHalf percent={78} />
+              <div className={page.storageLegend}>
+                <div>
+                  <span className={page.storageLabel}>총 용량</span>
+                  <span className={page.storageVal}>12.0 TB</span>
+                </div>
+                <div>
+                  <span className={page.storageLabel}>사용 용량</span>
+                  <span className={page.storageVal}>9.36 TB</span>
+                </div>
+                <div>
+                  <span className={page.storageLabel}>잔여 용량</span>
+                  <span className={page.storageVal}>2.64 TB</span>
+                </div>
+              </div>
+              <Button variant="secondary" size="sm" block>
+                데이터 클리닝 도구 실행
+              </Button>
+            </Card>
+
+            <Card title="시스템 사양">
+              <div className={page.specList}>
+                <div className={page.specRow}>
+                  <span className={page.specLabel}>펌웨어 버전</span>
+                  <span className={page.specVal}>v2.4.12-enterprise (Stable)</span>
+                </div>
+                <div className={page.specRow}>
+                  <span className={page.specLabel}>OS 환경</span>
+                  <span className={page.specVal}>S1 Secure-Cloud Linux x64</span>
+                </div>
+                <div className={page.specRow}>
+                  <span className={page.specLabel}>최종 업데이트</span>
+                  <span className={page.specVal}>2023.10.15 03:00 (UTC+9)</span>
+                </div>
+                <div className={page.specRow}>
+                  <span className={page.specLabel}>서버 응답 속도</span>
+                  <span className={page.specVal}>
+                    <span className={page.onlineDotInline} /> 12ms (정상)
+                  </span>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         <Card title="최근 보안 활동">
           <div className={page.securityList}>
             <div className={page.securityItem}>
@@ -515,101 +570,6 @@ export default function Settings() {
           </div>
         </Card>
       </div>
-
-      {/* ===== Right column ===== */}
-      <aside className={page.settingsRight}>
-        <Card
-          title="저장소 상태"
-          actions={
-            <span className={page.infoIcon} aria-hidden>
-              ⓘ
-            </span>
-          }
-        >
-          <StorageHalf percent={78} />
-          <div className={page.storageLegend}>
-            <div>
-              <span className={page.storageLabel}>총 용량</span>
-              <span className={page.storageVal}>12.0 TB</span>
-            </div>
-            <div>
-              <span className={page.storageLabel}>사용 용량</span>
-              <span className={page.storageVal}>9.36 TB</span>
-            </div>
-            <div>
-              <span className={page.storageLabel}>잔여 용량</span>
-              <span className={page.storageVal}>2.64 TB</span>
-            </div>
-          </div>
-          <Button variant="secondary" size="sm" block>
-            데이터 클리닝 도구 실행
-          </Button>
-        </Card>
-
-        <Card title="시스템 사양">
-          <div className={page.specList}>
-            <div className={page.specRow}>
-              <span className={page.specLabel}>펌웨어 버전</span>
-              <span className={page.specVal}>v2.4.12-enterprise (Stable)</span>
-            </div>
-            <div className={page.specRow}>
-              <span className={page.specLabel}>OS 환경</span>
-              <span className={page.specVal}>S1 Secure-Cloud Linux x64</span>
-            </div>
-            <div className={page.specRow}>
-              <span className={page.specLabel}>최종 업데이트</span>
-              <span className={page.specVal}>2023.10.15 03:00 (UTC+9)</span>
-            </div>
-            <div className={page.specRow}>
-              <span className={page.specLabel}>서버 응답 속도</span>
-              <span className={page.specVal}>
-                <span className={page.onlineDotInline} /> 12ms (정상)
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        {/* Phase G — Dashboard dark variant 무드보드 (panel 2026-04-28 GPT 에셋) */}
-        <Card title="Design Preview">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-8)' }}>
-            <img
-              src={dashboardDarkMood}
-              alt="Dashboard dark variant 무드보드"
-              style={{
-                width: '100%',
-                aspectRatio: '16 / 9',
-                objectFit: 'cover',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--color-border-subtle)',
-                display: 'block',
-              }}
-              loading="lazy"
-            />
-            <div
-              style={{
-                fontSize: 'var(--font-size-xs)',
-                color: 'var(--color-text-muted)',
-                lineHeight: 1.5,
-              }}
-            >
-              Phase A 패널 분석에서 Dashboard dark variant 무드보드 자료 (다음 라운드 후보)
-            </div>
-          </div>
-        </Card>
-
-        <div className={page.helpCard}>
-          <div className={page.helpTitle}>도움이 필요하신가요?</div>
-          <div className={page.helpDesc}>
-            에스원 보안 관제 센터는 24시간 연중무휴로 운영됩니다.
-          </div>
-          <button type="button" className={page.helpBtn}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7a2 2 0 0 1 1.72 2z" />
-            </svg>
-            <span>1588-3112 고객센터 연결</span>
-          </button>
-        </div>
-      </aside>
 
       <footer className={page.settingsFoot}>
         <div className={page.certIcons}>

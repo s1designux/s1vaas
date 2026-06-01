@@ -96,14 +96,17 @@ export default function UserLog() {
     setPage(1);
   };
 
-  const filtered = MOCK_LOGS.filter((log) => {
-    if (query.user   && !log.user.includes(query.user))           return false;
-    if (query.action && log.action !== query.action)              return false;
-    if (query.site   && !log.target.includes(query.site))         return false;
-    if (query.from   && log.time < query.from)                    return false;
-    if (query.to     && log.time > query.to + ' 23:59:59')        return false;
-    return true;
-  });
+  // 최신순 정렬 — id 내림차순 (id 가 시간 순서와 동일)
+  const filtered = MOCK_LOGS
+    .filter((log) => {
+      if (query.user   && !log.user.includes(query.user))           return false;
+      if (query.action && log.action !== query.action)              return false;
+      if (query.site   && !log.target.includes(query.site))         return false;
+      if (query.from   && log.time < query.from)                    return false;
+      if (query.to     && log.time > query.to + ' 23:59:59')        return false;
+      return true;
+    })
+    .sort((a, b) => b.id - a.id);
 
   const start = (page - 1) * pageSize;
   const paged = filtered.slice(start, start + pageSize);
