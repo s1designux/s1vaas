@@ -1,7 +1,7 @@
 // TODO: replace with fetch('/api/v1/cameras/{id}') + PATCH
 // 카메라 관리 — AI 카메라 Process Flow(V0.76) 사양 기반 상세화.
 //   설정 체계: 실시간영상(100 LIVE) / 시스템(310/320) / 네트워크(410/420) / 비디오(510) / 이미지(610·620)
-//   실시간영상 탭 = 라이브 영상 + 기본 정보 + OSD 설정.
+//   실시간영상 탭 = 라이브 영상 + 기본 정보 + OSD 설정 + 이미지 설정 (시스템 메뉴와 동일하게 타이틀 카드로 묶음).
 //   AI 이벤트(침입·배회·가상펜스·화재·주정차·피플카운팅)·움직임 감지·감지 스케줄,
 //   그리고 프라이버시 마스크(630)는 [안심 AI 설정]으로 이관 — 여기서는 다루지 않는다.
 import React, { useEffect, useMemo, useState } from 'react';
@@ -225,7 +225,6 @@ export default function CameraSettings() {
   // 초기 선택: 첫 번째 카메라
   const [activeId, setActiveId] = useState(() => cameras[0]?.id ?? '');
   const [tab, setTab] = useState<SettingsTab>('live');
-  const [liveTab, setLiveTab] = useState<'osd' | 'image'>('osd');
 
   const cam = cameras.find((c) => c.id === activeId);
   const offline = cam?.status === 'offline';
@@ -586,69 +585,44 @@ export default function CameraSettings() {
           {/* 채널 / 정보 구분선 */}
           <div className={cs.liveDivider} aria-hidden />
 
-          {/* 우측: 기본 정보 / OSD 설정 라인탭 패널 (탭바 고정, 내용만 스크롤) */}
+          {/* 우측: OSD 설정 · 이미지 설정 카드 패널 (탭 제거, 시스템 메뉴와 동일하게 타이틀 카드로 묶음) */}
           <div className={cs.livePanel}>
-            <div className={cs.livePanelTabBar}>
-              <button
-                className={`${cs.livePanelTab} ${liveTab === 'osd' ? cs.livePanelTabActive : ''}`}
-                onClick={() => setLiveTab('osd')}
-              >
-                OSD 설정
-              </button>
-              <button
-                className={`${cs.livePanelTab} ${liveTab === 'image' ? cs.livePanelTabActive : ''}`}
-                onClick={() => setLiveTab('image')}
-              >
-                이미지 설정
-              </button>
-            </div>
-
             <div className={cs.livePanelBody}>
-              {/* ── OSD 설정 탭 ── */}
-              {liveTab === 'osd' && (
-                <>
-                  <Card>
-                    <div className={page.formStack}>
-                      <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
-                      {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
-                    </div>
-                  </Card>
-                  <Card>
-                    <div className={page.formStack}>
-                      <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
-                      {osdDate && (
-                        <>
-                          <Seg
-                            label="시간 표시"
-                            value={timeFormat}
-                            onChange={setTimeFormat}
-                            options={[{ value: '24', label: '24시간' }, { value: '12', label: '12시간' }]}
-                          />
-                          <SelectField
-                            label="날짜 형식"
-                            value={dateFormat}
-                            onChange={setDateFormat}
-                            options={[
-                              { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-                              { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
-                              { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
-                              { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-                            ]}
-                          />
-                          <ToggleRow title="요일 표시" on={osdWeekday} onToggle={() => setOsdWeekday(!osdWeekday)} />
-                        </>
-                      )}
-                    </div>
-                  </Card>
-                  <Card>
-                    <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
-                  </Card>
-                </>
-              )}
+              <Card title="OSD 설정">
+                <div className={page.formStack}>
+                  <ToggleRow title="카메라 이름 표시" on={osdName} onToggle={() => setOsdName(!osdName)} />
+                  {osdName && <InputField label="이름 (최대 10자)" value={camLabel} onChange={setCamLabel} maxLength={10} />}
 
-              {/* ── 이미지 설정 탭 ── */}
-              {liveTab === 'image' && (
-                <>
+                  <ToggleRow title="날짜 표시" on={osdDate} onToggle={() => setOsdDate(!osdDate)} />
+                  {osdDate && (
+                    <>
+                      <Seg
+                        label="시간 표시"
+                        value={timeFormat}
+                        onChange={setTimeFormat}
+                        options={[{ value: '24', label: '24시간' }, { value: '12', label: '12시간' }]}
+                      />
+                      <SelectField
+                        label="날짜 형식"
+                        value={dateFormat}
+                        onChange={setDateFormat}
+                        options={[
+                          { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+                          { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
+                          { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
+                          { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+                        ]}
+                      />
+                      <ToggleRow title="요일 표시" on={osdWeekday} onToggle={() => setOsdWeekday(!osdWeekday)} />
+                    </>
+                  )}
+
+                  <Kv label="텍스트 삽입" value="최대 5개 · 각 10자" />
+                </div>
+              </Card>
+
+              <Card title="이미지 설정">
+                <div className={page.formStack}>
                   <div className={page.sectionCaption}>이미지 조정 (0~100)</div>
                   <EditSlider label="밝기" value={img.brightness} min={0} max={100} onChange={(v) => patchImg({ brightness: v })} />
                   <EditSlider label="선명도" value={img.sharpness} min={0} max={100} onChange={(v) => patchImg({ sharpness: v })} />
@@ -745,8 +719,8 @@ export default function CameraSettings() {
                     onChange={setBlc}
                     options={[{ value: 'off', label: '끄기' }, { value: 'on', label: '켜기' }]}
                   />
-                </>
-              )}
+                </div>
+              </Card>
             </div>
           </div>
         </div>

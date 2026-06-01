@@ -790,7 +790,8 @@
   --font-sans:
     'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
     'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-  --font-mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
+  /* 숫자도 Pretendard로 렌더 — 정렬이 필요한 곳은 font-variant-numeric: tabular-nums 사용 */
+  --font-mono: 'Pretendard Variable', 'Pretendard', ui-monospace, 'SFMono-Regular', monospace;
 
   --shadow-none: none;
   --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.04);

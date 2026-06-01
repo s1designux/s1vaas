@@ -1,7 +1,10 @@
 // TODO: replace with POST /api/v1/search
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
-import { Select } from '@/components/ui/Select';
+import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
+import { Input } from '@/components/ui/Input';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { useToast } from '@/hooks/useToast';
 import { relativeTime } from '@/lib/time';
 import { CAM_OPTIONS, MOCK_RESULTS_BY_QUERY, SITE_OPTIONS } from '@/mock/searchResults';
@@ -332,30 +335,21 @@ export default function Search() {
       {/* ═══ 검색 바 ═══ */}
       <div className={styles.searchBarWrap}>
         <div className={styles.searchBarInner}>
-          <div className={styles.searchInputWrap}>
-            <svg className={styles.searchIconInside} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-            </svg>
-            <input
-              className={styles.searchInputNew}
-              type="text"
-              placeholder="카메라 영상에서 찾고 싶은 내용을 입력하세요 — 예: 빨간 옷 입은 여성, 검은 SUV"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') runSearch(input); }}
-            />
-            {input && (
-              <button type="button" className={styles.searchClearBtn} onClick={() => setInput('')} aria-label="지우기">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
-              </button>
-            )}
-          </div>
+          <Input
+            className={styles.searchInputDs}
+            type="text"
+            placeholder="카메라 영상에서 찾고 싶은 내용을 입력하세요 — 예: 빨간 옷 입은 여성, 검은 SUV"
+            value={input}
+            clearable
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') runSearch(input); }}
+          />
           {phase !== 'idle' && (
-            <button type="button" className={styles.resetBtn} onClick={handleReset}>초기화</button>
+            <Button variant="secondary" size="sm" onClick={handleReset}>초기화</Button>
           )}
-          <button type="button" className={styles.searchSubmit} onClick={() => runSearch(input)} disabled={phase === 'loading'}>
+          <Button variant="primary" size="sm" onClick={() => runSearch(input)} disabled={phase === 'loading'}>
             검색
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -394,10 +388,9 @@ export default function Search() {
                     </span>
                     <div className={styles.exChips}>
                       {EXAMPLE_SEARCHES.person.map((ex) => (
-                        <button key={ex.label} type="button" className={styles.exChip}
-                          onClick={() => { setInput(ex.label); runSearch(ex.query); }}>
+                        <Chip key={ex.label} onClick={() => { setInput(ex.label); runSearch(ex.query); }}>
                           {ex.label}
-                        </button>
+                        </Chip>
                       ))}
                     </div>
                   </div>
@@ -408,10 +401,9 @@ export default function Search() {
                     </span>
                     <div className={styles.exChips}>
                       {EXAMPLE_SEARCHES.vehicle.map((ex) => (
-                        <button key={ex.label} type="button" className={styles.exChip}
-                          onClick={() => { setInput(ex.label); runSearch(ex.query); }}>
+                        <Chip key={ex.label} onClick={() => { setInput(ex.label); runSearch(ex.query); }}>
                           {ex.label}
-                        </button>
+                        </Chip>
                       ))}
                     </div>
                   </div>
@@ -439,8 +431,8 @@ export default function Search() {
                       <img src={uploadPreview} className={styles.uploadPreviewImg} alt="업로드된 이미지" />
                       <div className={styles.uploadPreviewName}>{uploadedFile?.name}</div>
                       <div className={styles.uploadPreviewActions}>
-                        <button type="button" className={styles.uploadActionBtn} onClick={runImageSearch}>이미지로 검색</button>
-                        <button type="button" className={styles.uploadActionBtnSec} onClick={clearUpload}>다시 선택</button>
+                        <Button variant="primary" size="sm" onClick={runImageSearch}>이미지로 검색</Button>
+                        <Button variant="secondary" size="sm" onClick={clearUpload}>다시 선택</Button>
                       </div>
                     </div>
                   ) : (
@@ -504,9 +496,9 @@ export default function Search() {
                       {bottomColor && <span className={styles.colorTag}>하의: {bottomColor}</span>}
                     </div>
                   )}
-                  <button type="button" className={styles.colorSearchBtn} disabled={!topColor && !bottomColor} onClick={runColorSearch}>
+                  <Button variant="primary" size="sm" block disabled={!topColor && !bottomColor} onClick={runColorSearch}>
                     이 색상으로 검색
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -571,11 +563,9 @@ export default function Search() {
                 <div className={styles.sbTitle}>객체 구분</div>
                 <div className={styles.sbObjTabs}>
                   {([['all','전체',results.length],['person','인물',personCount],['vehicle','차량',vehicleCount]] as [ObjType,string,number][]).map(([t,l,c]) => (
-                    <button key={t} type="button"
-                      className={[styles.sbObjTab, objType === t ? styles.sbObjTabActive : ''].filter(Boolean).join(' ')}
-                      onClick={() => setObjType(t)}>
-                      {l} <span>{c}</span>
-                    </button>
+                    <Chip key={t} selected={objType === t} onClick={() => setObjType(t)}>
+                      {l} <span className={styles.sbObjCount}>{c}</span>
+                    </Chip>
                   ))}
                 </div>
               </div>
@@ -601,13 +591,15 @@ export default function Search() {
                       {isOpen && availCams.map((cam) => {
                         const cnt = results.filter((r) => r.cameraId === cam.id).length;
                         return (
-                          <label key={cam.id} className={styles.sbCamRow}>
-                            <input type="checkbox" className={styles.sbCheckbox}
+                          <div key={cam.id} className={styles.sbCamRow}>
+                            <Checkbox
                               checked={filterCamIds.has(cam.id)}
-                              onChange={() => toggleCam(cam.id)} />
-                            <span className={styles.sbCamName}>{cam.name}</span>
+                              onChange={() => toggleCam(cam.id)}
+                            >
+                              {cam.name}
+                            </Checkbox>
                             <span className={styles.sbCamCount}>{cnt}</span>
-                          </label>
+                          </div>
                         );
                       })}
                     </div>
@@ -620,9 +612,7 @@ export default function Search() {
                 <div className={styles.sbTitle}>정렬</div>
                 <div className={styles.sbSortRow}>
                   {[{v:'score',l:'유사도'},{v:'time',l:'시간순'}].map(({v,l}) => (
-                    <button key={v} type="button"
-                      className={[styles.sbSortBtn, sortKey === v ? styles.sbSortBtnActive : ''].filter(Boolean).join(' ')}
-                      onClick={() => setSortKey(v as SortKey)}>{l}</button>
+                    <Chip key={v} selected={sortKey === v} onClick={() => setSortKey(v as SortKey)}>{l}</Chip>
                   ))}
                 </div>
               </div>
@@ -632,15 +622,13 @@ export default function Search() {
                 <div className={styles.sbTitle}>일자</div>
                 <div className={styles.sbDatePresets}>
                   {[['today','오늘'],['yesterday','어제'],['7days','7일'],['30days','30일']].map(([v,l]) => (
-                    <button key={v} type="button"
-                      className={[styles.sbPresetBtn, activeDatePreset === v ? styles.sbPresetBtnActive : ''].filter(Boolean).join(' ')}
-                      onClick={() => applyDatePreset(activeDatePreset === v ? '' : v)}>{l}</button>
+                    <Chip key={v} selected={activeDatePreset === v} onClick={() => applyDatePreset(activeDatePreset === v ? '' : v)}>{l}</Chip>
                   ))}
                 </div>
                 <div className={styles.sbDateRow}>
-                  <input type="date" className={styles.sbDateInput} value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setActiveDatePreset(''); }} />
+                  <Input type="date" size="sm" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setActiveDatePreset(''); }} />
                   <span className={styles.sbDateSep}>~</span>
-                  <input type="date" className={styles.sbDateInput} value={dateTo} onChange={(e) => { setDateTo(e.target.value); setActiveDatePreset(''); }} />
+                  <Input type="date" size="sm" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setActiveDatePreset(''); }} />
                 </div>
               </div>
 
@@ -648,18 +636,18 @@ export default function Search() {
               <div className={styles.sbSection}>
                 <div className={styles.sbTitle}>시간 범위</div>
                 <div className={styles.sbDateRow}>
-                  <input type="time" className={styles.sbDateInput} value={timeFrom} onChange={(e) => setTimeFrom(e.target.value)} placeholder="HH:MM" />
+                  <Input type="time" size="sm" value={timeFrom} onChange={(e) => setTimeFrom(e.target.value)} placeholder="HH:MM" />
                   <span className={styles.sbDateSep}>~</span>
-                  <input type="time" className={styles.sbDateInput} value={timeTo} onChange={(e) => setTimeTo(e.target.value)} placeholder="HH:MM" />
+                  <Input type="time" size="sm" value={timeTo} onChange={(e) => setTimeTo(e.target.value)} placeholder="HH:MM" />
                 </div>
               </div>
 
               {/* 필터 초기화 */}
               {(filterCamIds.size > 0 || dateFrom || dateTo || timeFrom || timeTo) && (
-                <button type="button" className={styles.sbResetBtn}
+                <Button variant="secondary" size="sm" block
                   onClick={() => { setFilterCamIds(new Set()); setDateFrom(''); setDateTo(''); setTimeFrom(''); setTimeTo(''); setActiveDatePreset(''); }}>
                   필터 초기화
-                </button>
+                </Button>
               )}
             </aside>
 

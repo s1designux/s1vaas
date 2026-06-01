@@ -15,6 +15,9 @@
   margin-bottom: var(--space-4);
 }
 
+/* DS Input wrap이 검색바 내부에서 flex로 늘어나도록 */
+.searchInputDs { flex: 1; min-width: 0; }
+
 .searchBarInner {
   display: flex;
   align-items: center;
@@ -168,7 +171,11 @@
   top: var(--space-4);
   max-height: calc(100vh - 140px);
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
 }
+
+.filterSidebar > * { min-width: 0; }
 
 .sbSection {
   display: flex;
@@ -370,6 +377,24 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+}
+
+/* Input 컴포넌트(.wrap)가 플렉스 아이템으로서 컬럼 폭에 맞춰 축소되도록 */
+.sbDateRow > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.sbDateRow > .sbDateSep {
+  flex: 0 0 auto;
+}
+
+/* 네이티브 date/time 인풋의 인트린식 최소 폭 해제 */
+.sbDateRow input[type="date"],
+.sbDateRow input[type="time"] {
+  min-width: 0;
+  width: 100%;
 }
 
 .sbDateInput {

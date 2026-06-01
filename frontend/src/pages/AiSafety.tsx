@@ -6,10 +6,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { useToast } from '@/hooks/useToast';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Toggle } from '@/components/ui/Toggle';
+import { Tabs } from '@/components/ui/Tabs';
 import { RoiPreview } from '@/components/RoiPreview';
 import type { AlgorithmSensitivity, CameraAlgorithm, ZonePoint, ZonePolygon } from '@/types';
 import page from './Page.module.css';
@@ -29,6 +29,22 @@ interface ExtraCfg {
 }
 
 const DEFAULT_EXTRA: ExtraCfg = { notify: 'instant', schedule: 'always', person: true, vehicle: false };
+
+// ── AI 특화 전문가 상세 설정 ──
+interface ExpertCfg {
+  confidence: number;      // 감지 신뢰도 임계값 (%)
+  minSize: number;         // 최소 객체 크기 (px)
+  maxSize: number;         // 최대 객체 크기 (px)
+  trackHold: number;       // 추적 유지 프레임
+  confirmFrames: number;   // 검증 프레임 수
+  model: 'v1' | 'v2' | 'v2-lite';
+}
+const DEFAULT_EXPERT: ExpertCfg = { confidence: 70, minSize: 40, maxSize: 600, trackHold: 30, confirmFrames: 5, model: 'v2' };
+const MODEL_OPTS: { value: ExpertCfg['model']; label: string }[] = [
+  { value: 'v2',      label: 'YOLO v2 (기본)' },
+  { value: 'v2-lite', label: 'YOLO v2-lite (경량)' },
+  { value: 'v1',      label: 'YOLO v1 (호환)' },
+];
 
 const ICONS: Record<string, string> = {
   motion: 'M3 12h4l3-8 4 16 3-8h4',
@@ -86,6 +102,9 @@ const SCENARIO_META: { key: ScenarioKey; label: string; emoji: string; desc: str
   { key: 'holiday',    label: '휴일 시',   emoji: '📅', desc: '선택한 휴일 하루 종일' },
 ];
 
+// 메인 화면 슬롯 탭 표출 순서 — 하루 시간 흐름
+const SCENARIO_DISPLAY_ORDER: ScenarioKey[] = ['atOpen', 'operating', 'atClose', 'afterClose', 'holiday'];
+
 const SENS_OPTS: { value: AlgorithmSensitivity; title: string; desc: string }[] = [
   { value: 'low', title: '덜 민감하게', desc: '오탐을 줄여요' },
   { value: 'balanced', title: '균형 (추천)', desc: '권장 설정' },
@@ -135,168 +154,6 @@ function fmtDays(days: DayKey[]) {
   return days.map(d => DAY_LIST.find(x => x.key === d)?.label ?? '').join('·');
 }
 
-function ScheduleSection({ slots, onAdd }: {
-  slots: ScheduleSlot[];
-  onAdd: (s: Omit<ScheduleSlot,'id'>) => void;
-}) {
-  const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState<Omit<ScheduleSlot,'id'>>({ startH: 22, endH: 7, days: ALL_DAYS, algoIds: [] });
-  const patch = (p: Partial<Omit<ScheduleSlot,'id'>>) => setForm(prev => ({ ...prev, ...p }));
-
-  const toggleAlgo = (id: string) =>
-    patch({ algoIds: form.algoIds.includes(id) ? form.algoIds.filter(x => x !== id) : [...form.algoIds, id] });
-  const toggleDay = (d: DayKey) =>
-    patch({ days: form.days.includes(d) ? form.days.filter(x => x !== d) : [...form.days, d] });
-
-  const handleSave = () => {
-    if (!form.algoIds.length || !form.days.length) return;
-    onAdd(form);
-    setAdding(false);
-    setForm({ startH: 22, endH: 7, days: ALL_DAYS, algoIds: [] });
-  };
-
-  const START_H = Array.from({ length: 24 }, (_, i) => i);
-  const END_H   = Array.from({ length: 24 }, (_, i) => i + 1);
-
-  const dEq = (a: DayKey[], b: DayKey[]) => [...a].sort().join() === [...b].sort().join();
-
-  // 사용된 알고리즘 목록 (범례용)
-  const usedAlgoIds = [...new Set(slots.flatMap(s => s.algoIds))];
-
-  return (
-    <Card title="감지 일정">
-      {/* 일주일 타임라인 */}
-      <div className={styles.weekTimeline}>
-        {/* 시간 축 헤더 */}
-        <div className={styles.weekTimeHeader}>
-          <div className={styles.weekDayLabel} />
-          <div className={styles.weekAxis}>
-            {[0, 6, 12, 18, 24].map(h => (
-              <span key={h} className={styles.weekAxisTick} style={{ left: `${h / 24 * 100}%` }}>
-                {String(h).padStart(2, '0')}
-              </span>
-            ))}
-          </div>
-        </div>
-        {/* 요일 행 */}
-        {DAY_LIST.map(({ key, label }) => {
-          const daySlots = slots.filter(s => s.days.includes(key));
-          return (
-            <div key={key} className={styles.weekRow}>
-              <div className={styles.weekDayLabel}>{label}</div>
-              <div className={styles.weekBar}>
-                {daySlots.length === 0 && <div className={styles.weekBarEmpty} />}
-                {daySlots.flatMap(slot => {
-                  const c = ALGO_COLORS[slot.algoIds[0]] ?? '#9CA3AF';
-                  const title = `${fmtH(slot.startH)}~${fmtH(slot.endH)}: ${slot.algoIds.map(id => SCHED_ALGOS.find(a => a.id === id)?.label ?? id).join(', ')}`;
-                  if (slot.endH > slot.startH) {
-                    return [<div key={slot.id} className={styles.weekSlot} title={title}
-                      style={{ left: `${slot.startH / 24 * 100}%`, width: `${(slot.endH - slot.startH) / 24 * 100}%`, background: c }} />];
-                  }
-                  return [
-                    <div key={`${slot.id}a`} className={styles.weekSlot} title={title}
-                      style={{ left: `${slot.startH / 24 * 100}%`, width: `${(24 - slot.startH) / 24 * 100}%`, background: c }} />,
-                    <div key={`${slot.id}b`} className={styles.weekSlot} title={title}
-                      style={{ left: '0%', width: `${slot.endH / 24 * 100}%`, background: c }} />,
-                  ];
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 알고리즘 색상 범례 */}
-      {usedAlgoIds.length > 0 && (
-        <div className={styles.schedLegend}>
-          {usedAlgoIds.map(id => (
-            <div key={id} className={styles.schedLegendItem}>
-              <span className={styles.schedLegendDot} style={{ background: ALGO_COLORS[id] ?? '#9CA3AF' }} />
-              <span className={styles.schedLegendLabel}>{SCHED_ALGOS.find(a => a.id === id)?.label ?? id}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {adding ? (
-        <div className={styles.schedForm}>
-          {/* 시간 */}
-          <div className={styles.schedFormRow}>
-            <span className={styles.schedFormLabel}>시간</span>
-            <div className={styles.schedFormTimeRow}>
-              <select className={styles.schedTimeSelect} value={form.startH} onChange={e => patch({ startH: +e.target.value })}>
-                {START_H.map(h => <option key={h} value={h}>{fmtH(h)}</option>)}
-              </select>
-              <span className={styles.schedTimeTilde}>~</span>
-              <select className={styles.schedTimeSelect} value={form.endH} onChange={e => patch({ endH: +e.target.value })}>
-                {END_H.map(h => <option key={h} value={h}>{fmtH(h)}</option>)}
-              </select>
-              {form.endH <= form.startH && (
-                <span className={styles.schedNextDay}>익일 {fmtH(form.endH)}에 종료</span>
-              )}
-            </div>
-          </div>
-
-          {/* 요일 */}
-          <div className={styles.schedFormRow}>
-            <span className={styles.schedFormLabel}>요일</span>
-            <div className={styles.schedFormDaysRow}>
-              {[
-                { label: '매일', days: ALL_DAYS },
-                { label: '평일', days: WEEKDAYS },
-                { label: '주말', days: WEEKENDS },
-              ].map(p => (
-                <button key={p.label}
-                  className={[styles.schedPresetBtn, dEq(form.days, p.days) ? styles.schedPresetBtnActive : ''].filter(Boolean).join(' ')}
-                  onClick={() => patch({ days: p.days })}>
-                  {p.label}
-                </button>
-              ))}
-              <span className={styles.schedDaySep} />
-              {DAY_LIST.map(d => (
-                <button key={d.key}
-                  className={[styles.schedDayBtn, form.days.includes(d.key) ? styles.schedDayBtnActive : ''].filter(Boolean).join(' ')}
-                  onClick={() => toggleDay(d.key)}>
-                  {d.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 감지 기능 */}
-          <div className={styles.schedFormRow}>
-            <span className={styles.schedFormLabel}>감지 기능</span>
-            <div className={styles.schedFormAlgosRow}>
-              {SCHED_ALGOS.map(a => {
-                const active = form.algoIds.includes(a.id);
-                return (
-                  <button key={a.id}
-                    className={[styles.schedAlgoBtn, active ? styles.schedAlgoBtnActive : ''].filter(Boolean).join(' ')}
-                    style={active ? { background: `${ALGO_COLORS[a.id]}15`, borderColor: ALGO_COLORS[a.id], color: ALGO_COLORS[a.id] } : {}}
-                    onClick={() => toggleAlgo(a.id)}>
-                    {a.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className={styles.schedFormActions}>
-            <button className={styles.schedSaveBtn} disabled={!form.algoIds.length || !form.days.length} onClick={handleSave}>저장</button>
-            <button className={styles.schedCancelBtn} onClick={() => setAdding(false)}>취소</button>
-          </div>
-        </div>
-      ) : (
-        <button className={styles.schedAddBtn} onClick={() => setAdding(true)}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          일정 추가
-        </button>
-      )}
-    </Card>
-  );
-}
 
 export default function AiSafety() {
   const cameras = useDataStore((s) => s.cameras);
@@ -309,14 +166,24 @@ export default function AiSafety() {
   const toast = useToast();
 
   const [showRecommendModal, setShowRecommendModal] = useState(false);
-  const [detailMode, setDetailMode] = useState(false);
   // 추천 모달: 1=시나리오 설정, 2=카메라×슬롯 매트릭스
   const [modalStep, setModalStep] = useState<1 | 2>(1);
   const [activeSlotIdx, setActiveSlotIdx] = useState(0);
   // step2Selection[slotIdx][cameraId] = 활성 algoId 배열
   const [step2Selection, setStep2Selection] = useState<Record<number, Record<string, string[]>>>({});
-  // 메인 화면 슬롯 탭 (카메라별 적용된 schedule)
-  const [activeMainSlotIdx, setActiveMainSlotIdx] = useState(0);
+  // 메인 화면 슬롯 탭 — slot.id로 추적 (정렬 후에도 안정적)
+  const [activeMainSlotId, setActiveMainSlotId] = useState<string | null>(null);
+  // 전문가 상세 설정 모달
+  const [expertAlgoId, setExpertAlgoId] = useState<string | null>(null);
+  const [expertCfgs, setExpertCfgs] = useState<Record<string, ExpertCfg>>({});
+  const [expertTab, setExpertTab] = useState<'params' | 'area'>('params');
+  const [expertDrawMode, setExpertDrawMode] = useState(false);
+  // 전문가 인증 단계 — 톱니 클릭 시 먼저 ID/PW 입력
+  const [authForAlgoId, setAuthForAlgoId] = useState<string | null>(null);
+  const [authInput, setAuthInput] = useState({ id: '', pw: '' });
+  const [authError, setAuthError] = useState<string | null>(null);
+  // 기본 안심 / AI 특화 섹션 토글
+  const [activeKind, setActiveKind] = useState<'basic' | 'ai'>('basic');
 
   // 온보딩 — 최초 방문 시 초기 세팅 화면 표시
   const [isOnboarded, setIsOnboarded] = useState(() =>
@@ -367,17 +234,24 @@ export default function AiSafety() {
     () => cameras[0]?.id ? { [cameras[0].id]: SAMPLE_SCHED } : {}
   );
   const schedule = camSchedules[activeCamId] ?? [];
-  const addSlot = (s: Omit<ScheduleSlot,'id'>) =>
-    setCamSchedules(p => ({ ...p, [activeCamId]: [...(p[activeCamId] ?? []), { ...s, id: `ss${Date.now()}` }] }));
 
   const cam = cameras.find((c) => c.id === activeCamId);
   const camAlgos = useMemo(() => algorithms.filter((a) => a.cameraId === activeCamId), [algorithms, activeCamId]);
   const basicAlgos = camAlgos.filter((a) => a.kind === 'basic');
   const aiAlgos = camAlgos.filter((a) => a.kind === 'ai');
 
-  // 메인 슬롯 탭 — 활성 슬롯이 있으면 그 algoIds로 카드/칩 분리, 없으면 enabled 기준
-  const safeMainSlotIdx = Math.min(activeMainSlotIdx, Math.max(0, schedule.length - 1));
-  const activeMainSlot = schedule[safeMainSlotIdx] ?? null;
+  // 메인 슬롯 탭 — 시나리오 시간순으로 정렬해서 표출
+  const orderedSchedule = useMemo(() => {
+    return [...schedule].sort((a, b) => {
+      const ai = a.scenarioKey ? SCENARIO_DISPLAY_ORDER.indexOf(a.scenarioKey) : 99;
+      const bi = b.scenarioKey ? SCENARIO_DISPLAY_ORDER.indexOf(b.scenarioKey) : 99;
+      return ai - bi;
+    });
+  }, [schedule]);
+  // 활성 슬롯 — id로 추적, 못 찾으면 첫 번째
+  const activeMainSlot = (activeMainSlotId
+    ? orderedSchedule.find((s) => s.id === activeMainSlotId)
+    : null) ?? orderedSchedule[0] ?? null;
   const algoKeysInActiveSlot = useMemo(
     () => new Set(activeMainSlot?.algoIds ?? []),
     [activeMainSlot],
@@ -568,8 +442,9 @@ export default function AiSafety() {
   // 슬롯에서 algoKey 제거 후 어느 슬롯에도 없으면 enabled=false 처리
   const removeAlgoFromActiveSlot = (a: CameraAlgorithm) => {
     if (!activeMainSlot) return;
-    const newSched = schedule.map((s, i) =>
-      i === safeMainSlotIdx
+    const targetId = activeMainSlot.id;
+    const newSched = schedule.map((s) =>
+      s.id === targetId
         ? { ...s, algoIds: s.algoIds.filter((x) => x !== a.algoKey) }
         : s,
     );
@@ -591,8 +466,9 @@ export default function AiSafety() {
       return;
     }
     if (activeMainSlot) {
-      const newSched = schedule.map((s, i) =>
-        i === safeMainSlotIdx && !s.algoIds.includes(a.algoKey)
+      const targetId = activeMainSlot.id;
+      const newSched = schedule.map((s) =>
+        s.id === targetId && !s.algoIds.includes(a.algoKey)
           ? { ...s, algoIds: [...s.algoIds, a.algoKey] }
           : s,
       );
@@ -764,7 +640,24 @@ export default function AiSafety() {
 
             {/* 민감도 (고급) */}
             <div className={styles.algoField}>
-              <span className={styles.algoFieldLabel}>민감도</span>
+              <div className={styles.algoFieldHead}>
+                <span className={styles.algoFieldLabel}>민감도</span>
+                {a.kind === 'ai' && (
+                  <button
+                    type="button"
+                    className={styles.expertBtn}
+                    onClick={() => { setAuthForAlgoId(a.id); setAuthInput({ id: '', pw: '' }); setAuthError(null); }}
+                    title="전문가 상세 설정 — 당사 전문가가 영역·파라미터를 조정"
+                    aria-label="전문가 상세 설정"
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    전문가 설정
+                  </button>
+                )}
+              </div>
               <div className={styles.radioRow}>
                 {SENS_OPTS.map((s) => (
                   <button
@@ -1089,133 +982,116 @@ export default function AiSafety() {
                   onPolygonUpdate={handlePolygonUpdate}
                   onCancelDraw={() => setDrawMode(false)}
                 />
-              </div>
-
-              <div className={page.algoRight}>
-                <div className={styles.algoHeaderRow}>
-                  <label className={styles.detailModeField}>
-                    <Toggle
-                      on={detailMode}
-                      onToggle={() => {
-                        const next = !detailMode;
-                        setDetailMode(next);
-                        if (!next) { setExpandedId(null); setDrawMode(false); }
-                      }}
-                      aria-label="상세모드"
-                    />
-                    <span className={styles.detailModeLabel}>상세모드</span>
-                  </label>
+                <div className={styles.recBtnRow}>
                   <Button variant="secondary" size="sm" onClick={openRecommendModal}>
                     추천 안심 설정
                   </Button>
                 </div>
+              </div>
 
-                {detailMode && (
-                  <ScheduleSection slots={schedule} onAdd={addSlot} />
-                )}
-
-                {/* 시간 슬롯 탭 — 카메라에 schedule이 있을 때만 */}
-                {schedule.length > 0 && (
-                  <div className={styles.mainSlotTabs} role="tablist" aria-label="시간 슬롯">
-                    {schedule.map((slot, idx) => {
+              <div className={[page.algoRight, styles.algoRightTabWrap].join(' ')}>
+                {/* 시간 슬롯 라인탭 — 카메라에 schedule이 있을 때만 */}
+                {orderedSchedule.length > 0 && (
+                  <Tabs
+                    variant="line"
+                    active={activeMainSlot?.id ?? ''}
+                    onChange={(id) => setActiveMainSlotId(id)}
+                    tabs={orderedSchedule.map((slot) => {
                       const scen = findScenarioForSlot(slot);
-                      const active = safeMainSlotIdx === idx;
-                      return (
-                        <button
-                          key={slot.id}
-                          type="button"
-                          role="tab"
-                          aria-selected={active}
-                          className={[styles.mainSlotTab, active ? styles.mainSlotTabActive : ''].filter(Boolean).join(' ')}
-                          onClick={() => setActiveMainSlotIdx(idx)}
-                        >
-                          <span className={styles.mainSlotTabEmoji}>{scen?.emoji ?? '📋'}</span>
-                          <span className={styles.mainSlotTabLabel}>{scen?.label ?? '일정'}</span>
-                          <span className={styles.mainSlotTabTime}>{fmtH(slot.startH)}~{fmtH(slot.endH)}</span>
-                        </button>
-                      );
+                      return {
+                        key: slot.id,
+                        label: (
+                          <span className={styles.slotTabLabel}>
+                            <span>{scen?.label ?? '일정'}</span>
+                            <span className={styles.slotTabTime}>{fmtH(slot.startH)}~{fmtH(slot.endH)}</span>
+                          </span>
+                        ),
+                      };
                     })}
-                  </div>
+                  />
                 )}
 
-                <div className={styles.cardGrid}>
-                  <div>
-                    <div className={styles.algoSectionHead}>
-                      <span className={styles.algoGroupTitle}>기본 안심 기능</span>
-                      <span className={styles.algoSectionHint}>AI 특화 기능과 함께 자유롭게 사용할 수 있어요</span>
-                    </div>
-                    {visibleBasicAlgos.length > 0
-                      ? <div className={styles.algoGrid}>{visibleBasicAlgos.map(renderCard)}</div>
-                      : <div className={styles.algoEmptyHint}>이 시간대에 적용된 감지가 없습니다.</div>}
-                    {hiddenBasicAlgos.length > 0 && (
-                      <div className={styles.algoActivateRow}>
-                        <span className={styles.algoActivateLabel}>+ 추가 활성화</span>
-                        {hiddenBasicAlgos.map((a) => (
-                          <button key={a.id} type="button" className={styles.algoActivateChip} onClick={() => addAlgoToActiveSlot(a)}>
-                            <span className={styles.algoActivateChipIcon} aria-hidden><Glyph algoKey={a.algoKey} /></span>
-                            {a.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className={styles.algoSectionHead}>
-                      <span className={styles.algoGroupTitle}>AI 특화 기능</span>
-                      <span className={[styles.algoSectionHint, aiEnabledCountInContext >= AI_LIMIT ? styles.algoSectionHintWarn : ''].filter(Boolean).join(' ')}>
-                        동일 시간대 최대 {AI_LIMIT}개 · 현재 {aiEnabledCountInContext}/{AI_LIMIT}
+                {/* 기본/AI 칩 메뉴 */}
+                <div className={styles.kindChips} role="tablist" aria-label="기능 카테고리">
+                  {([['basic', '기본 안심 기능'], ['ai', 'AI 특화 기능']] as const).map(([k, label]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeKind === k}
+                      className={[styles.kindChip, activeKind === k ? styles.kindChipActive : ''].filter(Boolean).join(' ')}
+                      onClick={() => setActiveKind(k)}
+                    >
+                      {label}
+                      <span className={styles.kindChipCount}>
+                        {k === 'basic' ? visibleBasicAlgos.length : visibleAiAlgos.length}
                       </span>
-                    </div>
-                    {visibleAiAlgos.length > 0
-                      ? <div className={styles.algoGrid}>{visibleAiAlgos.map(renderCard)}</div>
-                      : <div className={styles.algoEmptyHint}>이 시간대에 적용된 감지가 없습니다.</div>}
-                    {hiddenAiAlgos.length > 0 && (
-                      <div className={styles.algoActivateRow}>
-                        <span className={[styles.algoActivateLabel, aiEnabledCountInContext >= AI_LIMIT ? styles.algoActivateLabelWarn : ''].filter(Boolean).join(' ')}>
-                          {aiEnabledCountInContext >= AI_LIMIT
-                            ? `한도 도달 — 기능을 해제하면 추가 활성화할 수 있어요`
-                            : '+ 추가 활성화'}
-                        </span>
-                        {hiddenAiAlgos.map((a) => {
-                          const disabled = aiEnabledCountInContext >= AI_LIMIT;
-                          return (
-                            <button
-                              key={a.id}
-                              type="button"
-                              className={styles.algoActivateChip}
-                              onClick={() => addAlgoToActiveSlot(a)}
-                              disabled={disabled}
-                              title={disabled ? `AI 특화 기능은 최대 ${AI_LIMIT}개까지 사용할 수 있어요` : undefined}
-                            >
+                    </button>
+                  ))}
+                </div>
+
+                {/* 단일 섹션 — activeKind에 해당하는 카드 + 활성화 칩 */}
+                <div className={styles.kindSection}>
+                  {activeKind === 'basic' ? (
+                    <>
+                      <div className={styles.algoSectionHead}>
+                        <span className={styles.algoSectionHint}>AI 특화 기능과 함께 자유롭게 사용할 수 있어요</span>
+                      </div>
+                      {visibleBasicAlgos.length > 0
+                        ? <div className={styles.algoGrid}>{visibleBasicAlgos.map(renderCard)}</div>
+                        : <div className={styles.algoEmptyHint}>이 시간대에 적용된 감지가 없습니다.</div>}
+                      {hiddenBasicAlgos.length > 0 && (
+                        <div className={styles.algoActivateRow}>
+                          <span className={styles.algoActivateLabel}>+ 추가 활성화</span>
+                          {hiddenBasicAlgos.map((a) => (
+                            <button key={a.id} type="button" className={styles.algoActivateChip} onClick={() => addAlgoToActiveSlot(a)}>
                               <span className={styles.algoActivateChipIcon} aria-hidden><Glyph algoKey={a.algoKey} /></span>
                               {a.label}
                             </button>
-                          );
-                        })}
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.algoSectionHead}>
+                        <span className={[styles.algoSectionHint, aiEnabledCountInContext >= AI_LIMIT ? styles.algoSectionHintWarn : ''].filter(Boolean).join(' ')}>
+                          동일 시간대 최대 {AI_LIMIT}개 · 현재 {aiEnabledCountInContext}/{AI_LIMIT}
+                        </span>
                       </div>
-                    )}
-                  </div>
+                      {visibleAiAlgos.length > 0
+                        ? <div className={styles.algoGrid}>{visibleAiAlgos.map(renderCard)}</div>
+                        : <div className={styles.algoEmptyHint}>이 시간대에 적용된 감지가 없습니다.</div>}
+                      {hiddenAiAlgos.length > 0 && (
+                        <div className={styles.algoActivateRow}>
+                          <span className={[styles.algoActivateLabel, aiEnabledCountInContext >= AI_LIMIT ? styles.algoActivateLabelWarn : ''].filter(Boolean).join(' ')}>
+                            {aiEnabledCountInContext >= AI_LIMIT
+                              ? `한도 도달 — 기능을 해제하면 추가 활성화할 수 있어요`
+                              : '+ 추가 활성화'}
+                          </span>
+                          {hiddenAiAlgos.map((a) => {
+                            const disabled = aiEnabledCountInContext >= AI_LIMIT;
+                            return (
+                              <button
+                                key={a.id}
+                                type="button"
+                                className={styles.algoActivateChip}
+                                onClick={() => addAlgoToActiveSlot(a)}
+                                disabled={disabled}
+                                title={disabled ? `AI 특화 기능은 최대 ${AI_LIMIT}개까지 사용할 수 있어요` : undefined}
+                              >
+                                <span className={styles.algoActivateChipIcon} aria-hidden><Glyph algoKey={a.algoKey} /></span>
+                                {a.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-
-            {detailMode && (
-              <Card>
-                <div className={styles.notice}>
-                  <span className={styles.noticeIcon} aria-hidden>
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="M12 8h.01M11 12h1v4h1" />
-                    </svg>
-                  </span>
-                  <span>
-                    카메라 기기 설정(시스템·네트워크·영상·OSD 등)은 <b>카메라 관리</b>에서 다룹니다.
-                    설치나 화각 조정이 필요하면 에스원에 도움을 요청하세요.
-                  </span>
-                </div>
-              </Card>
-            )}
 
             {/* 온보딩 재시작 */}
             <div className={styles.reOnboardRow}>
@@ -1485,6 +1361,313 @@ export default function AiSafety() {
           </div>
         </>
       )}
+
+      {/* ===== 전문가 인증 모달 ===== */}
+      {authForAlgoId && (() => {
+        const algo = camAlgos.find((x) => x.id === authForAlgoId);
+        if (!algo) return null;
+        const close = () => { setAuthForAlgoId(null); setAuthInput({ id: '', pw: '' }); setAuthError(null); };
+        const submit = () => {
+          const id = authInput.id.trim();
+          const pw = authInput.pw;
+          if (!id || !pw) { setAuthError('아이디와 비밀번호를 모두 입력하세요.'); return; }
+          if (pw.length < 4) { setAuthError('비밀번호는 4자 이상이어야 합니다.'); return; }
+          // 인증 성공 — 전문가 모달로 전환
+          setExpertTab('params');
+          setExpertDrawMode(false);
+          setExpertAlgoId(authForAlgoId);
+          close();
+        };
+        return (
+          <>
+            <div className={styles.expertBackdrop} onClick={close} />
+            <div className={[styles.expertModal, styles.authModal].join(' ')} role="dialog" aria-modal="true" aria-labelledby="expert-auth-title">
+              <div className={styles.expertHead}>
+                <div>
+                  <div id="expert-auth-title" className={styles.expertTitle}>전문가 인증</div>
+                  <div className={styles.expertSub}>{algo.label} 상세 설정을 위해 당사 전문가 계정으로 로그인하세요</div>
+                </div>
+                <button type="button" className={styles.expertClose} onClick={close} aria-label="닫기">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form
+                className={styles.authBody}
+                onSubmit={(e) => { e.preventDefault(); submit(); }}
+              >
+                <label className={styles.authField}>
+                  <span className={styles.authLabel}>아이디</span>
+                  <input
+                    type="text"
+                    autoFocus
+                    autoComplete="username"
+                    className={styles.authInput}
+                    value={authInput.id}
+                    onChange={(e) => { setAuthInput((p) => ({ ...p, id: e.target.value })); setAuthError(null); }}
+                    placeholder="전문가 계정 ID"
+                  />
+                </label>
+                <label className={styles.authField}>
+                  <span className={styles.authLabel}>비밀번호</span>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    className={styles.authInput}
+                    value={authInput.pw}
+                    onChange={(e) => { setAuthInput((p) => ({ ...p, pw: e.target.value })); setAuthError(null); }}
+                    placeholder="비밀번호"
+                  />
+                </label>
+                {authError && <div className={styles.authError}>{authError}</div>}
+                <div className={styles.authHint}>
+                  전문가 인증 후 영역·파라미터·모델 등 상세 설정이 가능합니다.
+                </div>
+                {/* 폼 submit용 hidden */}
+                <button type="submit" style={{ display: 'none' }} aria-hidden />
+              </form>
+
+              <div className={styles.expertFoot}>
+                <Button variant="secondary" size="sm" onClick={close}>취소</Button>
+                <Button variant="primary" size="sm" onClick={submit}>로그인</Button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {/* ===== 전문가 상세 설정 모달 ===== */}
+      {expertAlgoId && (() => {
+        const algo = camAlgos.find((x) => x.id === expertAlgoId);
+        if (!algo) return null;
+        const cfg = expertCfgs[algo.id] ?? DEFAULT_EXPERT;
+        const patch = (p: Partial<ExpertCfg>) =>
+          setExpertCfgs((prev) => ({ ...prev, [algo.id]: { ...cfg, ...p } }));
+        const close = () => { setExpertAlgoId(null); setExpertDrawMode(false); };
+        const save = () => {
+          toast.success('전문가 설정 저장', `${algo.label} 파라미터가 저장되었습니다.`);
+          close();
+        };
+        const polys = algo.polygons ?? [];
+        const expertOnDraw = (polygon: Omit<ZonePolygon, 'id'>) => {
+          if (polygon.points.length < 3) return;
+          addAlgorithmPolygon(algo.cameraId, algo.id, polygon);
+          setExpertDrawMode(false);
+          toast.success('영역 추가됨', `${algo.label} · ${polygon.points.length}개 vertex`);
+        };
+        return (
+          <>
+            <div className={styles.expertBackdrop} onClick={close} />
+            <div className={[styles.expertModal, styles.expertModalWide].join(' ')} role="dialog" aria-modal="true" aria-labelledby="expert-title">
+              <div className={styles.expertHead}>
+                <div>
+                  <div id="expert-title" className={styles.expertTitle}>전문가 상세 설정 — {algo.label}</div>
+                  <div className={styles.expertSub}>당사 전문가가 카메라별 영역·파라미터를 미세 조정합니다</div>
+                </div>
+                <button type="button" className={styles.expertClose} onClick={close} aria-label="닫기">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* 칩 탭 */}
+              <div className={styles.expertChipTabs} role="tablist">
+                {([['params', '감지 파라미터'], ['area', '영역 설정']] as const).map(([k, label]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    role="tab"
+                    aria-selected={expertTab === k}
+                    className={[styles.expertChipTab, expertTab === k ? styles.expertChipTabActive : ''].filter(Boolean).join(' ')}
+                    onClick={() => { setExpertTab(k); if (k === 'params') setExpertDrawMode(false); }}
+                  >
+                    {label}
+                    {k === 'area' && <span className={styles.expertChipTabCount}>{polys.length}</span>}
+                  </button>
+                ))}
+              </div>
+
+              <div className={styles.expertSplit}>
+                {/* 좌측 — 채널 프리뷰 (항상 표출) */}
+                <div className={styles.expertSplitLeft}>
+                  <RoiPreview
+                    camName={cam.name}
+                    camStatus={cam.status}
+                    videoIdx={videoIdx}
+                    offline={offline}
+                    algos={[algo]}
+                    activeAlgoId={algo.id}
+                    drawMode={expertTab === 'area' && expertDrawMode}
+                    noCard
+                    onDrawComplete={expertOnDraw}
+                    onPolygonRemove={handlePolygonRemove}
+                    onPolygonUpdate={handlePolygonUpdate}
+                    onCancelDraw={() => setExpertDrawMode(false)}
+                  />
+                </div>
+
+                {/* 우측 — 활성 탭 콘텐츠 */}
+                <div className={styles.expertSplitRight}>
+                  {expertTab === 'params' && <>
+                    {/* 감지 파라미터 */}
+                    <div className={styles.expertSection}>
+                      <div className={styles.expertSectionTitle}>감지 파라미터</div>
+
+                      <div className={styles.expertField}>
+                        <div className={styles.expertFieldHead}>
+                          <span className={styles.expertFieldLabel}>감지 신뢰도 임계값</span>
+                          <span className={styles.expertFieldValue}>{cfg.confidence}%</span>
+                        </div>
+                        <input type="range" min={30} max={95} step={1}
+                          className={styles.expertSlider}
+                          value={cfg.confidence}
+                          onChange={(e) => patch({ confidence: +e.target.value })} />
+                        <span className={styles.expertFieldHint}>낮을수록 더 많이 감지 (오탐 증가), 높을수록 정확하지만 누락 가능</span>
+                      </div>
+
+                      <div className={styles.expertField}>
+                        <div className={styles.expertFieldHead}>
+                          <span className={styles.expertFieldLabel}>최소 객체 크기</span>
+                          <span className={styles.expertFieldValue}>{cfg.minSize}px</span>
+                        </div>
+                        <input type="range" min={10} max={200} step={5}
+                          className={styles.expertSlider}
+                          value={cfg.minSize}
+                          onChange={(e) => patch({ minSize: +e.target.value })} />
+                      </div>
+
+                      <div className={styles.expertField}>
+                        <div className={styles.expertFieldHead}>
+                          <span className={styles.expertFieldLabel}>최대 객체 크기</span>
+                          <span className={styles.expertFieldValue}>{cfg.maxSize}px</span>
+                        </div>
+                        <input type="range" min={200} max={1200} step={20}
+                          className={styles.expertSlider}
+                          value={cfg.maxSize}
+                          onChange={(e) => patch({ maxSize: +e.target.value })} />
+                      </div>
+                    </div>
+
+                    {/* 트래킹 */}
+                    <div className={styles.expertSection}>
+                      <div className={styles.expertSectionTitle}>트래킹</div>
+
+                      <div className={styles.expertField}>
+                        <div className={styles.expertFieldHead}>
+                          <span className={styles.expertFieldLabel}>추적 유지 프레임</span>
+                          <span className={styles.expertFieldValue}>{cfg.trackHold} frames</span>
+                        </div>
+                        <input type="range" min={5} max={120} step={1}
+                          className={styles.expertSlider}
+                          value={cfg.trackHold}
+                          onChange={(e) => patch({ trackHold: +e.target.value })} />
+                        <span className={styles.expertFieldHint}>객체가 일시 가려져도 이 프레임 수만큼 트래킹 유지</span>
+                      </div>
+
+                      <div className={styles.expertField}>
+                        <div className={styles.expertFieldHead}>
+                          <span className={styles.expertFieldLabel}>검증 프레임 수</span>
+                          <span className={styles.expertFieldValue}>{cfg.confirmFrames} frames</span>
+                        </div>
+                        <input type="range" min={1} max={30} step={1}
+                          className={styles.expertSlider}
+                          value={cfg.confirmFrames}
+                          onChange={(e) => patch({ confirmFrames: +e.target.value })} />
+                        <span className={styles.expertFieldHint}>이벤트 확정 전 연속 감지 프레임 — 깜박임 방지</span>
+                      </div>
+                    </div>
+
+                    {/* 모델 */}
+                    <div className={styles.expertSection}>
+                      <div className={styles.expertSectionTitle}>적용 모델</div>
+                      <div className={styles.expertField}>
+                        <div className={styles.expertModelRow}>
+                          {MODEL_OPTS.map((m) => (
+                            <button
+                              key={m.value}
+                              type="button"
+                              className={[styles.expertModelBtn, cfg.model === m.value ? styles.expertModelBtnActive : ''].filter(Boolean).join(' ')}
+                              onClick={() => patch({ model: m.value })}
+                            >
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>}
+
+                  {expertTab === 'area' && <>
+                    <div className={styles.expertSection}>
+                      <div className={styles.expertSectionTitle}>등록된 영역 ({polys.length})</div>
+                      {polys.length === 0 && (
+                        <div className={styles.expertAreaEmpty}>설정된 영역이 없습니다. "영역 그리기"로 추가하세요.</div>
+                      )}
+                      {polys.length > 0 && (
+                        <div className={styles.expertPolyList}>
+                          {polys.map((poly, i) => (
+                            <div key={poly.id} className={styles.expertPolyRow}>
+                              <span className={styles.expertPolyLabel}>영역 {i + 1}</span>
+                              <span className={styles.expertPolyMeta}>{poly.points.length}개 vertex</span>
+                              <button
+                                type="button"
+                                className={styles.expertPolyDelBtn}
+                                onClick={() => handlePolygonRemove(algo.id, poly.id)}
+                                aria-label="영역 삭제"
+                                title="영역 삭제"
+                              >
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                                  <path d="M18 6L6 18M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={styles.expertSection}>
+                      <div className={styles.expertSectionTitle}>그리기</div>
+                      {expertDrawMode ? (
+                        <div className={styles.expertDrawHint}>
+                          <span>좌측 영상 위를 클릭해서 점을 찍고, 첫 점 근처를 다시 클릭하면 영역이 완성됩니다.</span>
+                          <button
+                            type="button"
+                            className={styles.expertDrawCancelBtn}
+                            onClick={() => setExpertDrawMode(false)}
+                          >
+                            그리기 취소
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.expertDrawBtn}
+                          onClick={() => setExpertDrawMode(true)}
+                        >
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 5v14M5 12h14" />
+                          </svg>
+                          새 영역 그리기
+                        </button>
+                      )}
+                      <span className={styles.expertFieldHint}>이 영역 안에서만 감지가 동작합니다. 여러 영역을 추가할 수 있어요.</span>
+                    </div>
+                  </>}
+                </div>
+              </div>
+
+              <div className={styles.expertFoot}>
+                <Button variant="secondary" size="sm" onClick={close}>닫기</Button>
+                <Button variant="primary" size="sm" onClick={save}>저장</Button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
