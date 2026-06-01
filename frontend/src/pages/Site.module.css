@@ -144,8 +144,6 @@
   background: var(--color-bg-muted);
 }
 
-.siteRowUnassigned { border-bottom: 1px solid var(--color-border-subtle); }
-
 .siteLabel {
   flex: 1;
   min-width: 0;
@@ -161,10 +159,6 @@
 .siteLabelActive { color: var(--color-action-primary-default); font-weight: var(--font-weight-bold); }
 
 [data-theme='dark'] .siteLabelActive { color: var(--color-blue-dark-350); }
-.siteLabelMuted {
-  color: var(--color-text-tertiary);
-  font-weight: var(--font-weight-medium);
-}
 
 .siteCount {
   flex-shrink: 0;
@@ -217,59 +211,6 @@
 
 .statusChipOn  { background: var(--color-status-success); color: #fff; }
 .statusChipOff { background: var(--color-border-default); color: var(--color-text-secondary); }
-
-/* 사이트 추가 행 */
-.addSiteRow {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-8, 8px);
-  padding: var(--spacing-12, 12px) var(--spacing-20, 20px);
-  border: none;
-  background: transparent;
-  width: 100%;
-  cursor: pointer;
-  text-align: left;
-  font-size: var(--font-size-14);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-tertiary);
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.addSiteRow:hover {
-  background: var(--color-bg-subtle);
-}
-
-.addSiteRowIcon {
-  font-size: var(--font-size-14);
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-/* 인라인 사이트명 편집 */
-.siteRowEdit {
-  display: flex;
-  align-items: center;
-  padding: 5px 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
-  background: color-mix(in srgb, var(--color-action-primary-default) 5%, transparent);
-}
-
-.siteEditInput {
-  flex: 1;
-  height: 28px;
-  padding: 0 8px;
-  font-size: var(--font-size-14);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  background: var(--color-surface-default);
-  border: 1px solid var(--color-action-primary-default);
-  border-radius: 5px;
-  outline: none;
-}
-
-.siteEditInput:focus {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-action-primary-default) 25%, transparent);
-}
 
 .treeActions {
   display: flex;

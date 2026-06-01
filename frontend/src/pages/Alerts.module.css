@@ -5,7 +5,7 @@
   border-color: rgba(220, 38, 38, 0.35) !important;
 }
 
-/* ===== 필터바 — 위험도 라인탭 + 유형 칩 (sticky 한 덩어리) ===== */
+/* ===== 필터바 — 유형 칩 (sticky) ===== */
 .filterBar {
   display: flex;
   flex-direction: column;
@@ -15,87 +15,13 @@
   z-index: 10;
   background: var(--color-bg-home);
   padding-bottom: var(--space-3);
-  /* DS 라인탭 배경 토큰을 이 페이지에서만 비활성화 */
-  --tab-bg: transparent;
 }
 
-/* 위험도 라인탭 — DS Tabs(variant="line")의 label 슬롯에 들어갈 콘텐츠 스타일 */
-.riskTabLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-6);
-}
-
-.riskDot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  background: var(--color-text-tertiary);
-}
-
-.riskDot_danger {
-  background: var(--color-danger);
-}
-
-.riskDot_caution {
-  background: var(--color-warn);
-}
-
-.riskDot_info {
-  background: var(--color-accent);
-}
-
-.riskTabCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  padding: var(--spacing-2) var(--spacing-6);
-  border-radius: var(--radius-full);
-  background: var(--color-bg-subtle);
-  color: var(--color-text-secondary);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-10);
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--font-weight-medium);
-  line-height: 1.6;
-}
-
-/* 유형 칩 */
+/* 유형 칩 컨테이너 — DS Chip 사이즈로 통일 (카메라 관리와 동일) */
 .typeChips {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
-}
-
-.typeChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition:
-    background-color var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast);
-}
-
-.typeChip:hover {
-  border-color: var(--color-accent);
-  color: var(--color-text);
-}
-
-.typeChipActive {
-  border-color: var(--color-accent);
-  background: var(--color-accent-muted);
-  color: var(--color-text);
 }
 
 /* ===== 2-column layout ===== */

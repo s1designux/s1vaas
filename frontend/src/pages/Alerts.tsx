@@ -1,7 +1,7 @@
 // TODO: replace with fetch('/api/v1/alerts')
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Tabs } from '@/components/ui/Tabs';
+import { Chip } from '@/components/ui/Chip';
 import { useToast } from '@/hooks/useToast';
 import { relativeTime, formatDateTime } from '@/lib/time';
 import { alertsSeed } from '@/mock/alerts';
@@ -10,7 +10,7 @@ import page from './Page.module.css';
 import styles from './Alerts.module.css';
 
 // ===== Risk level — 전문 용어 제거, 소상공인 친화적 =====
-type RiskLevel = 'all' | 'danger' | 'caution' | 'info';
+type RiskLevel = 'danger' | 'caution' | 'info';
 
 const PRIORITY_TO_RISK: Record<AlertPriority, RiskLevel> = {
   critical: 'danger',
@@ -19,14 +19,7 @@ const PRIORITY_TO_RISK: Record<AlertPriority, RiskLevel> = {
   low: 'info',
 };
 
-const RISK_LABEL: Record<RiskLevel, string> = {
-  all: '전체',
-  danger: '위험',
-  caution: '주의',
-  info: '알림',
-};
-
-const RISK_EMOJI: Record<Exclude<RiskLevel, 'all'>, string> = {
+const RISK_EMOJI: Record<RiskLevel, string> = {
   danger: '🔴',
   caution: '🟡',
   info: '🔵',
@@ -138,26 +131,14 @@ export default function Alerts() {
   const toast = useToast();
 
   const [alerts, setAlerts] = useState<SecurityAlert[]>(() => alertsSeed);
-  const [riskFilter, setRiskFilter] = useState<RiskLevel>('all');
   const [typeFilter, setTypeFilter] = useState<AlertType | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(alertsSeed[0]?.id ?? null);
   const [showLive, setShowLive] = useState(false);
 
-  // ===== risk counts for tabs =====
-  const riskCounts = useMemo(() => {
-    const c: Record<RiskLevel, number> = { all: 0, danger: 0, caution: 0, info: 0 };
-    for (const a of alerts) {
-      c.all++;
-      c[PRIORITY_TO_RISK[a.priority]]++;
-    }
-    return c;
-  }, [alerts]);
-
   // ===== filtered + sorted list =====
   const filtered = useMemo(() => {
-    const RISK_ORDER: Record<RiskLevel, number> = { all: 3, danger: 0, caution: 1, info: 2 };
+    const RISK_ORDER: Record<RiskLevel, number> = { danger: 0, caution: 1, info: 2 };
     return alerts
-      .filter((a) => (riskFilter === 'all' ? true : PRIORITY_TO_RISK[a.priority] === riskFilter))
       .filter((a) => (typeFilter === null ? true : a.type === typeFilter))
       .sort((a, b) => {
         const ra = PRIORITY_TO_RISK[a.priority];
@@ -165,7 +146,7 @@ export default function Alerts() {
         if (RISK_ORDER[ra] !== RISK_ORDER[rb]) return RISK_ORDER[ra] - RISK_ORDER[rb];
         return Date.parse(b.occurredAt) - Date.parse(a.occurredAt);
       });
-  }, [alerts, riskFilter, typeFilter]);
+  }, [alerts, typeFilter]);
 
   const selected = useMemo(() => alerts.find((a) => a.id === selectedId) ?? null, [alerts, selectedId]);
 
@@ -220,49 +201,20 @@ export default function Alerts() {
   // ===== Render =====
   return (
     <div className={page.page}>
-      {/* ===== 필터바 — 위험도 라인탭 + 유형 칩 ===== */}
+      {/* ===== 필터바 — 유형 칩 (DS Chip 기준 사이즈 md) ===== */}
       <div className={styles.filterBar}>
-        {/* 위험도 라인탭 (DS Tabs variant="line") */}
-        <Tabs
-          variant="line"
-          active={riskFilter}
-          onChange={(k) => setRiskFilter(k as RiskLevel)}
-          tabs={(['all', 'danger', 'caution', 'info'] as RiskLevel[]).map((level) => ({
-            key: level,
-            label: (
-              <span className={styles.riskTabLabel}>
-                {level !== 'all' && (
-                  <span className={[styles.riskDot, styles[`riskDot_${level}`]].join(' ')} aria-hidden />
-                )}
-                {RISK_LABEL[level]}
-                <span className={styles.riskTabCount}>{riskCounts[level]}</span>
-              </span>
-            ),
-          }))}
-        />
-
-        {/* 유형 칩 */}
         <div className={styles.typeChips}>
-          <button
-            type="button"
-            className={[styles.typeChip, typeFilter === null ? styles.typeChipActive : '']
-              .filter(Boolean)
-              .join(' ')}
-            onClick={() => setTypeFilter(null)}
-          >
+          <Chip selected={typeFilter === null} onClick={() => setTypeFilter(null)}>
             전체 유형
-          </button>
+          </Chip>
           {(Object.keys(TYPE_LABEL) as AlertType[]).map((t) => (
-            <button
+            <Chip
               key={t}
-              type="button"
-              className={[styles.typeChip, typeFilter === t ? styles.typeChipActive : '']
-                .filter(Boolean)
-                .join(' ')}
+              selected={typeFilter === t}
               onClick={() => setTypeFilter(typeFilter === t ? null : t)}
             >
-              {TYPE_ICON[t]} {TYPE_LABEL[t]}
-            </button>
+              {TYPE_LABEL[t]}
+            </Chip>
           ))}
         </div>
       </div>
@@ -311,8 +263,7 @@ export default function Alerts() {
                           .filter(Boolean)
                           .join(' ')}
                       >
-                        {risk !== 'all' && RISK_EMOJI[risk as Exclude<RiskLevel, 'all'>]}{' '}
-                        {RISK_DISPLAY[a.priority]}
+                        {RISK_EMOJI[risk]} {RISK_DISPLAY[a.priority]}
                       </span>
                       <span className={styles.typeTag}>
                         {TYPE_ICON[a.type]} {TYPE_LABEL[a.type]}
@@ -386,8 +337,7 @@ export default function Alerts() {
                       .filter(Boolean)
                       .join(' ')}
                   >
-                    {RISK_EMOJI[PRIORITY_TO_RISK[selected.priority] as Exclude<RiskLevel, 'all'>]}{' '}
-                    {RISK_DISPLAY[selected.priority]}
+                    {RISK_EMOJI[PRIORITY_TO_RISK[selected.priority]]} {RISK_DISPLAY[selected.priority]}
                   </span>
                   <span className={styles.detailStatus}>
                     {STATUS_LABEL[selected.status]}

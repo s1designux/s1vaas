@@ -189,7 +189,7 @@ export default function AiSafety() {
   const [isOnboarded, setIsOnboarded] = useState(() =>
     localStorage.getItem('ai-safety-onboarded') === '1',
   );
-  const [onboardStep, setOnboardStep] = useState(0); // 0~2
+  const [onboardStep, setOnboardStep] = useState(0); // 0=업종/시간, 1=걱정상황, 2=카메라별 감지 항목, 3=설정 완료
 
   // 추천 입력
   const [industry, setIndustry] = useState('cvs');
@@ -210,6 +210,12 @@ export default function AiSafety() {
     atClose: false,
     holiday: false,
   });
+
+  // 휴일을 하나라도 선택하면 Step 1 의 '휴일 시' 시나리오 카드를 자동 펼침, 모두 해제하면 자동 접기.
+  // (걱정상황 단계에서 별도 토글 클릭은 holidays.length 가 바뀌지 않는 한 그대로 유지됨)
+  useEffect(() => {
+    setScenarioExpanded((p) => ({ ...p, holiday: holidays.length > 0 }));
+  }, [holidays.length]);
 
   // 사이드바 — 계약처·사이트 필터
   const [selectedContractId, setSelectedContractId] = useState<string>(() => contracts[0]?.id ?? '');
@@ -329,14 +335,39 @@ export default function AiSafety() {
   }
 
   // applyRecommendation의 무소음 버전 (toast 없이, 온보딩 완료 후 자동 적용용)
+  // Step 2(카메라별 감지 항목) 매트릭스를 거쳤다면 step2Selection 기준으로 카메라별 적용, 아니면 슬롯 기본값으로 균일 적용
   function applyRecommendationSilent() {
     if (generatedSlots.length === 0) return;
+    const hasMatrixSelection = Object.keys(step2Selection).length > 0;
+    const scopedSet = new Set(scopedCameras.map(c => c.id));
     cameras.forEach((c) => {
+      const slots = hasMatrixSelection && scopedSet.has(c.id)
+        ? generatedSlots
+            .map((slot, idx) => ({ ...slot, algoIds: step2Selection[idx]?.[c.id] ?? slot.algoIds }))
+            .filter(s => s.algoIds.length > 0)
+        : generatedSlots;
       setCamSchedules((p) => ({
         ...p,
-        [c.id]: generatedSlots.map((s, i) => ({ ...s, id: `rec_${c.id}_${i}` })),
+        [c.id]: slots.map((s, i) => ({ ...s, id: `rec_${c.id}_${i}` })),
       }));
     });
+  }
+
+  // 온보딩 Step 1 → Step 2(카메라별 감지 항목) 진입: step2Selection 초기화
+  function goToOnboardMatrix() {
+    if (generatedSlots.length === 0) {
+      // 걱정 상황을 하나도 선택하지 않은 경우엔 매트릭스 단계를 건너뛰고 요약으로 직행
+      setOnboardStep(3);
+      return;
+    }
+    const init: Record<number, Record<string, string[]>> = {};
+    generatedSlots.forEach((slot, idx) => {
+      init[idx] = {};
+      scopedCameras.forEach((c) => { init[idx][c.id] = [...slot.algoIds]; });
+    });
+    setStep2Selection(init);
+    setActiveSlotIdx(0);
+    setOnboardStep(2);
   }
 
   // 추천 모달 진입: Step1으로 초기화
@@ -700,7 +731,7 @@ export default function AiSafety() {
         <div className={styles.onboardWrap}>
           {/* 단계 표시 */}
           <div className={styles.onboardSteps}>
-            {['업종 · 시간', '걱정 상황', '설정 완료'].map((label, i) => (
+            {['업종 · 시간', '걱정 상황', '카메라별 감지 항목', '설정 완료'].map((label, i) => (
               <div key={i} className={[styles.onboardStep, onboardStep === i ? styles.onboardStepActive : onboardStep > i ? styles.onboardStepDone : ''].filter(Boolean).join(' ')}>
                 <span className={styles.onboardStepDot}>{onboardStep > i ? '✓' : i + 1}</span>
                 <span className={styles.onboardStepLabel}>{label}</span>
@@ -829,13 +860,117 @@ export default function AiSafety() {
 
               <div className={styles.onboardActions}>
                 <button type="button" className={styles.onboardBack} onClick={() => setOnboardStep(0)}>← 이전</button>
-                <button type="button" className={styles.onboardNext} onClick={() => setOnboardStep(2)}>다음 →</button>
+                <button type="button" className={styles.onboardNext} onClick={goToOnboardMatrix}>다음 →</button>
               </div>
             </div>
           )}
 
-          {/* ── Step 2: 요약 + 완료 ── */}
+          {/* ── Step 2: 카메라별 감지 항목 (추천 모달 Step 2 동형) ── */}
           {onboardStep === 2 && (
+            <div className={[styles.onboardCard, styles.onboardCardWide].filter(Boolean).join(' ')}>
+              <div className={styles.onboardCardHero}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={styles.onboardHeroIcon}>
+                  <rect x="2" y="6" width="14" height="12" rx="2" />
+                  <path d="M22 8l-6 4 6 4V8z" />
+                </svg>
+                <div>
+                  <div className={styles.onboardCardTitle}>카메라별 감지 항목</div>
+                  <div className={styles.onboardCardDesc}>각 시간대별로 카메라마다 어떤 항목을 감지할지 켜고 끌 수 있어요. 그대로 두면 추천 그대로 적용됩니다.</div>
+                </div>
+              </div>
+
+              {/* 슬롯 탭 */}
+              <div className={styles.recSlotTabs} role="tablist" aria-label="시간 슬롯">
+                {generatedSlots.map((slot, idx) => {
+                  const scen = findScenarioForSlot(slot);
+                  const active = activeSlotIdx === idx;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      className={[styles.recSlotTab, active ? styles.recSlotTabActive : ''].filter(Boolean).join(' ')}
+                      onClick={() => setActiveSlotIdx(idx)}
+                    >
+                      <span className={styles.recSlotTabEmoji}>{scen?.emoji ?? '📋'}</span>
+                      <span className={styles.recSlotTabLabel}>{scen?.label ?? '일정'}</span>
+                      <span className={styles.recSlotTabTime}>{fmtH(slot.startH)}~{fmtH(slot.endH)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 매트릭스: 행=카메라, 열=감지 기능 */}
+              {scopedCameras.length === 0 ? (
+                <div className={styles.recMatrixEmpty}>선택한 계약처에 카메라가 없습니다.</div>
+              ) : (
+                <div className={styles.recMatrixWrap}>
+                  <table className={styles.recMatrix}>
+                    <thead>
+                      <tr>
+                        <th className={styles.recMatrixCornerCell}>카메라</th>
+                        {SCHED_ALGOS.map((algo) => {
+                          const allOn = scopedCameras.every(c => (step2Selection[activeSlotIdx]?.[c.id] ?? []).includes(algo.id));
+                          return (
+                            <th key={algo.id} className={styles.recMatrixHeadCell}>
+                              <button
+                                type="button"
+                                className={[styles.recMatrixHeadBtn, allOn ? styles.recMatrixHeadBtnAllOn : ''].filter(Boolean).join(' ')}
+                                onClick={() => toggleStep2Column(activeSlotIdx, algo.id)}
+                                title={`${allOn ? '전체 해제' : '전체 적용'} · ${algo.label}`}
+                              >
+                                <span className={styles.recMatrixHeadDot} style={{ background: ALGO_COLORS[algo.id] ?? '#9CA3AF' }} />
+                                {algo.label}
+                              </button>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scopedCameras.map((c) => {
+                        const enabled = step2Selection[activeSlotIdx]?.[c.id] ?? [];
+                        const site = sites.find(s => s.id === c.siteId);
+                        return (
+                          <tr key={c.id}>
+                            <th scope="row" className={styles.recMatrixRowHead}>
+                              <span className={styles.recMatrixCamName}>{c.name}</span>
+                              {site && <span className={styles.recMatrixSiteName}>{site.name}</span>}
+                            </th>
+                            {SCHED_ALGOS.map((algo) => {
+                              const checked = enabled.includes(algo.id);
+                              return (
+                                <td key={algo.id} className={styles.recMatrixCell}>
+                                  <label className={styles.recMatrixCheckbox}>
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => toggleStep2Cell(activeSlotIdx, c.id, algo.id)}
+                                      aria-label={`${c.name} · ${algo.label}`}
+                                    />
+                                    <span className={styles.recMatrixCheckboxBox} aria-hidden />
+                                  </label>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className={styles.onboardActions}>
+                <button type="button" className={styles.onboardBack} onClick={() => setOnboardStep(1)}>← 이전</button>
+                <button type="button" className={styles.onboardNext} onClick={() => setOnboardStep(3)}>다음 →</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 3: 요약 + 완료 ── */}
+          {onboardStep === 3 && (
             <div className={styles.onboardCard}>
               <div className={styles.onboardCardHero}>
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={styles.onboardHeroIconSuccess}>
@@ -895,7 +1030,7 @@ export default function AiSafety() {
               )}
 
               <div className={styles.onboardActions}>
-                <button type="button" className={styles.onboardBack} onClick={() => setOnboardStep(1)}>← 이전</button>
+                <button type="button" className={styles.onboardBack} onClick={() => setOnboardStep(generatedSlots.length > 0 ? 2 : 1)}>← 이전</button>
                 <button type="button" className={styles.onboardComplete} onClick={() => completeOnboarding(false)}>
                   안심 AI 설정 시작하기
                 </button>
@@ -997,7 +1132,7 @@ export default function AiSafety() {
                 />
                 <div className={styles.recBtnRow}>
                   <Button variant="secondary" size="sm" onClick={openRecommendModal}>
-                    추천 안심 설정
+                    AI 일괄 수정
                   </Button>
                 </div>
               </div>

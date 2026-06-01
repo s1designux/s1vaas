@@ -4,8 +4,8 @@ import styles from './PageHeader.module.css';
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': '대시보드',
   '/monitoring': '실시간 보기',
-  '/alerts': '알림 센터',
   '/search': '지난 영상 찾기',
+  '/search/alerts': '지난 영상 찾기',
   '/ai-safety': '안심 AI 설정',
   '/cases': '사건철',
   '/dispatch': '출동 관제',

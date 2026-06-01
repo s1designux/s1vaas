@@ -31,7 +31,6 @@ export const ALL_ITEMS: NavItem[] = [
   { path: '/dashboard',       label: '대시보드',       icon: <Icon d="M3 13h8V3H3v10zm10 8h8V11h-8v10zM3 21h8v-6H3v6zm10-18v6h8V3h-8z" /> },
   { path: '/monitoring',      label: '실시간 보기',    icon: <Icon d="M2 4h20v12H2zM2 20h20M10 16v4M14 16v4" /> },
   { path: '/search',          label: '지난 영상 찾기', icon: <Icon d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm5.5-2.5L21 21" /> },
-  { path: '/alerts',          label: '알림 센터',      icon: <Icon d="M10 5a2 2 0 1 1 4 0v.5a6 6 0 0 1 3 5.5v3l1.5 2H5.5L7 14v-3a6 6 0 0 1 3-5.5V5zM9 19a3 3 0 0 0 6 0" /> },
   { path: '/ai-safety',       label: '안심 AI 설정',   icon: <Icon d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4zM9 12l2 2 4-4" /> },
   { path: '/camera-settings', label: '카메라 관리',    icon: <Icon d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /> },
   { path: '/site',            label: '사이트 관리',    icon: <Icon d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" /> },

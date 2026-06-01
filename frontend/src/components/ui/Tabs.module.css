@@ -6,8 +6,8 @@
   scrollbar-width: none;
   flex-shrink: 0;
   /* 모든 변종 탭은 상단 고정 — 스크롤 시 컨텐츠만 움직이도록 */
-  position: sticky;
-  top: 0;
+  position: sticky !important;
+  top: 0 !important;
   z-index: 10;
 }
 

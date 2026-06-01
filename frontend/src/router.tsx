@@ -5,8 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import Monitoring from '@/pages/Monitoring';
-import Alerts from '@/pages/Alerts';
-import Search from '@/pages/Search';
+import SearchHub from '@/pages/SearchHub';
 import AiSafety from '@/pages/AiSafety';
 import Cases from '@/pages/Cases';
 import Dispatch from '@/pages/Dispatch';
@@ -38,8 +37,10 @@ export function AppRouter() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/monitoring" element={<Monitoring />} />
-          <Route path="/alerts" element={<Alerts />} />
-          <Route path="/search" element={<Search />} />
+          {/* 알림 센터는 지난 영상 찾기 > 알림 대시보드 하위 탭으로 흡수 */}
+          <Route path="/alerts" element={<Navigate to="/search/alerts" replace />} />
+          <Route path="/search" element={<SearchHub />} />
+          <Route path="/search/alerts" element={<SearchHub />} />
           <Route path="/ai-safety" element={<AiSafety />} />
           <Route path="/cases" element={<Cases />} />
           <Route path="/dispatch" element={<Dispatch />} />

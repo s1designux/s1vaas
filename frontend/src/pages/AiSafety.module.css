@@ -2155,6 +2155,11 @@
   gap: var(--spacing-24);
 }
 
+/* 카메라별 감지 항목(매트릭스) 단계 — 매트릭스가 들어가므로 더 넓은 카드 */
+.onboardCardWide {
+  max-width: 960px;
+}
+
 .onboardCardHero {
   display: flex;
   align-items: flex-start;
