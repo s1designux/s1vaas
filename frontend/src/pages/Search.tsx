@@ -1,12 +1,10 @@
 // TODO: replace with POST /api/v1/search
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { Input } from '@/components/ui/Input';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { useToast } from '@/hooks/useToast';
-import { relativeTime } from '@/lib/time';
 import { CAM_OPTIONS, MOCK_RESULTS_BY_QUERY, SITE_OPTIONS } from '@/mock/searchResults';
 import type { SearchResult, SearchSensitivity } from '@/types/search';
 import page from './Page.module.css';
@@ -99,36 +97,6 @@ function ThumbSvg({ seed }: { seed: string }) {
         <rect x="106" y="38" width="10" height="8" fillOpacity="0.16" stroke="none" />
       </g>
     </svg>
-  );
-}
-
-function formatDuration(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return m === 0 ? `${s}초` : `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-function ResultCard({ result, onClick }: { result: SearchResult; onClick: () => void }) {
-  return (
-    <button type="button" className={styles.card} onClick={onClick}>
-      <div className={styles.thumb}>
-        <ThumbSvg seed={result.thumbnailSeed} />
-        <span className={styles.scoreBadge}>{result.score.toFixed(2)}</span>
-        <span className={styles.durBadge}>{formatDuration(result.durationSec)}</span>
-      </div>
-      <div className={styles.cardBody}>
-        <div className={styles.cardMetaRow}>
-          <span className={styles.cardCam}>{result.cameraName} · {result.siteName}</span>
-          <span className={styles.cardTime}>{relativeTime(result.occurredAt)}</span>
-        </div>
-        <div className={styles.cardCaption}>{result.caption}</div>
-        <div className={styles.attrRow}>
-          {result.matchedAttributes.slice(0, 4).map((a) => (
-            <Badge key={a} tone="info">{a}</Badge>
-          ))}
-        </div>
-      </div>
-    </button>
   );
 }
 
