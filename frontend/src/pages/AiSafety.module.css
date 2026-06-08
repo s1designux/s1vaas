@@ -2276,6 +2276,18 @@
   color: var(--color-text-tertiary);
 }
 
+/* 사무실 운영 시간 라벨 — 근무/출입제한 두 행의 첫 번째 셀렉트가 세로로 정렬되도록 공통 min-width 부여 */
+.onboardTimeLeadLabel {
+  min-width: 6em;
+}
+
+/* 익일 마커 텍스트 */
+.onboardTimeNextDay {
+  font-size: var(--font-size-14);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
 /* ── 시나리오 ── */
 .onboardScenarios {
   display: flex;

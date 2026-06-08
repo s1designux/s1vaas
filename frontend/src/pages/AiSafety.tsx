@@ -105,6 +105,16 @@ const SCENARIO_META: { key: ScenarioKey; label: string; emoji: string; desc: str
 // 메인 화면 슬롯 탭 표출 순서 — 하루 시간 흐름
 const SCENARIO_DISPLAY_ORDER: ScenarioKey[] = ['atOpen', 'operating', 'atClose', 'afterClose', 'holiday'];
 
+/**
+ * 사무실 업종 전용 — 시나리오 라벨/설명 오버라이드.
+ * 오픈/마감 용어를 근무/출입제한 용어로 치환.
+ * atOpen·atClose 는 사무실에선 노출 자체를 안 함 (Step 1 렌더에서 필터).
+ */
+const OFFICE_SCENARIO_OVERRIDES: Partial<Record<ScenarioKey, { label: string; desc: string }>> = {
+  operating:  { label: '근무시간 중',     desc: '근무 시간 동안' },
+  afterClose: { label: '출입 제한 시간 중', desc: '출입 제한 시간 동안' },
+};
+
 const SENS_OPTS: { value: AlgorithmSensitivity; title: string; desc: string }[] = [
   { value: 'low', title: '덜 민감하게', desc: '오탐을 줄여요' },
   { value: 'balanced', title: '균형 (추천)', desc: '권장 설정' },
@@ -739,7 +749,7 @@ export default function AiSafety() {
             ))}
           </div>
 
-          {/* ── Step 0: 업종 + 영업시간 + 휴일 ── */}
+          {/* ── Step 0: 업종 + 운영 시간 + 휴일 ── */}
           {onboardStep === 0 && (
             <div className={styles.onboardCard}>
               <div className={styles.onboardCardHero}>
@@ -748,7 +758,7 @@ export default function AiSafety() {
                 </svg>
                 <div>
                   <div className={styles.onboardCardTitle}>매장 정보 입력</div>
-                  <div className={styles.onboardCardDesc}>업종과 영업 시간을 알려주시면 맞춤 보안 설정을 추천해드려요</div>
+                  <div className={styles.onboardCardDesc}>업종과 운영 시간을 알려주시면 맞춤 보안 설정을 추천해드려요</div>
                 </div>
               </div>
 
@@ -765,22 +775,50 @@ export default function AiSafety() {
               </div>
 
               <div className={styles.onboardSection}>
-                <div className={styles.onboardSectionTitle}>영업 시간</div>
-                <div className={styles.onboardTimeRow}>
-                  <div className={styles.onboardTimeField}>
-                    <span className={styles.onboardTimeLabel}>오픈</span>
-                    <select className={styles.onboardTimeSelect} value={openH} onChange={(e) => setOpenH(+e.target.value)}>
-                      {Array.from({ length: 24 }, (_, i) => <option key={i} value={i}>{fmtH(i)}</option>)}
-                    </select>
+                <div className={styles.onboardSectionTitle}>운영 시간</div>
+                {industry === 'office' ? (
+                  /* 사무실 — 근무/출입제한 두 행을 flex로 분리.
+                     라벨에 공통 min-width(.onboardTimeLeadLabel)를 주어 두 행의 첫 번째 셀렉트만 세로로 정렬. */
+                  <>
+                    <div className={styles.onboardTimeRow}>
+                      <span className={[styles.onboardTimeLabel, styles.onboardTimeLeadLabel].join(' ')}>근무 시간</span>
+                      <select className={styles.onboardTimeSelect} value={openH} onChange={(e) => setOpenH(+e.target.value)} aria-label="근무 시작">
+                        {Array.from({ length: 24 }, (_, i) => <option key={i} value={i}>{fmtH(i)}</option>)}
+                      </select>
+                      <span className={styles.onboardTimeSep}>~</span>
+                      <select className={styles.onboardTimeSelect} value={closeH} onChange={(e) => setCloseH(+e.target.value)} aria-label="근무 종료">
+                        {Array.from({ length: 24 }, (_, i) => <option key={i + 1} value={i + 1}>{fmtH(i + 1)}</option>)}
+                      </select>
+                    </div>
+                    <div className={styles.onboardTimeRow}>
+                      <span className={[styles.onboardTimeLabel, styles.onboardTimeLeadLabel].join(' ')}>출입제한 시간</span>
+                      <select className={styles.onboardTimeSelect} value={closeH} onChange={(e) => setCloseH(+e.target.value)} aria-label="출입제한 시작">
+                        {Array.from({ length: 24 }, (_, i) => <option key={i + 1} value={i + 1}>{fmtH(i + 1)}</option>)}
+                      </select>
+                      <span className={styles.onboardTimeSep}>~</span>
+                      <span className={styles.onboardTimeNextDay}>익일</span>
+                      <select className={styles.onboardTimeSelect} value={openH} onChange={(e) => setOpenH(+e.target.value)} aria-label="출입제한 종료">
+                        {Array.from({ length: 24 }, (_, i) => <option key={i} value={i}>{fmtH(i)}</option>)}
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <div className={styles.onboardTimeRow}>
+                    <div className={styles.onboardTimeField}>
+                      <span className={styles.onboardTimeLabel}>오픈</span>
+                      <select className={styles.onboardTimeSelect} value={openH} onChange={(e) => setOpenH(+e.target.value)}>
+                        {Array.from({ length: 24 }, (_, i) => <option key={i} value={i}>{fmtH(i)}</option>)}
+                      </select>
+                    </div>
+                    <span className={styles.onboardTimeSep}>~</span>
+                    <div className={styles.onboardTimeField}>
+                      <span className={styles.onboardTimeLabel}>마감</span>
+                      <select className={styles.onboardTimeSelect} value={closeH} onChange={(e) => setCloseH(+e.target.value)}>
+                        {Array.from({ length: 24 }, (_, i) => <option key={i + 1} value={i + 1}>{fmtH(i + 1)}</option>)}
+                      </select>
+                    </div>
                   </div>
-                  <span className={styles.onboardTimeSep}>~</span>
-                  <div className={styles.onboardTimeField}>
-                    <span className={styles.onboardTimeLabel}>마감</span>
-                    <select className={styles.onboardTimeSelect} value={closeH} onChange={(e) => setCloseH(+e.target.value)}>
-                      {Array.from({ length: 24 }, (_, i) => <option key={i + 1} value={i + 1}>{fmtH(i + 1)}</option>)}
-                    </select>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className={styles.onboardSection}>
@@ -821,9 +859,30 @@ export default function AiSafety() {
               </div>
 
               <div className={styles.onboardScenarios}>
-                {SCENARIO_META.filter((s) =>
-                  s.key !== 'holiday' || holidays.length > 0
-                ).map((scenario) => {
+                {(() => {
+                  // 1) 사무실: atOpen/atClose 제거 + 라벨/설명 오버라이드
+                  let base = SCENARIO_META;
+                  if (industry === 'office') {
+                    base = SCENARIO_META
+                      .filter((s) => s.key !== 'atOpen' && s.key !== 'atClose')
+                      .map((s) => {
+                        const ov = OFFICE_SCENARIO_OVERRIDES[s.key];
+                        return ov ? { ...s, label: ov.label, desc: ov.desc } : s;
+                      });
+                  }
+                  // 2) 휴일 선택 시: 휴일 시 카드를 '마감 이후/출입 제한 시간 중' 다음 위치로 이동.
+                  if (holidays.length === 0) return base;
+                  const rest = base.filter((s) => s.key !== 'holiday');
+                  const holiday = base.find((s) => s.key === 'holiday');
+                  if (!holiday) return base;
+                  const afterCloseIdx = rest.findIndex((s) => s.key === 'afterClose');
+                  if (afterCloseIdx < 0) return base;
+                  return [
+                    ...rest.slice(0, afterCloseIdx + 1),
+                    holiday,
+                    ...rest.slice(afterCloseIdx + 1),
+                  ];
+                })().map((scenario) => {
                   const expanded = scenarioExpanded[scenario.key];
                   return (
                     <div key={scenario.key} className={styles.onboardScenario}>
@@ -989,10 +1048,23 @@ export default function AiSafety() {
                   <span className={styles.onboardSummaryLabel}>업종</span>
                   <span className={styles.onboardSummaryVal}>{INDUSTRIES.find((o) => o.value === industry)?.label}</span>
                 </div>
-                <div className={styles.onboardSummaryRow}>
-                  <span className={styles.onboardSummaryLabel}>영업 시간</span>
-                  <span className={styles.onboardSummaryVal}>{fmtH(openH)} ~ {fmtH(closeH)}</span>
-                </div>
+                {industry === 'office' ? (
+                  <>
+                    <div className={styles.onboardSummaryRow}>
+                      <span className={styles.onboardSummaryLabel}>근무 시간</span>
+                      <span className={styles.onboardSummaryVal}>{fmtH(openH)} ~ {fmtH(closeH)}</span>
+                    </div>
+                    <div className={styles.onboardSummaryRow}>
+                      <span className={styles.onboardSummaryLabel}>출입제한 시간</span>
+                      <span className={styles.onboardSummaryVal}>{fmtH(closeH)} ~ {fmtH(openH)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className={styles.onboardSummaryRow}>
+                    <span className={styles.onboardSummaryLabel}>운영 시간</span>
+                    <span className={styles.onboardSummaryVal}>{fmtH(openH)} ~ {fmtH(closeH)}</span>
+                  </div>
+                )}
                 {holidays.length > 0 && (
                   <div className={styles.onboardSummaryRow}>
                     <span className={styles.onboardSummaryLabel}>휴일</span>
